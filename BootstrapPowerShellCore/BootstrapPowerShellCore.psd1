@@ -12,7 +12,7 @@
 RootModule = 'BootstrapPowerShellCore.psm1'
 
 # Version number of this module.
-ModuleVersion = '0.8.0'
+ModuleVersion = '0.8.1'
 
 # Supported PSEditions
 # CompatiblePSEditions = @()
@@ -30,7 +30,7 @@ CompanyName = 'pldmgg'
 Copyright = '(c) 2018 pldmgg. All rights reserved.'
 
 # Description of the functionality provided by this module
-Description = 'Functions to install PowerShell Core on a Remote Host. Opitionally configure pwsh PSRemoting on the Remote Host.'
+Description = 'Functions to install PowerShell Core on a Remote Host. Opitionally configure pwsh PSRemoting on the Remote Host. GitHub: https://github.com/pldmgg/BootstrapPowerShellCore'
 
 # Minimum version of the Windows PowerShell engine required by this module
 PowerShellVersion = '5.1'
