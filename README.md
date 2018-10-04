@@ -70,4 +70,4 @@ Bootstrap-PowerShellCore @BootstrapPwshSplatParams
 
 ## Notes
 
-* PSGallery: https://www.powershellgallery.com/packages/WinSSH
+* PSGallery: https://www.powershellgallery.com/packages/BootstrapPowerShellCore
