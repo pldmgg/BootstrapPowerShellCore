@@ -1405,7 +1405,7 @@ function Bootstrap-PowerShellCore {
 
             $ExpectScriptPrep = @(
                 'expect - << EOF'
-                'set timeout 10'
+                'set timeout 120'
                 "spawn $($SSHCmdStringArray -join " ")"
                 'match_max 100000'
                 'expect {'
@@ -1456,8 +1456,8 @@ function Bootstrap-PowerShellCore {
 # SIG # Begin signature block
 # MIIMiAYJKoZIhvcNAQcCoIIMeTCCDHUCAQExCzAJBgUrDgMCGgUAMGkGCisGAQQB
 # gjcCAQSgWzBZMDQGCisGAQQBgjcCAR4wJgIDAQAABBAfzDtgWUsITrck0sYpfvNR
-# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQU60AhtezvTdGQqOK/UQe9XCUe
-# prCgggn9MIIEJjCCAw6gAwIBAgITawAAAB/Nnq77QGja+wAAAAAAHzANBgkqhkiG
+# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUVVBkWA+98V7nhcVzyIYRRaEM
+# asSgggn9MIIEJjCCAw6gAwIBAgITawAAAB/Nnq77QGja+wAAAAAAHzANBgkqhkiG
 # 9w0BAQsFADAwMQwwCgYDVQQGEwNMQUIxDTALBgNVBAoTBFpFUk8xETAPBgNVBAMT
 # CFplcm9EQzAxMB4XDTE3MDkyMDIxMDM1OFoXDTE5MDkyMDIxMTM1OFowPTETMBEG
 # CgmSJomT8ixkARkWA0xBQjEUMBIGCgmSJomT8ixkARkWBFpFUk8xEDAOBgNVBAMT
@@ -1514,11 +1514,11 @@ function Bootstrap-PowerShellCore {
 # ARkWA0xBQjEUMBIGCgmSJomT8ixkARkWBFpFUk8xEDAOBgNVBAMTB1plcm9TQ0EC
 # E1gAAAH5oOvjAv3166MAAQAAAfkwCQYFKw4DAhoFAKB4MBgGCisGAQQBgjcCAQwx
 # CjAIoAKAAKECgAAwGQYJKoZIhvcNAQkDMQwGCisGAQQBgjcCAQQwHAYKKwYBBAGC
-# NwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFLW4AAGLK0+9N74S
-# 3rGRSw1QbKfKMA0GCSqGSIb3DQEBAQUABIIBACWX2sfIPp0u62Ls93fB/kbuB+P/
-# VEHppze1cjmDpZMs0fmYTuqQLxKiXv1bR1l9tSwaquUA4PAs2dqLB2BbOL3Fk6fZ
-# lIuYnZZXIQPSjCt+6obpacY/lVU/8oDzRIYd7TtLL1r3Rsciy0l44lldXPfaL/p3
-# LJLAtx1UmWkQUq8ay+ryDlzQAohp4/49TZjhJ/jxDdZNngyhbNIxOC7pybf7w6Sd
-# jmTwv9ItxsjStyvoYlHcezpPHbzH+wzFu7NBGoxQPP9jE/CuqeMEbDepN7Y0ogpA
-# 7YlIwbaPsxjJhq4fAQFYNcNrY2muN18I2mK6Lm/7MSooqba8xYapFoMK9Nw=
+# NwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFDjw6YvcTMIzXBWf
+# dAXNcZtG98JOMA0GCSqGSIb3DQEBAQUABIIBAHjDLpMPJM1CpGxco9I0aeu1btGg
+# iVzS6lAP7UIiNJQWb3h4RARrMGsN3ytdcyUsOKw+oSQihD58bhG+Hz9uYc61wjqv
+# Enyg+8ra5F9n5kB3zycUsLOrrcoIMmPMUMiV75uAPw6yDd3qWc0CIRHujHBwEiGQ
+# v/Vp6NVRHbDHiHGA6+8njozulYUx67Lg4sWkKgv04hHgmzTYEvRdsZPNfNsB3hW1
+# kEkelZHe17CGAV2h+RhKBaaYpBJw26NTxbfkrb13/2i85+sl97iauEBv3HmCuI/H
+# VMtmUv8aL+/pkdupBKF2lDmvvHrMAewwUFvV5RjWSW0FUjC7AdnvcfYbHKk=
 # SIG # End signature block
