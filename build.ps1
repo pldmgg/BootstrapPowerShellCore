@@ -222,33 +222,6 @@ if ($Cert) {
 
     Remove-Signature -FilePath $FilesToSign.FullName
 
-    # Build the Get-PUDAdminCenter Public Function
-    $PUDAppMainFunctionTemplateContent = Get-Content "$env:BHModulePath\Private\PUDAppMainFunctionTemplate.ps1"
-    $DynamicPagesContent = foreach ($FileItem in @(Get-ChildItem -Path "$env:BHModulePath\Pages\Dynamic" -File)) {
-        @(
-            Get-Content $FileItem.FullName
-            ""
-        )
-    }
-    $StaticPagesContent = foreach ($FileItem in @(Get-ChildItem -Path "$env:BHModulePath\Pages\Static" -File)) {
-        @(
-            Get-Content $FileItem.FullName
-            ""
-        )
-    }
-    $GetPUDAdminCenterFunction = $PUDAppMainFunctionTemplateContent | foreach {
-        if ($_ -eq "'Add Dynamic Pages Here'") {
-            $DynamicPagesContent | foreach {'    ' + $_}
-        }
-        elseif ($_ -eq "'Add Static Pages Here'") {
-            $StaticPagesContent | foreach {'    ' + $_}
-        }
-        else {
-            $_
-        }
-    }
-    Set-Content -Path $env:BHModulePath\Public\Get-PUDAdminCenter.ps1 -Value $GetPUDAdminCenterFunction
-
     [System.Collections.ArrayList]$FilesFailedToSign = @()
     foreach ($FilePath in $FilesToSign.FullName) {
         try {
@@ -265,22 +238,6 @@ if ($Cert) {
         $global:FunctionResult = "1"
         return
     }
-}
-else {
-    # Build the Get-PUDAdminCenter Public Function
-    $PUDAppMainFunctionTemplateContent = Get-Content "$env:BHModulePath\Private\PUDAppMainFunctionTemplate.ps1"
-    $DynamicPagesContent = foreach ($FileItem in $(Get-ChildItem -Path "$env:BHModulePath\Pages\Dynamic" -File)) {
-        # Indent each line...
-        Get-Content $FileItem | foreach {"    $_"}
-    }
-    $StaticPagesContent = foreach ($FileItem in $(Get-ChildItem -Path "$env:BHModulePath\Pages\Static" -File)) {
-        # Indent each line...
-        Get-Content $FileItem | foreach {"    $_"}
-    }
-    $GetPUDAdminCenterFunction = $(
-        $PUDAppMainFunctionTemplateContent -replace '\# Add Dynamic Functions Here',$DynamicPagesContent
-    ) -replace '\# Add Static Functions Here',$StaticPagesContent
-    Set-Content -Path $env:BHModulePath\Public\Get-PUDAdminCenter.ps1 -Value $GetPUDAdminCenterFunction
 }
 
 if (!$(Get-Module -ListAvailable PSDepend)) {

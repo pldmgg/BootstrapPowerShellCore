@@ -178,67 +178,6 @@ if ($PSVersionTable.Platform -eq "Win32NT" -and $PSVersionTable.PSEdition -eq "C
     }
 }
 
-# Can't just install and import UniversalDashboard.Community automatically because of interactive license agreement prompt. So, it must be done
-# manually before trying to import PUDAdminCenter.
-if (![bool]$(Get-Module -ListAvailable UniversalDashboard.Community)) {
-    $InstallPUDCommunityMsg = "Please install the UniversalDashboard.Community PowerShell Module via...`n    Install-Module UniversalDashboard.Community`n..." +
-    "and try importing the PUDAdminCenter Module in a fresh Windows PowerShell 5.1 session."
-    Write-Warning $InstallPUDCommunityMsg
-    Write-Warning "The $ThisModule Module was NOT loaded successfully! Please run:`n    Remove-Module $ThisModule"
-    $global:FunctionResult = "1"
-    return
-}
-
-if (![bool]$(Get-Module UniversalDashboard.Community)) {
-    try {
-        Import-Module UniversalDashboard.Community -ErrorAction Stop
-    }
-    catch {
-        Write-Error $_
-        Write-Warning "The $ThisModule Module was NOT loaded successfully! Please run:`n    Remove-Module $ThisModule"
-        $global:FunctionResult = "1"
-        return
-
-        # The below is commented out because there's some concern about whether installing .Net 4.7.2 automatically on Module Import is a good practice
-        <#
-        if ($_.Exception.Message -match "\.Net Framework") {
-            $Net472Check = Get-ChildItem "HKLM:SOFTWARE\Microsoft\NET Framework Setup\NDP\v4\Full\" | Get-ItemPropertyValue -Name Release | ForEach-Object { $_ -ge 461808 }
-
-            if (!$Net472Check) {
-                try {
-                    Write-Host "Installing .Net Framework 4.7.2 ... This will take a little while, and you will need to restart afterwards..."
-                    #$InstallDotNet47Result = Install-Program -ProgramName dotnet4.7.2 -ErrorAction Stop
-                    Install-DotNet472 -DownloadDirectory "$HOME\Downloads" -ErrorAction Stop
-                }
-                catch {
-                    Write-Error $_
-                    Write-Warning ".Net Framework 4.7.2 was NOT installed successfully."
-                    Write-Warning "The $ThisModule Module will NOT be loaded. Please run`n    Remove-Module $ThisModule"
-                    $global:FunctionResult = "1"
-                    return
-                }
-            }
-            else {
-                Write-Error $_
-                Write-Warning ".Net Framework 4.7.2 is already installed! Please review the above error message before using the $ThisModule Module!"
-                Write-Warning "The $ThisModule Module will NOT be loaded. Please run`n    Remove-Module $ThisModule"
-                $global:FunctionResult = "1"
-                return
-            }
-
-            Write-Warning ".Net Framework 4.7.2 was installed successfully, however *****you must restart $env:ComputerName***** before using the $ThisModule Module! Halting!"
-            return
-        }
-        else {
-            Write-Error $_
-            Write-Warning "The $ThisModule Module was NOT loaded successfully! Please run:`n    Remove-Module $ThisModule"
-            $global:FunctionResult = "1"
-            return
-        }
-        #>
-    }
-}
-
 '@
 
     Add-Content -Value $ImportUDCommCode -Path "$env:BHModulePath\$env:BHProjectName.psm1"

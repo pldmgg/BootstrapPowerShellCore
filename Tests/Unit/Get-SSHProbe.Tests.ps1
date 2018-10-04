@@ -3,7 +3,6 @@ param(
     [Parameter(Mandatory=$False)]
     [System.Collections.Hashtable]$TestResources
 )
-
 # NOTE: `Set-BuildEnvironment -Force -Path $PSScriptRoot` from build.ps1 makes the following $env: available:
 <#
     $env:BHBuildSystem = "Unknown"
@@ -17,81 +16,23 @@ param(
     $env:BHBuildOutput = "U:\powershell\ProjectRepos\BootstrapPowerShellCore\BuildOutput"
 #>
 
-# Verbose output for non-master builds on appveyor
-# Handy for troubleshooting.
-# Splat @Verbose against commands as needed (here or in pester tests)
-$Verbose = @{}
-if($env:BHBranchName -notlike "master" -or $env:BHCommitMessage -match "!verbose") {
-    $Verbose.add("Verbose",$True)
-}
-
-# Make sure the Module is not already loaded
-if ([bool]$(Get-Module -Name $env:BHProjectName -ErrorAction SilentlyContinue)) {
-    Remove-Module $env:BHProjectName -Force
-}
-
-Describe -Name "General Project Validation: $env:BHProjectName" -Tag 'Validation' -Fixture {
-    $Scripts = Get-ChildItem $env:BHProjectPath -Include *.ps1,*.psm1,*.psd1 -Recurse
-
-    # TestCases are splatted to the script so we need hashtables
-    $TestCasesHashTable = $Scripts | foreach {@{file=$_}}         
-    It "Script <file> should be valid powershell" -TestCases $TestCasesHashTable {
-        param($file)
-
-        $file.fullname | Should Exist
-
-        $contents = Get-Content -Path $file.fullname -ErrorAction Stop
-        $errors = $null
-        $null = [System.Management.Automation.PSParser]::Tokenize($contents, [ref]$errors)
-        $errors.Count | Should Be 0
+# NOTE: If -TestResources was used, the folloqing resources should be available
+<#
+    $TestResources = @{
+        UserName        = $UserName
+        SimpleUserName  = $SimpleUserName
+        Password        = $Password
+        Creds           = $Creds
     }
+#>
 
-    $Net472Check = Get-ChildItem "HKLM:SOFTWARE\Microsoft\NET Framework Setup\NDP\v4\Full\" | Get-ItemPropertyValue -Name Release | ForEach-Object { $_ -ge 461808 }
-    if ($Net472Check) {
-        It "Module '$env:BHProjectName' Should Load" -Test {
-            {Import-Module $env:BHPSModuleManifest -Force} | Should Not Throw
-        }
-    }
-
-    It "Module '$env:BHProjectName' Public and Not Private Functions Are Available" {
-        $Module = Get-Module $env:BHProjectName
-        $Module.Name -eq $env:BHProjectName | Should Be $True
-        $Commands = $Module.ExportedCommands.Keys
-        $Commands -contains 'AddWinRMTrustedHost' | Should Be $False
-        $Commands -contains 'AddWinRMTrustLocalHost' | Should Be $False
-        $Commands -contains 'GetElevation' | Should Be $False
-        $Commands -contains 'GetModuleDependencies' | Should Be $False
-        $Commands -contains 'InstallLinuxPackage' | Should Be $False
-        $Commands -contains 'InvokeModuleDependencies' | Should Be $False
-        $Commands -contains 'InvokePSCompatibility' | Should Be $False
-        $Commands -contains 'ManualPSGalleryModuleInstall' | Should Be $False
-        $Commands -contains 'ResolveHost' | Should Be $False
-        $Commands -contains 'TestIsValidIPAddress' | Should Be $False
-        
-        $Commands -contains 'Bootstrap-PowerShellCore' | Should Be $True
-        $Commands -contains 'Get-SSHProbe' | Should Be $True
-    }
-
-    It "Module '$env:BHProjectName' Private Functions Are Available in Internal Scope" {
-        $Module = Get-Module $env:BHProjectName
-        [bool]$Module.Invoke({Get-Item function:AddWinRMTrustedHost}) | Should Be $True
-        [bool]$Module.Invoke({Get-Item function:AddWinRMTrustLocalHost}) | Should Be $True
-        [bool]$Module.Invoke({Get-Item function:GetElevation}) | Should Be $True
-        [bool]$Module.Invoke({Get-Item function:GetModuleDependencies}) | Should Be $True
-        [bool]$Module.Invoke({Get-Item function:InstallLinuxPackage}) | Should Be $True
-        [bool]$Module.Invoke({Get-Item function:InvokeModuleDependencies}) | Should Be $True
-        [bool]$Module.Invoke({Get-Item function:InvokePSCompatibility}) | Should Be $True
-        [bool]$Module.Invoke({Get-Item function:ManualPSGalleryModuleInstall}) | Should Be $True
-        [bool]$Module.Invoke({Get-Item function:ResolveHost}) | Should Be $True
-        [bool]$Module.Invoke({Get-Item function:TestIsValidIPAddress}) | Should Be $True
-    }
-}
+# placeholder
 
 # SIG # Begin signature block
 # MIIMiAYJKoZIhvcNAQcCoIIMeTCCDHUCAQExCzAJBgUrDgMCGgUAMGkGCisGAQQB
 # gjcCAQSgWzBZMDQGCisGAQQBgjcCAR4wJgIDAQAABBAfzDtgWUsITrck0sYpfvNR
-# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQU+b/IQ8yrM3X8PppDwMRVdzW3
-# UOmgggn9MIIEJjCCAw6gAwIBAgITawAAAB/Nnq77QGja+wAAAAAAHzANBgkqhkiG
+# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUHKcbDxjUuw1tTdncTIRL8Mww
+# cDqgggn9MIIEJjCCAw6gAwIBAgITawAAAB/Nnq77QGja+wAAAAAAHzANBgkqhkiG
 # 9w0BAQsFADAwMQwwCgYDVQQGEwNMQUIxDTALBgNVBAoTBFpFUk8xETAPBgNVBAMT
 # CFplcm9EQzAxMB4XDTE3MDkyMDIxMDM1OFoXDTE5MDkyMDIxMTM1OFowPTETMBEG
 # CgmSJomT8ixkARkWA0xBQjEUMBIGCgmSJomT8ixkARkWBFpFUk8xEDAOBgNVBAMT
@@ -148,11 +89,11 @@ Describe -Name "General Project Validation: $env:BHProjectName" -Tag 'Validation
 # ARkWA0xBQjEUMBIGCgmSJomT8ixkARkWBFpFUk8xEDAOBgNVBAMTB1plcm9TQ0EC
 # E1gAAAH5oOvjAv3166MAAQAAAfkwCQYFKw4DAhoFAKB4MBgGCisGAQQBgjcCAQwx
 # CjAIoAKAAKECgAAwGQYJKoZIhvcNAQkDMQwGCisGAQQBgjcCAQQwHAYKKwYBBAGC
-# NwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFHAQ3X3iDDMRA5Xv
-# +Ph+Xh6LZiajMA0GCSqGSIb3DQEBAQUABIIBAIeb4uxq2sXzctfSbNfj+9XbO32z
-# P9Mho/JQDaamh4mUYNI5EhwE0PdJGFYliVz8zScSDkcy2EJRtrZnAdeZG0dBOvM7
-# q3BPeXgyAJ8KweC8Cgjm7MASdLb1XXpWqYW+DBofSnF3sX3lueLD5zVz9vTDKjk2
-# U6GXGJUyxn6JTt/ojrE1twd+a/wPS4Wiq6mM1vayQNHLbDdonIzD9KIhHmeZiqx6
-# RjG8N/wNBfIttYAJWJoAp1sMh1mTQSSdbaO4UF2j2x7Q4hbbLAhnrgq5x/i0hlYv
-# 2UyxSAZ7IvZYu86NpJIhPDIci7dHF0ueFS3/sp2hBU8UVBMYyP6Ojqfkfmw=
+# NwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFLIoqE4gS7woJ0CG
+# kV0Xz11d/4a3MA0GCSqGSIb3DQEBAQUABIIBAFmaBg6hZLXEEoSM8cmXqvdHJqrQ
+# c8KQNHekoUYPmSZuX5E4+nfoHzLkqJwr01Fe5WHHW7dv5EZcdVP3iPzNocBy7nL+
+# QRj3LcpNt87NRI3pmJ18+N40oiaKIK4ZUedb2pfu2izR813Hh4Q2cncpGZGPNMrI
+# 31clnahtFcxo35qRQgdkp3683SqtOauGBv2oO4IBhpXNvv3YoXKFfBFwJFbMTdXw
+# 95lKQTMHQBoi7D8uW9W9n7kDqbp5oYK43+RwkxcV5BJ5h+wTvwR4rLN60f/IrZhq
+# Tfjpm1xOWABHpHVd93dWXd4qeZs0ENgnjo3s8SvmgRhdR8TbG8uKmwecNKU=
 # SIG # End signature block

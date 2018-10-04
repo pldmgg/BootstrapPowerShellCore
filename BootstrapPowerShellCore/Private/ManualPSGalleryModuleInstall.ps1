@@ -1,38 +1,86 @@
-[CmdletBinding()]
-param(
-    [Parameter(Mandatory=$False)]
-    [System.Collections.Hashtable]$TestResources
-)
-# NOTE: `Set-BuildEnvironment -Force -Path $PSScriptRoot` from build.ps1 makes the following $env: available:
-<#
-    $env:BHBuildSystem = "Unknown"
-    $env:BHProjectPath = "U:\powershell\ProjectRepos\PUDAdminCenter"
-    $env:BHBranchName = "master"
-    $env:BHCommitMessage = "!deploy"
-    $env:BHBuildNumber = 0
-    $env:BHProjectName = "PUDAdminCenter"
-    $env:BHPSModuleManifest = "U:\powershell\ProjectRepos\PUDAdminCenter\PUDAdminCenter\PUDAdminCenter.psd1"
-    $env:BHModulePath = "U:\powershell\ProjectRepos\PUDAdminCenter\PUDAdminCenter"
-    $env:BHBuildOutput = "U:\powershell\ProjectRepos\PUDAdminCenter\BuildOutput"
-#>
+function ManualPSGalleryModuleInstall {
+    [CmdletBinding()]
+    Param (
+        [Parameter(Mandatory=$True)]
+        [string]$ModuleName,
 
-# NOTE: If -TestResources was used, the folloqing resources should be available
-<#
-    $TestResources = @{
-        UserName        = $UserName
-        SimpleUserName  = $SimpleUserName
-        Password        = $Password
-        Creds           = $Creds
+        [Parameter(Mandatory=$False)]
+        [switch]$PreRelease,
+
+        [Parameter(Mandatory=$False)]
+        [string]$DownloadDirectory
+    )
+
+    if (!$DownloadDirectory) {
+        $DownloadDirectory = $(Get-Location).Path
     }
-#>
 
-# placeholder
+    if (!$(Test-Path $DownloadDirectory)) {
+        Write-Error "The path $DownloadDirectory was not found! Halting!"
+        $global:FunctionResult = "1"
+        return
+    }
+
+    if (![bool]$($($env:PSModulePath -split ";") -match [regex]::Escape("$HOME\Documents\WindowsPowerShell\Modules"))) {
+        $env:PSModulePath = "$HOME\Documents\WindowsPowerShell\Modules;$env:PSModulePath"
+    }
+    if (!$(Test-Path "$HOME\Documents\WindowsPowerShell\Modules")) {
+        $null = New-Item -ItemType Directory "$HOME\Documents\WindowsPowerShell\Modules" -Force
+    }
+
+    if ($PreRelease) {
+        $searchUrl = "https://www.powershellgallery.com/api/v2/Packages?`$filter=Id eq '$ModuleName'"
+    }
+    else {
+        $searchUrl = "https://www.powershellgallery.com/api/v2/Packages?`$filter=Id eq '$ModuleName' and IsLatestVersion"
+    }
+    $ModuleInfo = Invoke-RestMethod $searchUrl
+    if (!$ModuleInfo -or $ModuleInfo.Count -eq 0) {
+        Write-Error "Unable to find Module Named $ModuleName! Halting!"
+        $global:FunctionResult = "1"
+        return
+    }
+    if ($PreRelease) {
+        if ($ModuleInfo.Count -gt 1) {
+            $ModuleInfo = $($ModuleInfo | Sort-Object -Property Updated | Where-Object {$_.properties.isPrerelease.'#text' -eq 'true'})[-1]
+        }
+    }
+    
+    $OutFilePath = Join-Path $DownloadDirectory $($ModuleInfo.title.'#text' + $ModuleInfo.properties.version + '.zip')
+    if (Test-Path $OutFilePath) {Remove-Item $OutFilePath -Force}
+
+    try {
+        #Invoke-WebRequest $ModuleInfo.Content.src -OutFile $OutFilePath
+        # Download via System.Net.WebClient is a lot faster than Invoke-WebRequest...
+        $WebClient = [System.Net.WebClient]::new()
+        $WebClient.Downloadfile($ModuleInfo.Content.src, $OutFilePath)
+    }
+    catch {
+        Write-Error $_
+        $global:FunctionResult = "1"
+        return
+    }
+    
+    if (Test-Path "$DownloadDirectory\$ModuleName") {Remove-Item "$DownloadDirectory\$ModuleName" -Recurse -Force}
+    Expand-Archive $OutFilePath -DestinationPath "$DownloadDirectory\$ModuleName"
+
+    if ($DownloadDirectory -ne "$HOME\Documents\WindowsPowerShell\Modules") {
+        if (Test-Path "$HOME\Documents\WindowsPowerShell\Modules\$ModuleName") {
+            Remove-Item "$HOME\Documents\WindowsPowerShell\Modules\$ModuleName" -Recurse -Force
+        }
+        Copy-Item -Path "$DownloadDirectory\$ModuleName" -Recurse -Destination "$HOME\Documents\WindowsPowerShell\Modules"
+
+        Remove-Item "$DownloadDirectory\$ModuleName" -Recurse -Force
+    }
+
+    Remove-Item $OutFilePath -Force
+}
 
 # SIG # Begin signature block
 # MIIMiAYJKoZIhvcNAQcCoIIMeTCCDHUCAQExCzAJBgUrDgMCGgUAMGkGCisGAQQB
 # gjcCAQSgWzBZMDQGCisGAQQBgjcCAR4wJgIDAQAABBAfzDtgWUsITrck0sYpfvNR
-# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUHKcbDxjUuw1tTdncTIRL8Mww
-# cDqgggn9MIIEJjCCAw6gAwIBAgITawAAAB/Nnq77QGja+wAAAAAAHzANBgkqhkiG
+# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUKehst4FRbIpIf5iTmu6+Y6IV
+# maigggn9MIIEJjCCAw6gAwIBAgITawAAAB/Nnq77QGja+wAAAAAAHzANBgkqhkiG
 # 9w0BAQsFADAwMQwwCgYDVQQGEwNMQUIxDTALBgNVBAoTBFpFUk8xETAPBgNVBAMT
 # CFplcm9EQzAxMB4XDTE3MDkyMDIxMDM1OFoXDTE5MDkyMDIxMTM1OFowPTETMBEG
 # CgmSJomT8ixkARkWA0xBQjEUMBIGCgmSJomT8ixkARkWBFpFUk8xEDAOBgNVBAMT
@@ -89,11 +137,11 @@ param(
 # ARkWA0xBQjEUMBIGCgmSJomT8ixkARkWBFpFUk8xEDAOBgNVBAMTB1plcm9TQ0EC
 # E1gAAAH5oOvjAv3166MAAQAAAfkwCQYFKw4DAhoFAKB4MBgGCisGAQQBgjcCAQwx
 # CjAIoAKAAKECgAAwGQYJKoZIhvcNAQkDMQwGCisGAQQBgjcCAQQwHAYKKwYBBAGC
-# NwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFLIoqE4gS7woJ0CG
-# kV0Xz11d/4a3MA0GCSqGSIb3DQEBAQUABIIBAFmaBg6hZLXEEoSM8cmXqvdHJqrQ
-# c8KQNHekoUYPmSZuX5E4+nfoHzLkqJwr01Fe5WHHW7dv5EZcdVP3iPzNocBy7nL+
-# QRj3LcpNt87NRI3pmJ18+N40oiaKIK4ZUedb2pfu2izR813Hh4Q2cncpGZGPNMrI
-# 31clnahtFcxo35qRQgdkp3683SqtOauGBv2oO4IBhpXNvv3YoXKFfBFwJFbMTdXw
-# 95lKQTMHQBoi7D8uW9W9n7kDqbp5oYK43+RwkxcV5BJ5h+wTvwR4rLN60f/IrZhq
-# Tfjpm1xOWABHpHVd93dWXd4qeZs0ENgnjo3s8SvmgRhdR8TbG8uKmwecNKU=
+# NwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFG2P7uvTxEH17rkh
+# 2UG+pv1iX+6bMA0GCSqGSIb3DQEBAQUABIIBAH6Hm5HLF6QPiFfWK06x8u13CjTo
+# L40m7p1UTfu7MxK+pBNxKxa8C3Bn7UpXqS860RVUIFtTjUUDlXeqkjshFZ0EnKzW
+# LQsuq2lUyXqJq9xm/6TX4zg4ybd60LIhmuRkVTY2FoRKz4bc0NAop6wunjAHyh18
+# ZgHdqU9kiqoaqWhFa1VSK8KP/1a6BEIa3jTuTJYlsHtvg2Rfu2+w4w1wHM2JOV3z
+# 7v1gFHmzZHGkFTzrJoSXH78jhB6Ib5jiTvLGf2T7pfrwp3/MdebcvL1Nj0r1x683
+# c/ID7/4sIp6as84dsgljKrXGST8fZq1orFsBm3GgmZctmyZnLou4LOmJewo=
 # SIG # End signature block
