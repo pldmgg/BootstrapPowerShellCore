@@ -1,5 +1,9 @@
 # Change log
 
+## 0.8.3 (October 05, 2018)
+
+- Major fix to scenario targeting Windows from pwsh on Linux.
+
 ## 0.8.2 (October 04, 2018)
 
 - Increased Expect timeout.

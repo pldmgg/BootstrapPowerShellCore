@@ -752,6 +752,7 @@ function Get-SSHProbe {
                     OS              = $OSDetermination
                     Shell           = $ShellDetermination
                     OSVersionInfo   = $OSVersionInfo
+                    AllOutput       = $SSHCheckAsJson
                 }
             }
         }
@@ -1220,6 +1221,7 @@ function Get-SSHProbe {
                     OS              = $OSDetermination
                     Shell           = $ShellDetermination
                     OSVersionInfo   = $OSVersionInfo
+                    AllOutput       = $SSHOutputPrep
                 }
             }
         }
@@ -1367,6 +1369,7 @@ function Get-SSHProbe {
                     OS              = $OSDetermination
                     Shell           = $ShellDetermination
                     OSVersionInfo   = $OSVersionInfo
+                    AllOutput       = $SSHCheckAsJson
                 }
             }
         }
@@ -1505,6 +1508,7 @@ function Get-SSHProbe {
                     OS              = $OSDetermination
                     Shell           = $ShellDetermination
                     OSVersionInfo   = $OSVersionInfo
+                    AllOutput       = $SSHOutputPrep
                 }
             }
         }
@@ -1566,8 +1570,8 @@ function Get-SSHProbe {
 # SIG # Begin signature block
 # MIIMiAYJKoZIhvcNAQcCoIIMeTCCDHUCAQExCzAJBgUrDgMCGgUAMGkGCisGAQQB
 # gjcCAQSgWzBZMDQGCisGAQQBgjcCAR4wJgIDAQAABBAfzDtgWUsITrck0sYpfvNR
-# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUDZydBGiCGUuo3C1DsOtr7iuW
-# D1Cgggn9MIIEJjCCAw6gAwIBAgITawAAAB/Nnq77QGja+wAAAAAAHzANBgkqhkiG
+# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUpbvRqMshGcSELUTR2tp6EMss
+# e+ugggn9MIIEJjCCAw6gAwIBAgITawAAAB/Nnq77QGja+wAAAAAAHzANBgkqhkiG
 # 9w0BAQsFADAwMQwwCgYDVQQGEwNMQUIxDTALBgNVBAoTBFpFUk8xETAPBgNVBAMT
 # CFplcm9EQzAxMB4XDTE3MDkyMDIxMDM1OFoXDTE5MDkyMDIxMTM1OFowPTETMBEG
 # CgmSJomT8ixkARkWA0xBQjEUMBIGCgmSJomT8ixkARkWBFpFUk8xEDAOBgNVBAMT
@@ -1624,11 +1628,11 @@ function Get-SSHProbe {
 # ARkWA0xBQjEUMBIGCgmSJomT8ixkARkWBFpFUk8xEDAOBgNVBAMTB1plcm9TQ0EC
 # E1gAAAH5oOvjAv3166MAAQAAAfkwCQYFKw4DAhoFAKB4MBgGCisGAQQBgjcCAQwx
 # CjAIoAKAAKECgAAwGQYJKoZIhvcNAQkDMQwGCisGAQQBgjcCAQQwHAYKKwYBBAGC
-# NwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFEnasmvEncM2rgUK
-# E+Ao9lX3J0tJMA0GCSqGSIb3DQEBAQUABIIBAJlbiS8sdap6LDwcQb9ArrVDlF5m
-# aKaQOtsCizos9+2LGiMXOiOj98bXGlroCqE+efdTOUX0ZG5g1JpkyBGUYQjpyyQ8
-# RnhqMmSJWtBFA/t9r3kKpZ2W1jq5w8paXXBnHwPUySKlYQK8ju/aBNSEpIpp2JxB
-# cRiXHaRYSB2D3U2Z930z9lgLIufnIyirF6WL8x6C0A47Vp9vH+/7FNps4l5vIPRR
-# O7G6JpTnP75Vw31mq3f4zW2F3zugxYfDmrRYsjPDzRe9Aw1j2chtVgNWO8IeoFl9
-# USlzBuMuNdd6BTf7c2UJGEEeg0DxV300sMugXc2aNeO4n4ksxNeD19qo9Rs=
+# NwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFCR6iy38sCuTMW5M
+# PjcR0Rau31kKMA0GCSqGSIb3DQEBAQUABIIBAI2i1mfcWOPFrB1iLg3EHxAmEqjD
+# 6JjpBqGCddl6rWuqRFXuCJYdRtPkoH11hBwCxRrXbth6/HvzMnUu4ZoBFuX0NDlK
+# KsXaZUSBd6SqdMHMyOJjW2brKsL6wfq+fkHsIgYb4BUv6Rl8oIOwxeliDMSRJndG
+# cAQSeYvM1/nUbVvPEgplAZTFWif8yJmLhv7OnaCBieP3Ldak+QPtGkRyu/VofsKY
+# CnA4xw2ykgpMHAb+Dx4z+WZGOy1rboUOg1VtmviK0pwR9lOvwkTHT/h4z8cDpdTL
+# DLmnc1R6DK2Rge2ANxdreWVhp4zMjShupuGGFOXKcFjeJtA8ip4XV8eh2GQ=
 # SIG # End signature block
