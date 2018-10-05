@@ -276,9 +276,11 @@ function Bootstrap-PowerShellCore {
     }
 
     # Create PSCustomObjects with all applicable installation info
+    Write-Host "Determining latest PowerShell Core Packages..."
     $ReleaseInfo = Invoke-RestMethod https://api.github.com/repos/PowerShell/PowerShell/releases/latest
     $PSCorePackageUrls = $ReleaseInfo.assets.browser_download_url
     $PSCorePackageNames = $ReleaseInfo.assets.name
+    Write-Host "Determined latest PowerShell Core Packages."
     <#
         https://github.com/PowerShell/PowerShell/releases/download/v6.1.0/powershell-6.1.0-1.rhel.7.x86_64.rpm
         https://github.com/PowerShell/PowerShell/releases/download/v6.1.0/powershell-6.1.0-linux-arm32.tar.gz
@@ -451,6 +453,32 @@ function Bootstrap-PowerShellCore {
             ConfigurePwshRemotingScript = $WindowsPwshRemotingScriptForExpect
         }
     }
+
+    # Universal Scripts
+    $PwshRemotingScriptPrep = @(
+        'pscorepath=$(command -v pwsh)'
+        'subsystemline=$(echo \"\"Subsystem powershell $pscorepath -sshs -NoLogo -NoProfile\"\")'
+        'sed -i \"\"s|sftp-server|sftp-server\n$subsystemline|\"\" /etc/ssh/sshd_config'
+        'systemctl restart sshd'
+    )
+    $PwshRemotingScript = "sudo bash -c \```"$($PwshRemotingScriptPrep -join '; ')\```""
+    $PwshRemotingScriptPrepWindowsToLinux = @(
+        'pscorepath=\`$(command -v pwsh)'
+        'subsystemline=\`$(echo \`"\`"Subsystem powershell \`$pscorepath -sshs -NoLogo -NoProfile\`"\`")'
+        'sed -i \\\`"s|sftp-server|sftp-server\\n\`$subsystemline|\\\`" /etc/ssh/sshd_config'
+        'systemctl restart sshd'
+    )
+    $PwshRemotingScriptWindowsToLinux = "sudo bash -c \```"$($PwshRemotingScriptPrepWindowsToLinux -join '; ')\```""
+    # IMPORTANT NOTE: For Expect, we need to triple (i.e. \\\) for $ and "
+    # We need to double (i.e. \\) for \n
+    # We need to single (i.e. \) for [, ]
+    # No need to escape |, -, /
+    $PwshRemotingScriptPrepForExpect = @(
+        'pscorepath=\\\$(command -v pwsh)'
+        'subsystemline=\\\$(echo \\\"Subsystem powershell \\\$pscorepath -sshs -NoLogo -NoProfile\\\")'
+        'sed -i \\\"s|sftp-server|sftp-server\\\n\\\$subsystemline|\\\" /etc/ssh/sshd_config'
+        'systemctl restart sshd'
+    )
     
     # Ubuntu 14.04 Install Info
     $Ubuntu1404PMInstallScriptPrep = @(
@@ -470,35 +498,17 @@ function Bootstrap-PowerShellCore {
 
     $Ubuntu1404UninstallScript = 'sudo apt remove powershell'
 
-    $Ubuntu1404PwshRemotingScriptPrep = @(
-        'pscorepath=$(command -v pwsh)'
-        'subsystemline=$(echo \"\"Subsystem powershell $pscorepath -sshs -NoLogo -NoProfile\"\")'
-        'sed -i \"\"s|sftp-server|sftp-server\n$subsystemline|\"\" /etc/ssh/sshd_config'
-        'systemctl restart sshd'
-    )
-    $Ubuntu1404PwshRemotingScript = "sudo bash -c \```"$($Ubuntu1404PwshRemotingScriptPrep -join '; ')\```""
-    
-    # IMPORTANT NOTE: For Expect, we need to triple (i.e. \\\) for $ and "
-    # We need to double (i.e. \\) for \n
-    # We need to single (i.e. \) for [, ]
-    # No need to escape |, -, /
-    $Ubuntu1404PwshRemotingScriptPrepForExpect = @(
-        'pscorepath=\\\$(command -v pwsh)'
-        'subsystemline=\\\$(echo \\\"Subsystem powershell \\\$pscorepath -sshs -NoLogo -NoProfile\\\")'
-        'sed -i \\\"s|sftp-server|sftp-server\\\n\\\$subsystemline|\\\" /etc/ssh/sshd_config'
-        'systemctl restart sshd'
-    )
-
     $Ubuntu1404 = [pscustomobject]@{
-        PackageManagerInstallScript = $Ubuntu1404PMInstallScript
-        ManualInstallScript         = $Ubuntu1404ManualInstallScript
-        UninstallScript             = $Ubuntu1404UninstallScript
-        ConfigurePwshRemotingScript = $Ubuntu1404PwshRemotingScript
+        PackageManagerInstallScript                 = $Ubuntu1404PMInstallScript
+        ManualInstallScript                         = $Ubuntu1404ManualInstallScript
+        UninstallScript                             = $Ubuntu1404UninstallScript
+        ConfigurePwshRemotingScript                 = $PwshRemotingScript
+        ConfigurePwshRemotingScriptWindowsToLinux   = $PwshRemotingScriptWindowsToLinux
         ExpectScripts               = [pscustomobject]@{
             PackageManagerInstallScript = $Ubuntu1404PMInstallScriptPrep
             ManualInstallScript         = $Ubuntu1404ManualInstallScriptPrep
             UninstallScript             = $Ubuntu1404UninstallScript
-            ConfigurePwshRemotingScript = $Ubuntu1404PwshRemotingScriptPrepForExpect
+            ConfigurePwshRemotingScript = $PwshRemotingScriptPrepForExpect
         }
     }
 
@@ -520,31 +530,17 @@ function Bootstrap-PowerShellCore {
 
     $Ubuntu1604UninstallScript = 'sudo apt remove powershell'
 
-    $Ubuntu1604PwshRemotingScriptPrep = @(
-        'pscorepath=$(command -v pwsh)'
-        'subsystemline=$(echo \"\"Subsystem powershell $pscorepath -sshs -NoLogo -NoProfile\"\")'
-        'sed -i \"\"s|sftp-server|sftp-server\n$subsystemline|\"\" /etc/ssh/sshd_config'
-        'systemctl restart sshd'
-    )
-    $Ubuntu1604PwshRemotingScript = "sudo bash -c \`"$($Ubuntu1604PwshRemotingScriptPrep -join '; ')\`""
-
-    $Ubuntu1604PwshRemotingScriptPrepForExpect = @(
-        'pscorepath=\\\$(command -v pwsh)'
-        'subsystemline=\\\$(echo \\\"Subsystem powershell \\\$pscorepath -sshs -NoLogo -NoProfile\\\")'
-        'sed -i \\\"s|sftp-server|sftp-server\\\n\\\$subsystemline|\\\" /etc/ssh/sshd_config'
-        'systemctl restart sshd'
-    )
-
     $Ubuntu1604 = [pscustomobject]@{
-        PackageManagerInstallScript = $Ubuntu1604PMInstallScript
-        ManualInstallScript         = $Ubuntu1604ManualInstallScript
-        UninstallScript             = $Ubuntu1604UninstallScript
-        ConfigurePwshRemotingScript = $Ubuntu1604PwshRemotingScript
+        PackageManagerInstallScript                 = $Ubuntu1604PMInstallScript
+        ManualInstallScript                         = $Ubuntu1604ManualInstallScript
+        UninstallScript                             = $Ubuntu1604UninstallScript
+        ConfigurePwshRemotingScript                 = $PwshRemotingScript
+        ConfigurePwshRemotingScriptWindowsToLinux   = $PwshRemotingScriptWindowsToLinux
         ExpectScripts               = [pscustomobject]@{
             PackageManagerInstallScript = $Ubuntu1604PMInstallScriptPrep
             ManualInstallScript         = $Ubuntu1604ManualInstallScriptPrep
             UninstallScript             = $Ubuntu1604UninstallScript
-            ConfigurePwshRemotingScript = $Ubuntu1604PwshRemotingScriptPrepForExpect
+            ConfigurePwshRemotingScript = $PwshRemotingScriptPrepForExpect
         }
     }
 
@@ -566,31 +562,17 @@ function Bootstrap-PowerShellCore {
 
     $Ubuntu1804UninstallScript = 'sudo apt remove powershell'
 
-    $Ubuntu1804PwshRemotingScriptPrep = @(
-        'pscorepath=$(command -v pwsh)'
-        'subsystemline=$(echo \"\"Subsystem powershell $pscorepath -sshs -NoLogo -NoProfile\"\")'
-        'sed -i \"\"s|sftp-server|sftp-server\n$subsystemline|\"\" /etc/ssh/sshd_config'
-        'systemctl restart sshd'
-    )
-    $Ubuntu1804PwshRemotingScript = "sudo bash -c \```"$($Ubuntu1804PwshRemotingScriptPrep -join '; ')\```""
-
-    $Ubuntu1804PwshRemotingScriptPrepForExpect = @(
-        'pscorepath=\\\$(command -v pwsh)'
-        'subsystemline=\\\$(echo \\\"Subsystem powershell \\\$pscorepath -sshs -NoLogo -NoProfile\\\")'
-        'sed -i \\\"s|sftp-server|sftp-server\\\n\\\$subsystemline|\\\" /etc/ssh/sshd_config'
-        'systemctl restart sshd'
-    )
-
     $Ubuntu1804 = [pscustomobject]@{
-        PackageManagerInstallScript = $Ubuntu1804PMInstallScript
-        ManualInstallScript         = $Ubuntu1804ManualInstallScript
-        UninstallScript             = $Ubuntu1804UninstallScript
-        ConfigurePwshRemotingScript = $Ubuntu1804PwshRemotingScript
+        PackageManagerInstallScript                 = $Ubuntu1804PMInstallScript
+        ManualInstallScript                         = $Ubuntu1804ManualInstallScript
+        UninstallScript                             = $Ubuntu1804UninstallScript
+        ConfigurePwshRemotingScript                 = $PwshRemotingScript
+        ConfigurePwshRemotingScriptWindowsToLinux   = $PwshRemotingScriptWindowsToLinux
         ExpectScripts               = [pscustomobject]@{
             PackageManagerInstallScript = $Ubuntu1804PMInstallScriptPrep
             ManualInstallScript         = $Ubuntu1804ManualInstallScriptPrep
             UninstallScript             = $Ubuntu1804UninstallScript
-            ConfigurePwshRemotingScript = $Ubuntu1804PwshRemotingScriptPrepForExpect
+            ConfigurePwshRemotingScript = $PwshRemotingScriptPrepForExpect
         }
     }
 
@@ -623,31 +605,17 @@ function Bootstrap-PowerShellCore {
 
     $Debian8UninstallScript = 'sudo apt remove powershell'
 
-    $Debian8PwshRemotingScriptPrep = @(
-        'pscorepath=$(command -v pwsh)'
-        'subsystemline=$(echo \"\"Subsystem powershell $pscorepath -sshs -NoLogo -NoProfile\"\")'
-        'sed -i \"\"s|sftp-server|sftp-server\n$subsystemline|\"\" /etc/ssh/sshd_config'
-        'systemctl restart sshd'
-    )
-    $Debian8PwshRemotingScript = "sudo bash -c \```"$($Debian8PwshRemotingScriptPrep -join '; ')\```""
-
-    $Debian8PwshRemotingScriptPrepForExpect = @(
-        'pscorepath=\\\$(command -v pwsh)'
-        'subsystemline=\\\$(echo \\\"Subsystem powershell \\\$pscorepath -sshs -NoLogo -NoProfile\\\")'
-        'sed -i \\\"s|sftp-server|sftp-server\\\n\\\$subsystemline|\\\" /etc/ssh/sshd_config'
-        'systemctl restart sshd'
-    )
-
     $Debian8 = [pscustomobject]@{
         PackageManagerInstallScript = $Debian8PMInstallScript
         ManualInstallScript         = $Debian8ManualInstallScript
         UninstallScript             = $Debian8UninstallScript
-        ConfigurePwshRemotingScript = $Debian8PwshRemotingScript
+        ConfigurePwshRemotingScript                 = $PwshRemotingScript
+        ConfigurePwshRemotingScriptWindowsToLinux   = $PwshRemotingScriptWindowsToLinux
         ExpectScripts               = [pscustomobject]@{
             PackageManagerInstallScript = $Debian8PMInstallScriptPrepForExpect
             ManualInstallScript         = $Debain8ManualInstallScriptPrep
             UninstallScript             = $Debian8UninstallScript
-            ConfigurePwshRemotingScript = $Debian8PwshRemotingScriptPrepForExpect
+            ConfigurePwshRemotingScript = $PwshRemotingScriptPrepForExpect
         }
     }
 
@@ -680,31 +648,17 @@ function Bootstrap-PowerShellCore {
 
     $Debian9UninstallScript = 'sudo apt remove powershell'
 
-    $Debian9PwshRemotingScriptPrep = @(
-        'pscorepath=$(command -v pwsh)'
-        'subsystemline=$(echo \"\"Subsystem powershell $pscorepath -sshs -NoLogo -NoProfile\"\")'
-        'sed -i \"\"s|sftp-server|sftp-server\n$subsystemline|\"\" /etc/ssh/sshd_config'
-        'systemctl restart sshd'
-    )
-    $Debian9PwshRemotingScript = "sudo bash -c \```"$($Debian9PwshRemotingScriptPrep -join '; ')\```""
-
-    $Debian9PwshRemotingScriptPrepForExpect = @(
-        'pscorepath=\\\$(command -v pwsh)'
-        'subsystemline=\\\$(echo \\\"Subsystem powershell \\\$pscorepath -sshs -NoLogo -NoProfile\\\")'
-        'sed -i \\\"s|sftp-server|sftp-server\\\n\\\$subsystemline|\\\" /etc/ssh/sshd_config'
-        'systemctl restart sshd'
-    )
-
     $Debian9 = [pscustomobject]@{
-        PackageManagerInstallScript = $Debian9PMInstallScript
-        ManualInstallScript         = $Debian9ManualInstallScript
-        UninstallScript             = $Debian9UninstallScript
-        ConfigurePwshRemotingScript = $Debian8PwshRemotingScript
+        PackageManagerInstallScript                 = $Debian9PMInstallScript
+        ManualInstallScript                         = $Debian9ManualInstallScript
+        UninstallScript                             = $Debian9UninstallScript
+        ConfigurePwshRemotingScript                 = $PwshRemotingScript
+        ConfigurePwshRemotingScriptWindowsToLinux   = $PwshRemotingScriptWindowsToLinux
         ExpectScripts               = [pscustomobject]@{
             PackageManagerInstallScript = $Debian9PMInstallScriptPrepForExpect
             ManualInstallScript         = $Debain9ManualInstallScriptPrep
             UninstallScript             = $Debian9UninstallScript
-            ConfigurePwshRemotingScript = $Debian9PwshRemotingScriptPrepForExpect
+            ConfigurePwshRemotingScript = $PwshRemotingScriptPrepForExpect
         }
     }
 
@@ -723,31 +677,17 @@ function Bootstrap-PowerShellCore {
 
     $CentOS7UninstallScript = $RHEL7UninstallScript = 'sudo yum remove powershell'
 
-    $CentOS7PwshRemotingScriptPrep = $RHEL7PwshRemotingScriptPrep = @(
-        'pscorepath=$(command -v pwsh)'
-        'subsystemline=$(echo \"\"Subsystem powershell $pscorepath -sshs -NoLogo -NoProfile\"\")'
-        'sed -i \"\"s|sftp-server|sftp-server\n$subsystemline|\"\" /etc/ssh/sshd_config'
-        'systemctl restart sshd'
-    )
-    $CentOS7PwshRemotingScript = $RHEL7PwshRemotingScript = "sudo bash -c \```"$($CentOS7PwshRemotingScriptPrep -join '; ')\```""
-
-    $CentOS7PwshRemotingScriptPrepForExpect = @(
-        'pscorepath=\\\$(command -v pwsh)'
-        'subsystemline=\\\$(echo \\\"Subsystem powershell \\\$pscorepath -sshs -NoLogo -NoProfile\\\")'
-        'sed -i \\\"s|sftp-server|sftp-server\\\n\\\$subsystemline|\\\" /etc/ssh/sshd_config'
-        'systemctl restart sshd'
-    )
-
     $CentOS7 = $RHEL7 = [pscustomobject]@{
-        PackageManagerInstallScript = $CentOS7PMInstallScript
-        ManualInstallScript         = $CentOS7ManualInstallScript
-        UninstallScript             = $CentOS7UninstallScript
-        ConfigurePwshRemotingScript = $CentOS7PwshRemotingScript
+        PackageManagerInstallScript                 = $CentOS7PMInstallScript
+        ManualInstallScript                         = $CentOS7ManualInstallScript
+        UninstallScript                             = $CentOS7UninstallScript
+        ConfigurePwshRemotingScript                 = $PwshRemotingScript
+        ConfigurePwshRemotingScriptWindowsToLinux   = $PwshRemotingScriptWindowsToLinux
         ExpectScripts               = [pscustomobject]@{
             PackageManagerInstallScript = $CentOS7PMInstallScriptPrep
             ManualInstallScript         = $CentOS7ManualInstallScriptPrep
             UninstallScript             = $CentOS7UninstallScript
-            ConfigurePwshRemotingScript = $CentOS7PwshRemotingScriptPrepForExpect
+            ConfigurePwshRemotingScript = $PwshRemotingScriptPrepForExpect
         }
     }
 
@@ -768,31 +708,17 @@ function Bootstrap-PowerShellCore {
 
     $OpenSUSE423UninstallScript = 'sudo zypper remove powershell'
 
-    $OpenSUSE423PwshRemotingScriptPrep = @(
-        'pscorepath=$(command -v pwsh)'
-        'subsystemline=$(echo \"\"Subsystem powershell $pscorepath -sshs -NoLogo -NoProfile\"\")'
-        'sed -i \"\"s|sftp-server|sftp-server\n$subsystemline|\"\" /etc/ssh/sshd_config'
-        'systemctl restart sshd'
-    )
-    $OpenSUSE423PwshRemotingScript = "sudo bash -c \```"$($OpenSUSE423PwshRemotingScriptPrep -join '; ')\```""
-
-    $OpenSUSE423PwshRemotingScriptPrepForExpect = @(
-        'pscorepath=\\\$(command -v pwsh)'
-        'subsystemline=\\\$(echo \\\"Subsystem powershell \\\$pscorepath -sshs -NoLogo -NoProfile\\\")'
-        'sed -i \\\"s|sftp-server|sftp-server\\\n\\\$subsystemline|\\\" /etc/ssh/sshd_config'
-        'systemctl restart sshd'
-    )
-
     $OpenSUSE423 = [pscustomobject]@{
-        PackageManagerInstallScript = $OpenSUSE423PMInstallScript
-        ManualInstallScript         = $OpenSUSE423ManualInstallScript
-        UninstallScript             = $OpenSUSE423UninstallScript
-        ConfigurePwshRemotingScript = $OpenSUSE423PwshRemotingScript
+        PackageManagerInstallScript                 = $OpenSUSE423PMInstallScript
+        ManualInstallScript                         = $OpenSUSE423ManualInstallScript
+        UninstallScript                             = $OpenSUSE423UninstallScript
+        ConfigurePwshRemotingScript                 = $PwshRemotingScript
+        ConfigurePwshRemotingScriptWindowsToLinux   = $PwshRemotingScriptWindowsToLinux
         ExpectScripts               = [pscustomobject]@{
             PackageManagerInstallScript = $OpenSUSE423PMInstallScriptPrep
             ManualInstallScript         = $OpenSUSE423ManualInstallScriptPrep
             UninstallScript             = $OpenSUSE423UninstallScript
-            ConfigurePwshRemotingScript = $OpenSUSE423PwshRemotingScriptPrepForExpect
+            ConfigurePwshRemotingScript = $PwshRemotingScriptPrepForExpect
         }
     }
 
@@ -814,31 +740,17 @@ function Bootstrap-PowerShellCore {
 
     $FedoraUninstallScript = 'sudo dnf remove powershell'
 
-    $FedoraPwshRemotingScriptPrep = @(
-        'pscorepath=$(command -v pwsh)'
-        'subsystemline=$(echo \"\"Subsystem powershell $pscorepath -sshs -NoLogo -NoProfile\"\")'
-        'sed -i \"\"s|sftp-server|sftp-server\n$subsystemline|\"\" /etc/ssh/sshd_config'
-        'systemctl restart sshd'
-    )
-    $FedoraPwshRemotingScript = "sudo bash -c \```"$($FedoraPwshRemotingScriptPrep -join '; ')\```""
-
-    $FedoraPwshRemotingScriptPrepForExpect = @(
-        'pscorepath=\\\$(command -v pwsh)'
-        'subsystemline=\\\$(echo \\\"Subsystem powershell \\\$pscorepath -sshs -NoLogo -NoProfile\\\")'
-        'sed -i \\\"s|sftp-server|sftp-server\\\n\\\$subsystemline|\\\" /etc/ssh/sshd_config'
-        'systemctl restart sshd'
-    )
-
     $Fedora = [pscustomobject]@{
-        PackageManagerInstallScript = $FedoraPMInstallScript
-        ManualInstallScript         = $FedoraManualInstallScript
-        UninstallScript             = $FedoraUninstallScript
-        ConfigurePwshRemotingScript = $FedoraPwshRemotingScript
+        PackageManagerInstallScript                 = $FedoraPMInstallScript
+        ManualInstallScript                         = $FedoraManualInstallScript
+        UninstallScript                             = $FedoraUninstallScript
+        ConfigurePwshRemotingScript                 = $PwshRemotingScript
+        ConfigurePwshRemotingScriptWindowsToLinux   = $PwshRemotingScriptWindowsToLinux
         ExpectScripts               = [pscustomobject]@{
             PackageManagerInstallScript = $FedoraPMInstallScriptPrep
             ManualInstallScript         = $FedoraManualInstallScriptPrep
             UninstallScript             = $FedoraUninstallScript
-            ConfigurePwshRemotingScript = $FedoraPwshRemotingScriptPrepForExpect
+            ConfigurePwshRemotingScript = $PwshRemotingScriptPrepForExpect
         }
     }
 
@@ -853,31 +765,17 @@ function Bootstrap-PowerShellCore {
 
     $RaspbianUninstallScript = 'rm -rf ~/powershell'
 
-    $RaspbianPwshRemotingScriptPrep = @(
-        'pscorepath=$(command -v pwsh)'
-        'subsystemline=$(echo \"\"Subsystem powershell $pscorepath -sshs -NoLogo -NoProfile\"\")'
-        'sed -i \"\"s|sftp-server|sftp-server\n$subsystemline|\"\" /etc/ssh/sshd_config'
-        'systemctl restart sshd'
-    )
-    $RaspbianPwshRemotingScript = "sudo bash -c \```"$($RaspbianPwshRemotingScriptPrep -join '; ')\```""
-
-    $RaspbianPwshRemotingScriptPrepForExpect = @(
-        'pscorepath=\\\$(command -v pwsh)'
-        'subsystemline=\\\$(echo \\\"Subsystem powershell \\\$pscorepath -sshs -NoLogo -NoProfile\\\")'
-        'sed -i \\\"s|sftp-server|sftp-server\\\n\\\$subsystemline|\\\" /etc/ssh/sshd_config'
-        'systemctl restart sshd'
-    )
-
     $Raspbian = [pscustomobject]@{
-        PackageManagerInstallScript = $null
-        ManualInstallScript         = $RaspbianManualInstallScript
-        UninstallScript             = $RaspbianUninstallScript
-        ConfigurePwshRemotingScript = $RaspbianPwshRemotingScript
+        PackageManagerInstallScript                 = $null
+        ManualInstallScript                         = $RaspbianManualInstallScript
+        UninstallScript                             = $RaspbianUninstallScript
+        ConfigurePwshRemotingScript                 = $PwshRemotingScript
+        ConfigurePwshRemotingScriptWindowsToLinux   = $PwshRemotingScriptWindowsToLinux
         ExpectScripts               = [pscustomobject]@{
             PackageManagerInstallScript = $RaspbianPMInstallScriptPrep
             ManualInstallScript         = $RaspbianManualInstallScriptPrep
             UninstallScript             = $RaspbianUninstallScript
-            ConfigurePwshRemotingScript = $RaspbianPwshRemotingScriptPrepForExpect
+            ConfigurePwshRemotingScript = $PwshRemotingScriptPrepForExpect
         }
     }
 
@@ -887,6 +785,8 @@ function Bootstrap-PowerShellCore {
 
     # Probe the Remote Host to get OS and Shell Info
     try {
+        Write-Host "Probing $RemoteHostNameOrIP to determine OS and available shell..."
+
         $GetSSHProbeSplatParams = @{
             RemoteHostNameOrIP  = $RemoteHostNameOrIP
         }
@@ -1031,18 +931,18 @@ function Bootstrap-PowerShellCore {
 
             if ($UsePackageManagement) {
                 if ($ConfigurePSRemoting) {
-                    $SSHScript = $ExpectScripts.ConfigurePwshRemotingScript
+                    $SSHScript = $($SSHCmdStringArray -join " ") + ' ' + '"' + $ExpectScripts.ConfigurePwshRemotingScript + '"'
                 }
                 else {
-                    $SSHScript = $ExpectScripts.PackageManagerInstallScript
+                    $SSHScript = $($SSHCmdStringArray -join " ") + ' ' + '"' + $ExpectScripts.PackageManagerInstallScript + '"'
                 }
             }
             else {
                 if ($ConfigurePSRemoting) {
-                    $SSHScript = $ExpectScripts.ConfigurePwshRemotingScript
+                    $SSHScript = $($SSHCmdStringArray -join " ") + ' ' + '"' + $ExpectScripts.ConfigurePwshRemotingScript + '"'
                 }
                 else {
-                    $SSHScript = $ExpectScripts.ManualInstallScript
+                    $SSHScript = $($SSHCmdStringArray -join " ") + ' ' + '"' + $ExpectScripts.ManualInstallScript + '"'
                 }
             }
 
@@ -1411,8 +1311,24 @@ function Bootstrap-PowerShellCore {
                 }
             }
 
+            # We need to give the Remote Host a little more time to finish installation and configuration...
+            if ($SSHOutputPrep) {
+                Write-Host "Waiting 5 minutes for install/config to finish..."
+                Start-Sleep -Seconds 300
+            }
+
+            if (!$SSHOutputPrep) {
+                $TentativeResult = "ManualVerificationRequired"
+            }
+            elseif ($SSHOutputPrep -notmatch "powershell") {
+                $TentativeResult = "ReviewAllOutput"
+            }
+            else {
+                $TentativeResult = "Success"
+            }
+
             $FinalOutput = [pscustomobject]@{
-                TentativeResult         = if ($SSHOutputPrep -match "^powershellInstallComplete") {"Success"} else {"ReviewAllOutput"}
+                TentativeResult         = $TentativeResult
                 AllOutput               = $SSHOutputPrep
                 SSHProbeInfo            = $OSCheck
             }
@@ -1472,42 +1388,60 @@ function Bootstrap-PowerShellCore {
             # NOTE: The below -replace regex string removes garbage escape sequences like: [116;1H
             $SSHOutputPrep = $ExpectOutput -replace "\e\[(\d+;)*(\d+)?[ABCDHJKfmsu]",""
 
+            # We need to give the Remote Host a little more time to finish installation and configuration...
+            if ($SSHOutputPrep -match "powershell -NoProfile -EncodedCommand") {
+                Write-Host "Waiting 5 mintutes for install/config to finish..."
+                Start-Sleep -Seconds 300
+            }
+
+            if (!$SSHOutputPrep) {
+                $TentativeResult = "ManualVerificationRequired"
+            }
+            elseif ($SSHOutputPrep -notmatch "powershell") {
+                $TentativeResult = "ReviewAllOutput"
+            }
+            else {
+                $TentativeResult = "Success"
+            }
+
             $FinalOutput = [pscustomobject]@{
-                TentativeResult         = if ($SSHOutputPrep -match "powershell -NoProfile -EncodedCommand") {"Success"} else {"ReviewAllOutput"}
+                TentativeResult         = $TentativeResult
                 AllOutput               = $SSHOutputPrep
                 SSHProbeInfo            = $OSCheck
             }
         }
     }
     if ($OSCheck.OS -eq "Linux") {
-        $BootstrapSB = {
-            if ($UsePackageManagement) {
-                if ($ConfigurePSRemoting) {
-                    $SSHCmdString = $($SSHCmdStringArray -join " ") + ' "' + $args[0].PackageManagerInstallScript + '; ' + $args[0].ConfigurePwshRemotingScript + '"'
-                }
-                else {
-                    $SSHCmdString = $($SSHCmdStringArray -join " ") + ' "' + $args[0].PackageManagerInstallScript + '"'
-                }
-            }
-            else {
-                if ($ConfigurePSRemoting) {
-                    $SSHCmdString = $($SSHCmdStringArray -join " ") + ' "' + $args[0].ManualInstallScript + '; ' + $args[0].ConfigurePwshRemotingScript + '"'
-                }
-                else {
-                    $SSHCmdString = $($SSHCmdStringArray -join " ") + ' "' + $args[0].ManualInstallScript + '"'
-                }
-            }
-
-            $SSHCmdString
-        }
-
-        $SSHCmdString = Invoke-Command -ScriptBlock $BootstrapSB -ArgumentList $(Get-Variable -Name $OS -ValueOnly)
-
-        Write-Host "`$SSHCmdString is:`n    $SSHCmdString"
-
-        # Now we need to deal with passing the 'sudo' password to the Remote Host, so we need to use either Await or Expect
-
         if (!$PSVersionTable.Platform -or $PSVersionTable.Platform -eq "Win32NT") {
+            $BootstrapSB = {
+                if ($UsePackageManagement) {
+                    if ($ConfigurePSRemoting) {
+                        $SSHCmdString = $($SSHCmdStringArray -join " ") + ' "' +
+                        $($args[0].PackageManagerInstallScript.Substring(0,$($args[0].PackageManagerInstallScript.Length-3)) -replace [regex]::Escape('\"'),'\`"' -replace [regex]::Escape('$'),'\`$') + '; ' +
+                        $($args[0].ConfigurePwshRemotingScriptWindowsToLinux -replace [regex]::Escape('sudo bash -c \`"'),'') + '"'
+                    }
+                    else {
+                        $SSHCmdString = $($SSHCmdStringArray -join " ") + ' "' + $($args[0].PackageManagerInstallScript -replace [regex]::Escape('\"'),'\`"' -replace [regex]::Escape('$'),'\`$') + '"'
+                    }
+                }
+                else {
+                    if ($ConfigurePSRemoting) {
+                        $SSHCmdString = $($SSHCmdStringArray -join " ") + ' "' +
+                        $($args[0].ManualInstallScript.Substring(0,$($args[0].PackageManagerInstallScript.Length-3)) -replace [regex]::Escape('\"'),'\`"' -replace [regex]::Escape('$'),'\`$') + '; ' +
+                        $($args[0].ConfigurePwshRemotingScriptWindowsToLinux -replace [regex]::Escape('sudo bash -c \`"'),'') + '"'
+                    }
+                    else {
+                        $SSHCmdString = $($SSHCmdStringArray -join " ") + ' "' + $($args[0].ManualInstallScript -replace [regex]::Escape('\"'),'\`"' -replace [regex]::Escape('$'),'\`$') + '"'
+                    }
+                }
+            
+                $SSHCmdString
+            }
+            
+            $SSHCmdString = Invoke-Command -ScriptBlock $BootstrapSB -ArgumentList $(Get-Variable -Name $OS -ValueOnly)
+            
+            Write-Host "`$SSHCmdString is:`n    $SSHCmdString"
+
             try {
                 if ($(Get-Module -ListAvailable).Name -notcontains 'WinSSH') {$null = Install-Module WinSSH -ErrorAction Stop}
                 if ($(Get-Module).Name -notcontains 'WinSSH') {$null = Import-Module WinSSH -ErrorAction Stop}
@@ -1871,8 +1805,18 @@ function Bootstrap-PowerShellCore {
                 }
             }
 
+            if (!$SSHOutputPrep) {
+                $TentativeResult = "ManualVerificationRequired"
+            }
+            elseif ($SSHOutputPrep -notmatch "powershell") {
+                $TentativeResult = "ReviewAllOutput"
+            }
+            else {
+                $TentativeResult = "Success"
+            }
+
             $FinalOutput = [pscustomobject]@{
-                TentativeResult         = if ($SSHOutputPrep -match "^powershellInstallComplete") {"Success"} else {"ReviewAllOutput"}
+                TentativeResult         = $TentativeResult
                 AllOutput               = $SSHOutputPrep
                 SSHProbeInfo            = $OSCheck
             }
@@ -1884,21 +1828,17 @@ function Bootstrap-PowerShellCore {
 
             if ($UsePackageManagement) {
                 if ($ConfigurePSRemoting) {
-                    #$SSHScript = $($args[0].PackageManagerInstallScript + '; ' + $args[0].ConfigurePwshRemotingScript) -split '; '
                     $SSHScript = $ExpectScripts.PackageManagerInstallScript + $ExpectScripts.ConfigurePwshRemotingScript
                 }
                 else {
-                    #$SSHScript = $args[0].PackageManagerInstallScript -split '; '
                     $SSHScript = $ExpectScripts.PackageManagerInstallScript
                 }
             }
             else {
                 if ($ConfigurePSRemoting) {
-                    #$SSHScript = $($args[0].ManualInstallScript + '; ' + $args[0].ConfigurePwshRemotingScript) -split '; '
                     $SSHScript = $ExpectScripts.ManualInstallScript + $ExpectScripts.ConfigurePwshRemotingScript
                 }
                 else {
-                    #$SSHScript = $args[0].ManualInstallScript -split '; '
                     $SSHScript = $ExpectScripts.ManualInstallScript
                 }
             }
@@ -1911,6 +1851,8 @@ function Bootstrap-PowerShellCore {
                     'send -- \"' + $_ + '\r\"' + "`n" + 'expect \"*\"'
                 }
             }
+
+            Write-Host "`$SSHScript is:`n$SSHScript"
 
             $ExpectScriptPrep = @(
                 'expect - << EOF'
@@ -1949,8 +1891,18 @@ function Bootstrap-PowerShellCore {
             # NOTE: The below -replace regex string removes garbage escape sequences like: [116;1H
             $SSHOutputPrep = $ExpectOutput -replace "\e\[(\d+;)*(\d+)?[ABCDHJKfmsu]",""
 
+            if (!$SSHOutputPrep) {
+                $TentativeResult = "ManualVerificationRequired"
+            }
+            elseif ($SSHOutputPrep -notmatch "powershell") {
+                $TentativeResult = "ReviewAllOutput"
+            }
+            else {
+                $TentativeResult = "Success"
+            }
+
             $FinalOutput = [pscustomobject]@{
-                TentativeResult         = if ($SSHOutputPrep -match "^powershellInstallComplete") {"Success"} else {"ReviewAllOutput"}
+                TentativeResult         = $TentativeResult
                 AllOutput               = $SSHOutputPrep
                 SSHProbeInfo            = $OSCheck
             }
@@ -3029,6 +2981,8 @@ function Get-SSHProbe {
                         Write-Error "Sending the user's password timed out!"
                         $global:FunctionResult = "1"
 
+                        $SSHOutputPrep
+
                         if ($PSAwaitProcess.Id) {
                             try {
                                 $null = Stop-AwaitSession
@@ -3080,6 +3034,8 @@ function Get-SSHProbe {
                 if ($Counter -eq 31) {
                     Write-Error "Sending the user's password timed out!"
                     $global:FunctionResult = "1"
+
+                    $SSHOutputPrep
 
                     if ($PSAwaitProcess.Id) {
                         try {
@@ -3450,7 +3406,7 @@ function Get-SSHProbe {
                 !$($($SSHOutputPrep -join "") -match "111RootDirInfo111.*Windows.*111ProcessInfo111")
                 ) {
                     $OSDetermination = "Linux"
-                    if ($($SSHOutputPrep -join "") -match "111ProcessInfo.*Process.*pwsh.*111PwshJson111") {
+                    if ($($SSHOutputPrep -join "") -match "111ProcessInfo.*Process.*pwsh.*111PwshJson111" -and $($SSHOutputPrep -join "") -notmatch "-bash") {
                         $ShellDetermination = "pwsh"
                     }
                     else {
@@ -3576,8 +3532,8 @@ if ($PSVersionTable.Platform -eq "Win32NT" -and $PSVersionTable.PSEdition -eq "C
 # SIG # Begin signature block
 # MIIMiAYJKoZIhvcNAQcCoIIMeTCCDHUCAQExCzAJBgUrDgMCGgUAMGkGCisGAQQB
 # gjcCAQSgWzBZMDQGCisGAQQBgjcCAR4wJgIDAQAABBAfzDtgWUsITrck0sYpfvNR
-# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUHyQIWL6u7alZuRQwHwpwKfwu
-# FyKgggn9MIIEJjCCAw6gAwIBAgITawAAAB/Nnq77QGja+wAAAAAAHzANBgkqhkiG
+# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUXzm5FiYByZaQvuxFtHtCnE1+
+# 9oygggn9MIIEJjCCAw6gAwIBAgITawAAAB/Nnq77QGja+wAAAAAAHzANBgkqhkiG
 # 9w0BAQsFADAwMQwwCgYDVQQGEwNMQUIxDTALBgNVBAoTBFpFUk8xETAPBgNVBAMT
 # CFplcm9EQzAxMB4XDTE3MDkyMDIxMDM1OFoXDTE5MDkyMDIxMTM1OFowPTETMBEG
 # CgmSJomT8ixkARkWA0xBQjEUMBIGCgmSJomT8ixkARkWBFpFUk8xEDAOBgNVBAMT
@@ -3634,11 +3590,11 @@ if ($PSVersionTable.Platform -eq "Win32NT" -and $PSVersionTable.PSEdition -eq "C
 # ARkWA0xBQjEUMBIGCgmSJomT8ixkARkWBFpFUk8xEDAOBgNVBAMTB1plcm9TQ0EC
 # E1gAAAH5oOvjAv3166MAAQAAAfkwCQYFKw4DAhoFAKB4MBgGCisGAQQBgjcCAQwx
 # CjAIoAKAAKECgAAwGQYJKoZIhvcNAQkDMQwGCisGAQQBgjcCAQQwHAYKKwYBBAGC
-# NwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFDilg21I5Xi0EF85
-# 2vDdb6vQWwsXMA0GCSqGSIb3DQEBAQUABIIBAMUTYXXs/b8n68Aw6U5ctM2TOs7s
-# 4BKMQyIIVCxWHsZbZOAan0sKCuhTvdsivG2sWFJ7mKDONc3E/qvkqviN9Fk2gNmo
-# +tS2YlgKFTE959M3Y961+iRxLWuWMozt5MLmN0CG+pgF16SPlLeBqSx+/fqfHJX7
-# 6Fs5yWbtCIeYljbFcUc9Dm6wrrlQISf3nShOlx51KjpYu8ygMeBehixjZRPSuc6w
-# RaobjHNA5ev9x77xdXDNu5Q1h0D3sqyjwzHk3msUMhyUFo48qSrC7zQCES3Pbos0
-# 03cfJDQ3n04ARmxIb03Lkmefuua1wkS1Bf0YiBem4KVFOUgc3kV3p3XyAaU=
+# NwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFG6YUQIJFl7Lh/ru
+# KQz7DvjBQ93FMA0GCSqGSIb3DQEBAQUABIIBADf0a5J9iZ7+GrATyzx0MA5VmruO
+# R1xW85PDHAgC0tqMA8Nbu2irtsGoOSNyRWKdew5vD4OpTY4pJ50J/V8Xcc8O/sXv
+# OAiNH5bB75bcNtuXFWSxjy7PzkaDjoTUlX654U+Ey/szMRT28OC5/udNiG8JWzK/
+# ASbyRNPR9mq+oxNlUTQvH6UtMLAEVP1p2Y/nhMaUw8J763J0MOfB6qdxOGhVZjP1
+# QNEUb1ob7AMi76LK20Zlhj+mBRPRM0X0W6J73KMR11ywNJOk17pcsX2KbG2NO/9D
+# /da6MWlCEt3tpL2BdACzXreKS0ullYQJGfSXOVYgHvoLXBBbTWQGGyajYPA=
 # SIG # End signature block

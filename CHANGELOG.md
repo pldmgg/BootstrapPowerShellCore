@@ -1,5 +1,9 @@
 # Change log
 
+## 0.8.4 (October 05, 2018)
+
+- Fixed various syntax issued targeting Linux from pwsh on Windows.
+
 ## 0.8.3 (October 05, 2018)
 
 - Major fix to scenario targeting Windows from pwsh on Linux.

@@ -1064,6 +1064,8 @@ function Get-SSHProbe {
                         Write-Error "Sending the user's password timed out!"
                         $global:FunctionResult = "1"
 
+                        $SSHOutputPrep
+
                         if ($PSAwaitProcess.Id) {
                             try {
                                 $null = Stop-AwaitSession
@@ -1115,6 +1117,8 @@ function Get-SSHProbe {
                 if ($Counter -eq 31) {
                     Write-Error "Sending the user's password timed out!"
                     $global:FunctionResult = "1"
+
+                    $SSHOutputPrep
 
                     if ($PSAwaitProcess.Id) {
                         try {
@@ -1485,7 +1489,7 @@ function Get-SSHProbe {
                 !$($($SSHOutputPrep -join "") -match "111RootDirInfo111.*Windows.*111ProcessInfo111")
                 ) {
                     $OSDetermination = "Linux"
-                    if ($($SSHOutputPrep -join "") -match "111ProcessInfo.*Process.*pwsh.*111PwshJson111") {
+                    if ($($SSHOutputPrep -join "") -match "111ProcessInfo.*Process.*pwsh.*111PwshJson111" -and $($SSHOutputPrep -join "") -notmatch "-bash") {
                         $ShellDetermination = "pwsh"
                     }
                     else {
@@ -1570,8 +1574,8 @@ function Get-SSHProbe {
 # SIG # Begin signature block
 # MIIMiAYJKoZIhvcNAQcCoIIMeTCCDHUCAQExCzAJBgUrDgMCGgUAMGkGCisGAQQB
 # gjcCAQSgWzBZMDQGCisGAQQBgjcCAR4wJgIDAQAABBAfzDtgWUsITrck0sYpfvNR
-# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUpbvRqMshGcSELUTR2tp6EMss
-# e+ugggn9MIIEJjCCAw6gAwIBAgITawAAAB/Nnq77QGja+wAAAAAAHzANBgkqhkiG
+# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUpfKrozzQknsCB8cpsf8Xajwi
+# 2wegggn9MIIEJjCCAw6gAwIBAgITawAAAB/Nnq77QGja+wAAAAAAHzANBgkqhkiG
 # 9w0BAQsFADAwMQwwCgYDVQQGEwNMQUIxDTALBgNVBAoTBFpFUk8xETAPBgNVBAMT
 # CFplcm9EQzAxMB4XDTE3MDkyMDIxMDM1OFoXDTE5MDkyMDIxMTM1OFowPTETMBEG
 # CgmSJomT8ixkARkWA0xBQjEUMBIGCgmSJomT8ixkARkWBFpFUk8xEDAOBgNVBAMT
@@ -1628,11 +1632,11 @@ function Get-SSHProbe {
 # ARkWA0xBQjEUMBIGCgmSJomT8ixkARkWBFpFUk8xEDAOBgNVBAMTB1plcm9TQ0EC
 # E1gAAAH5oOvjAv3166MAAQAAAfkwCQYFKw4DAhoFAKB4MBgGCisGAQQBgjcCAQwx
 # CjAIoAKAAKECgAAwGQYJKoZIhvcNAQkDMQwGCisGAQQBgjcCAQQwHAYKKwYBBAGC
-# NwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFCR6iy38sCuTMW5M
-# PjcR0Rau31kKMA0GCSqGSIb3DQEBAQUABIIBAI2i1mfcWOPFrB1iLg3EHxAmEqjD
-# 6JjpBqGCddl6rWuqRFXuCJYdRtPkoH11hBwCxRrXbth6/HvzMnUu4ZoBFuX0NDlK
-# KsXaZUSBd6SqdMHMyOJjW2brKsL6wfq+fkHsIgYb4BUv6Rl8oIOwxeliDMSRJndG
-# cAQSeYvM1/nUbVvPEgplAZTFWif8yJmLhv7OnaCBieP3Ldak+QPtGkRyu/VofsKY
-# CnA4xw2ykgpMHAb+Dx4z+WZGOy1rboUOg1VtmviK0pwR9lOvwkTHT/h4z8cDpdTL
-# DLmnc1R6DK2Rge2ANxdreWVhp4zMjShupuGGFOXKcFjeJtA8ip4XV8eh2GQ=
+# NwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFOx9B2AhQROjgD32
+# diYmPNq3e+wgMA0GCSqGSIb3DQEBAQUABIIBACSGnsHqmcs5Eoy/vCDjmz65T6ml
+# f7285wx2bdBN2DUirzrYFpb4ZvLHP4W6dsJB9kz9dFkQVnQpakg8MjaMvZSQE4Sa
+# u+oY36z4r2yKaKjswcjg1AxW23Cgw7TrzPSOiX4xgLtlE7wbcqJOlFsZzxQqZRcu
+# b1OSTond1n0hnSXXmnIEqtz0BMAak5pQpSU1WrghicN7OB4fGroXhveo1iyl20oQ
+# ecSG5QYTkQHodL8GxsnRYESqlWe9DzOl2O3IBrJaq4TvNbzWK2Aw+TJadkeqsMwy
+# ISvtsDLex0s8fjNNnhsbfOtGdorQEJwNd/AbIFxUVBgDQQ0wn3r+1YEi0hs=
 # SIG # End signature block
