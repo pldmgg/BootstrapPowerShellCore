@@ -126,7 +126,7 @@ if ($ModulesToInstallAndImport.Count -gt 0) {
         By default, this function probes the Remote Host to determine the OS running on the Remote Host. If you know in advance
         the OS running on the Remote Host, or if the Get-SSHProbe function returns incorrect information, use this parameter
         to specify one of the following values:
-            "Ubuntu1404","Ubuntu1604","Ubuntu1804","Ubuntu1810","Debian8","Debain9","CentOS7","RHEL7","OpenSUSE423","Fedora","Raspbian"
+            "Ubuntu1404","Ubuntu1604","Ubuntu1804","Ubuntu1810","Debian8","Debian9","CentOS7","RHEL7","OpenSUSE423","Fedora","Raspbian"
 
     .PARAMETER UsePackageManagement
         This parameter is OPTIONAL, however, it has a default value of $True
@@ -217,7 +217,7 @@ function Bootstrap-PowerShellCore {
         [string]$KeyFilePath,
 
         [Parameter(Mandatory=$False)]
-        [ValidateSet("Windows","Ubuntu1404","Ubuntu1604","Ubuntu1804","Ubuntu1810","Debian8","Debain9","CentOS7","RHEL7","OpenSUSE423","Fedora","Raspbian")]
+        [ValidateSet("Windows","Ubuntu1404","Ubuntu1604","Ubuntu1804","Ubuntu1810","Debian8","Debian9","CentOS7","RHEL7","OpenSUSE423","Fedora","Raspbian")]
         [string]$OS,
 
         [Parameter(Mandatory=$False)]
@@ -239,6 +239,14 @@ function Bootstrap-PowerShellCore {
         Write-Error "Unable to find 'ssh'! Please make sure it is installed and part of your Environment/System Path! Halting!"
         $global:FunctionResult = "1"
         return
+    }
+
+    if ($KeyFilePath) {
+        if (!$(Test-Path $KeyFilePath)) {
+            Write-Error "Unable to find KeyFilePath '$KeyFilePath'! Halting!"
+            $global:FunctionResult = "1"
+            return
+        }
     }
 
     try {
@@ -367,6 +375,7 @@ function Bootstrap-PowerShellCore {
         "    `$global:FunctionResult = '1'"
         '    return'
         '}'
+        'echo powershellInstallComplete'
     )
     $WindowsPMInstallScript = "powershell -NoProfile -Command \```"$($WindowsPMInstallScriptPrep -join '; ')\```""
 
@@ -392,6 +401,7 @@ function Bootstrap-PowerShellCore {
         '    $logFile'
         ')'
         'Start-Process msiexec.exe -ArgumentList $MSIArguments -Wait -NoNewWindow'
+        'echo powershellInstallComplete'
     )
     $WindowsManualInstallScript = "powershell -NoProfile -Command \```"$($WindowsManualInstallScriptPrep -join '; ')\```""
 
@@ -435,6 +445,7 @@ function Bootstrap-PowerShellCore {
         "    `$global:FunctionResult = '1'"
         '    return'
         '}'
+        'echo pwshConfigComplete'
     )
 
     $InstallPwshBytes = [System.Text.Encoding]::Unicode.GetBytes($WindowsPwshRemotingScript)
@@ -456,17 +467,23 @@ function Bootstrap-PowerShellCore {
 
     # Universal Scripts
     $PwshRemotingScriptPrep = @(
+        "if echo `$(cat /etc/ssh/sshd_config | grep -c '^Subsystem powershell') > /dev/null -gt 0; then sed -i '/^Subsystem powershell/d' /etc/ssh/sshd_config; fi"    
         'pscorepath=$(command -v pwsh)'
+        'if test -z $pscorepath; then echo pwshNotFound && exit 1; fi'
         'subsystemline=$(echo \"\"Subsystem powershell $pscorepath -sshs -NoLogo -NoProfile\"\")'
         'sed -i \"\"s|sftp-server|sftp-server\n$subsystemline|\"\" /etc/ssh/sshd_config'
         'systemctl restart sshd'
+        'echo pwshConfigComplete'
     )
     $PwshRemotingScript = "sudo bash -c \```"$($PwshRemotingScriptPrep -join '; ')\```""
     $PwshRemotingScriptPrepWindowsToLinux = @(
+        "if echo \```$(cat /etc/ssh/sshd_config | grep -c '^Subsystem powershell') > /dev/null -gt 0; then sed -i '/^Subsystem powershell/d' /etc/ssh/sshd_config; fi"
         'pscorepath=\`$(command -v pwsh)'
+        'if test -z \`$pscorepath; then echo pwshNotFound && exit 1; fi'
         'subsystemline=\`$(echo \`"\`"Subsystem powershell \`$pscorepath -sshs -NoLogo -NoProfile\`"\`")'
         'sed -i \\\`"s|sftp-server|sftp-server\\n\`$subsystemline|\\\`" /etc/ssh/sshd_config'
         'systemctl restart sshd'
+        'echo pwshConfigComplete'
     )
     $PwshRemotingScriptWindowsToLinux = "sudo bash -c \```"$($PwshRemotingScriptPrepWindowsToLinux -join '; ')\```""
     # IMPORTANT NOTE: For Expect, we need to triple (i.e. \\\) for $ and "
@@ -474,25 +491,33 @@ function Bootstrap-PowerShellCore {
     # We need to single (i.e. \) for [, ]
     # No need to escape |, -, /
     $PwshRemotingScriptPrepForExpect = @(
+        "if echo \\\`$(cat /etc/ssh/sshd_config | grep -c '^Subsystem powershell') > /dev/null -gt 0; then sed -i '/^Subsystem powershell/d' /etc/ssh/sshd_config; fi"
         'pscorepath=\\\$(command -v pwsh)'
+        'if test -z \\\$pscorepath; then echo pwshNotFound && exit 1; fi'
         'subsystemline=\\\$(echo \\\"Subsystem powershell \\\$pscorepath -sshs -NoLogo -NoProfile\\\")'
         'sed -i \\\"s|sftp-server|sftp-server\\\n\\\$subsystemline|\\\" /etc/ssh/sshd_config'
         'systemctl restart sshd'
+        'echo pwshConfigComplete'
     )
     
     # Ubuntu 14.04 Install Info
     $Ubuntu1404PMInstallScriptPrep = @(
+        'apt-get remove -y powershell'
+        'ls packages-microsoft-prod.deb && rm -f packages-microsoft-prod.deb'
+        'dpkg --purge packages-microsoft-prod'
         'wget -q https://packages.microsoft.com/config/ubuntu/14.04/packages-microsoft-prod.deb'
         'dpkg -i packages-microsoft-prod.deb'
-        'apt update'
-        'apt install -y powershell && echo powershellInstallComplete'
+        'apt-get update'
+        'echo powershellInstallComplete'
+        'apt-get install -y powershell'
     )
     $Ubuntu1404PMInstallScript = "sudo bash -c \```"$($Ubuntu1404PMInstallScriptPrep -join '; ')\```""
 
     $Ubuntu1404ManualInstallScriptPrep = @(
         "wget -q $Ubuntu1404PackageUrl"
         "dpkg -i $Ubuntu1404PackageName"
-        'apt install -f && echo powershellInstallComplete'
+        'echo powershellInstallComplete'
+        'apt-get install -f'
     )
     $Ubuntu1404ManualInstallScript = "sudo bash -c \```"$($Ubuntu1404ManualInstallScriptPrep -join '; ')\```""
 
@@ -514,17 +539,22 @@ function Bootstrap-PowerShellCore {
 
     # Ubuntu 16.04 Install Info
     $Ubuntu1604PMInstallScriptPrep = @(
+        'apt-get remove -y powershell'
+        'ls packages-microsoft-prod.deb && rm -f packages-microsoft-prod.deb'
+        'dpkg --purge packages-microsoft-prod'
         'wget -q https://packages.microsoft.com/config/ubuntu/16.04/packages-microsoft-prod.deb'
         'dpkg -i packages-microsoft-prod.deb'
-        'apt update'
-        'apt install -y powershell && echo powershellInstallComplete'
+        'apt-get update'
+        'echo powershellInstallComplete'
+        'apt-get install -y powershell'
     )
     $Ubuntu1604PMInstallScript = "sudo bash -c \```"$($Ubuntu1604PMInstallScriptPrep -join '; ')\```""
 
     $Ubuntu1604ManualInstallScriptPrep = @(
         "wget -q $Ubuntu1604PackageUrl"
         "dpkg -i $Ubuntu1604PackageName"
-        'apt install -f && echo powershellInstallComplete'
+        'echo powershellInstallComplete'
+        'apt-get install -f'
     )
     $Ubuntu1604ManualInstallScript = "sudo bash -c \```"$($Ubuntu1604ManualInstallScriptPrep -join '; ')\```""
 
@@ -546,17 +576,22 @@ function Bootstrap-PowerShellCore {
 
     # Ubuntu 18.04 Install Info
     $Ubuntu1804PMInstallScriptPrep = @(
+        'apt-get remove -y powershell'
+        'ls packages-microsoft-prod.deb && rm -f packages-microsoft-prod.deb'
+        'dpkg --purge packages-microsoft-prod'
         'wget -q https://packages.microsoft.com/config/ubuntu/18.04/packages-microsoft-prod.deb'
         'dpkg -i packages-microsoft-prod.deb'
-        'apt update'
-        'apt install -y powershell && echo powershellInstallComplete'
+        'apt-get update'
+        'echo powershellInstallComplete'
+        'apt-get install -y powershell'
     )
     $Ubuntu1804PMInstallScript = "sudo bash -c \```"$($Ubuntu1804PMInstallScriptPrep -join '; ')\```""
 
     $Ubuntu1804ManualInstallScriptPrep = @(
         "wget -q $Ubuntu1804PackageUrl"
         "dpkg -i $Ubuntu1804PackageName"
-        'apt install -f && echo powershellInstallComplete'
+        'echo powershellInstallComplete'
+        'apt-get install -f'
     )
     $Ubuntu1804ManualInstallScript = "sudo bash -c \```"$($Ubuntu1804ManualInstallScriptPrep -join '; ')\```""
 
@@ -578,28 +613,32 @@ function Bootstrap-PowerShellCore {
 
     # Debian 8 Install Info
     $Debian8PMInstallScriptPrep = @(
-        'apt update'
-        'apt install curl apt-transport-https'
+        'apt-get remove -y powershell'
+        'apt-get install -y curl apt-transport-https ca-certificates'
         'curl https://packages.microsoft.com/keys/microsoft.asc | sudo apt-key add -'
         "sh -c 'echo \`"\`"deb [arch=amd64] https://packages.microsoft.com/repos/microsoft-debian-jessie-prod jessie main\`"\`" > /etc/apt/sources.list.d/microsoft.list'"
-        'apt update'
-        'apt install -y powershell && echo powershellInstallComplete'
+        'apt-get update'
+        'echo powershellInstallComplete'
+        'apt-get install -y powershell'
     )
-    $Debian8PMInstallScript = "sudo bash -c \```"$($Debain8PMInstallScriptPrep -join '; ')\```""
+    $Debian8PMInstallScript = "sudo bash -c \```"$($Debian8PMInstallScriptPrep -join '; ')\```""
 
     $Debian8PMInstallScriptPrepForExpect = @(
-        'apt update'
-        'apt install curl apt-transport-https'
+        'apt-get remove -y powershell'
+        'apt install -y curl apt-transport-https ca-certificates'
         'curl https://packages.microsoft.com/keys/microsoft.asc | sudo apt-key add -'
         "sh -c 'echo \\\`"deb \[arch=amd64\] https://packages.microsoft.com/repos/microsoft-debian-jessie-prod jessie main\\\`" > /etc/apt/sources.list.d/microsoft.list'"
-        'apt update'
-        'apt install -y powershell && echo powershellInstallComplete'
+        'apt-get update'
+        'echo powershellInstallComplete'
+        'apt-get install -y powershell'
     )
 
     $Debian8ManualInstallScriptPrep = @(
+        "ls $Debian8PackageName && rm -f $Debian8PackageName"
         "wget -q $Debian8PackageUrl"
         "dpkg -i $Debian8PackageName"
-        'apt install -f && echo powershellInstallComplete'
+        'echo powershellInstallComplete'
+        'apt install -f'
     )
     $Debian8ManualInstallScript = "sudo bash -c \```"$($Debian8ManualInstallScriptPrep -join '; ')\```""
 
@@ -613,7 +652,7 @@ function Bootstrap-PowerShellCore {
         ConfigurePwshRemotingScriptWindowsToLinux   = $PwshRemotingScriptWindowsToLinux
         ExpectScripts               = [pscustomobject]@{
             PackageManagerInstallScript = $Debian8PMInstallScriptPrepForExpect
-            ManualInstallScript         = $Debain8ManualInstallScriptPrep
+            ManualInstallScript         = $Debian8ManualInstallScriptPrep
             UninstallScript             = $Debian8UninstallScript
             ConfigurePwshRemotingScript = $PwshRemotingScriptPrepForExpect
         }
@@ -628,7 +667,7 @@ function Bootstrap-PowerShellCore {
         'apt update'
         'apt install -y powershell && echo powershellInstallComplete'
     )
-    $Debian9PMInstallScript = "sudo bash -c \```"$($Debain9PMInstallScriptPrep -join '; ')\```""
+    $Debian9PMInstallScript = "sudo bash -c \```"$($Debian9PMInstallScriptPrep -join '; ')\```""
 
     $Debian9PMInstallScriptPrepForExpect = @(
         'apt update'
@@ -656,7 +695,7 @@ function Bootstrap-PowerShellCore {
         ConfigurePwshRemotingScriptWindowsToLinux   = $PwshRemotingScriptWindowsToLinux
         ExpectScripts               = [pscustomobject]@{
             PackageManagerInstallScript = $Debian9PMInstallScriptPrepForExpect
-            ManualInstallScript         = $Debain9ManualInstallScriptPrep
+            ManualInstallScript         = $Debian9ManualInstallScriptPrep
             UninstallScript             = $Debian9UninstallScript
             ConfigurePwshRemotingScript = $PwshRemotingScriptPrepForExpect
         }
@@ -802,10 +841,10 @@ function Bootstrap-PowerShellCore {
             $GetSSHProbeSplatParams.Add("DomainPasswordSS",$DomainPasswordSS)
         }
         
-        $OSCheck = Get-SSHProbe @GetSSHProbeSplatParams
+        $OSCheck = Get-SSHProbe @GetSSHProbeSplatParams -ErrorAction Stop
     }
     catch {
-        Write-Error $_
+        Write-Verbose $_.Exception.Message
         $global:FunctionResult = "1"
 
         try {
@@ -814,7 +853,47 @@ function Bootstrap-PowerShellCore {
         catch {
             Write-Verbose $_.Exception.Message
         }
+    }
 
+    if (!$OSCheck.OS -or !$OSCheck.Shell) {
+        try {
+            Write-Host "Probing $RemoteHostNameOrIP to determine OS and available shell..."
+    
+            $GetSSHProbeSplatParams = @{
+                RemoteHostNameOrIP  = $RemoteHostNameOrIP
+            }
+            if ($KeyFilePath) {
+                $GetSSHProbeSplatParams.Add("KeyFilePath",$KeyFilePath)
+            }
+            elseif ($LocalUserName -and $LocalPasswordSS) {
+                $GetSSHProbeSplatParams.Add("LocalUserName",$LocalUserName)
+                $GetSSHProbeSplatParams.Add("LocalPasswordSS",$LocalPasswordSS)
+            }
+            elseif ($DomainUserName -and $DomainPasswordSS) {
+                $GetSSHProbeSplatParams.Add("DomainUserName",$DomainUserName)
+                $GetSSHProbeSplatParams.Add("DomainPasswordSS",$DomainPasswordSS)
+            }
+            
+            $OSCheck = Get-SSHProbe @GetSSHProbeSplatParams -ErrorAction Stop
+        }
+        catch {
+            Write-Error $_
+            $global:FunctionResult = "1"
+    
+            try {
+                $null = Stop-AwaitSession
+            }
+            catch {
+                Write-Verbose $_.Exception.Message
+            }
+    
+            return
+        }
+    }
+
+    if (!$OSCheck.OS -or !$OSCheck.Shell) {
+        Write-Error "The Get-SSHProbe function was unable to identify $RemoteHostNameOrIP's platform or default shell! Please check your ssh connection/credentials. Halting!"
+        $global:FunctionResult = "1"
         return
     }
 
@@ -889,6 +968,8 @@ function Bootstrap-PowerShellCore {
         $global:FunctionResult = "1"
         return
     }
+
+    Write-Host "`$OS is: $OS"
 
     if ($LocalPasswordSS) {
         $LocalPassword = [Runtime.InteropServices.Marshal]::PtrToStringAuto([Runtime.InteropServices.Marshal]::SecureStringToBSTR($LocalPasswordSS))
@@ -977,7 +1058,7 @@ function Bootstrap-PowerShellCore {
             $Counter = 0
             while (![bool]$($($CheckForExpectedResponses -split "`n") -match [regex]::Escape("Are you sure you want to continue connecting (yes/no)?")) -and
             ![bool]$($($CheckForExpectedResponses -split "`n") -match [regex]::Escape("'s password:")) -and 
-            ![bool]$($($CheckForExpectedResponses -split "`n") -match "^}") -and $Counter -le 30
+            ![bool]$($($CheckForExpectedResponses -split "`n") -match "^}") -and $Counter -le 60
             ) {
                 $SuccessOrAcceptHostKeyOrPwdPrompt = Receive-AwaitResponse
                 $null = $CheckForExpectedResponses.Add($SuccessOrAcceptHostKeyOrPwdPrompt)
@@ -987,7 +1068,7 @@ function Bootstrap-PowerShellCore {
                 Start-Sleep -Seconds 1
                 $Counter++
             }
-            if ($Counter -eq 31) {
+            if ($Counter -eq 61) {
                 Write-Verbose "SSH via '$($SSHCmdStringArray -join " ")' timed out!"
 
                 if ($PSAwaitProcess.Id) {
@@ -1062,14 +1143,14 @@ function Bootstrap-PowerShellCore {
                 $Counter = 0
                 while ($SuccessOrAcceptHostKeyOrPwdPrompt -notmatch [regex]::Escape("Are you sure you want to continue connecting (yes/no)?") -and
                 $SuccessOrAcceptHostKeyOrPwdPrompt -notmatch [regex]::Escape("'s password:") -and 
-                $SuccessOrAcceptHostKeyOrPwdPrompt -notmatch "^}" -and $Counter -le 30
+                $SuccessOrAcceptHostKeyOrPwdPrompt -notmatch "^}" -and $Counter -le 60
                 ) {
                     $SuccessOrAcceptHostKeyOrPwdPrompt = Receive-AwaitResponse
                     $null = $CheckForExpectedResponses.Add($SuccessOrAcceptHostKeyOrPwdPrompt)
                     Start-Sleep -Seconds 1
                     $Counter++
                 }
-                if ($Counter -eq 31) {
+                if ($Counter -eq 61) {
                     Write-Error "SSH via '$($SSHCmdStringArray -join " ")' timed out!"
                     $global:FunctionResult = "1"
 
@@ -1147,14 +1228,14 @@ function Bootstrap-PowerShellCore {
                 $null = $CheckExpectedSendYesOutput.Add($SuccessOrAcceptHostKeyOrPwdPrompt)
                 $Counter = 0
                 while (![bool]$($($CheckExpectedSendYesOutput -split "`n") -match [regex]::Escape("'s password:")) -and 
-                ![bool]$($($CheckExpectedSendYesOutput -split "`n") -match "^}") -and $Counter -le 30
+                ![bool]$($($CheckExpectedSendYesOutput -split "`n") -match "^}") -and $Counter -le 60
                 ) {
                     $SuccessOrAcceptHostKeyOrPwdPrompt = Receive-AwaitResponse
                     $null = $CheckExpectedSendYesOutput.Add($SuccessOrAcceptHostKeyOrPwdPrompt)
                     Start-Sleep -Seconds 1
                     $Counter++
                 }
-                if ($Counter -eq 31) {
+                if ($Counter -eq 61) {
                     Write-Error "Sending 'yes' to accept the ssh host key timed out!"
                     $global:FunctionResult = "1"
                     
@@ -1199,17 +1280,20 @@ function Bootstrap-PowerShellCore {
                     [System.Collections.ArrayList]$script:SSHOutputPrep = @()
                     $null = $SSHOutputPrep.Add($SuccessOrAcceptHostKeyOrPwdPrompt)
                     $Counter = 0
-                    while (![bool]$($($SSHOutputPrep -split "`n") -match ".*") -and $Counter -le 30) {
+                    $CompleteIndicatorRegex = if ($ConfigurePSRemoting) {"^pwshConfigComplete|^powershellInstallComplete"} else {"^powershellInstallComplete"}
+                    while (![bool]$($($SSHOutputPrep -split "`n") -match $CompleteIndicatorRegex) -and $Counter -le 6) {
                         $SuccessOrAcceptHostKeyOrPwdPrompt = Receive-AwaitResponse
                         if (![System.String]::IsNullOrWhiteSpace($SuccessOrAcceptHostKeyOrPwdPrompt)) {
                             $null = $SSHOutputPrep.Add($SuccessOrAcceptHostKeyOrPwdPrompt)
                         }
-                        Start-Sleep -Seconds 1
+                        Start-Sleep -Seconds 10
                         $Counter++
                     }
-                    if ($Counter -eq 31) {
+                    if ($Counter -eq 7) {
                         Write-Error "Sending the user's password timed out!"
                         $global:FunctionResult = "1"
+
+                        $SSHOutputPrep
 
                         if ($PSAwaitProcess.Id) {
                             try {
@@ -1251,17 +1335,20 @@ function Bootstrap-PowerShellCore {
                 [System.Collections.ArrayList]$script:SSHOutputPrep = @()
                 $null = $SSHOutputPrep.Add($SuccessOrAcceptHostKeyOrPwdPrompt)
                 $Counter = 0
-                while (![bool]$($($SSHOutputPrep -split "`n") -match ".*") -and $Counter -le 30) {
+                $CompleteIndicatorRegex = if ($ConfigurePSRemoting) {"^pwshConfigComplete|^powershellInstallComplete"} else {"^powershellInstallComplete"}
+                while (![bool]$($($SSHOutputPrep -split "`n") -match $CompleteIndicatorRegex) -and $Counter -le 6) {
                     $SuccessOrAcceptHostKeyOrPwdPrompt = Receive-AwaitResponse
                     if (![System.String]::IsNullOrWhiteSpace($SuccessOrAcceptHostKeyOrPwdPrompt)) {
                         $null = $SSHOutputPrep.Add($SuccessOrAcceptHostKeyOrPwdPrompt)
                     }
-                    Start-Sleep -Seconds 1
+                    Start-Sleep -Seconds 10
                     $Counter++
                 }
-                if ($Counter -eq 31) {
+                if ($Counter -eq 7) {
                     Write-Error "Sending the user's password timed out!"
                     $global:FunctionResult = "1"
+
+                    $SSHOutputPrep
 
                     if ($PSAwaitProcess.Id) {
                         try {
@@ -1288,6 +1375,9 @@ function Bootstrap-PowerShellCore {
                     return
                 }
             }
+
+            # Give Await session a little more time to finish just in case
+            Start-Sleep -Seconds 15
 
             if ($PSAwaitProcess.Id) {
                 try {
@@ -1427,7 +1517,7 @@ function Bootstrap-PowerShellCore {
                 else {
                     if ($ConfigurePSRemoting) {
                         $SSHCmdString = $($SSHCmdStringArray -join " ") + ' "' +
-                        $($args[0].ManualInstallScript.Substring(0,$($args[0].PackageManagerInstallScript.Length-3)) -replace [regex]::Escape('\"'),'\`"' -replace [regex]::Escape('$'),'\`$') + '; ' +
+                        $($args[0].ManualInstallScript.Substring(0,$($args[0].ManualInstallScript.Length-3)) -replace [regex]::Escape('\"'),'\`"' -replace [regex]::Escape('$'),'\`$') + '; ' +
                         $($args[0].ConfigurePwshRemotingScriptWindowsToLinux -replace [regex]::Escape('sudo bash -c \`"'),'') + '"'
                     }
                     else {
@@ -1471,7 +1561,7 @@ function Bootstrap-PowerShellCore {
             $Counter = 0
             while (![bool]$($($CheckForExpectedResponses -split "`n") -match [regex]::Escape("Are you sure you want to continue connecting (yes/no)?")) -and
             ![bool]$($($CheckForExpectedResponses -split "`n") -match [regex]::Escape("'s password:")) -and 
-            ![bool]$($($CheckForExpectedResponses -split "`n") -match "^}") -and $Counter -le 30
+            ![bool]$($($CheckForExpectedResponses -split "`n") -match "^}") -and $Counter -le 60
             ) {
                 $SuccessOrAcceptHostKeyOrPwdPrompt = Receive-AwaitResponse
                 $null = $CheckForExpectedResponses.Add($SuccessOrAcceptHostKeyOrPwdPrompt)
@@ -1481,7 +1571,7 @@ function Bootstrap-PowerShellCore {
                 Start-Sleep -Seconds 1
                 $Counter++
             }
-            if ($Counter -eq 31) {
+            if ($Counter -eq 61) {
                 Write-Verbose "SSH via '$($SSHCmdStringArray -join " ")' timed out!"
 
                 if ($PSAwaitProcess.Id) {
@@ -1556,14 +1646,14 @@ function Bootstrap-PowerShellCore {
                 $Counter = 0
                 while ($SuccessOrAcceptHostKeyOrPwdPrompt -notmatch [regex]::Escape("Are you sure you want to continue connecting (yes/no)?") -and
                 $SuccessOrAcceptHostKeyOrPwdPrompt -notmatch [regex]::Escape("'s password:") -and 
-                $SuccessOrAcceptHostKeyOrPwdPrompt -notmatch "^}" -and $Counter -le 30
+                $SuccessOrAcceptHostKeyOrPwdPrompt -notmatch "^}" -and $Counter -le 60
                 ) {
                     $SuccessOrAcceptHostKeyOrPwdPrompt = Receive-AwaitResponse
                     $null = $CheckForExpectedResponses.Add($SuccessOrAcceptHostKeyOrPwdPrompt)
                     Start-Sleep -Seconds 1
                     $Counter++
                 }
-                if ($Counter -eq 31) {
+                if ($Counter -eq 61) {
                     Write-Error "SSH via '$($SSHCmdStringArray -join " ")' timed out!"
                     $global:FunctionResult = "1"
 
@@ -1641,14 +1731,14 @@ function Bootstrap-PowerShellCore {
                 $null = $CheckExpectedSendYesOutput.Add($SuccessOrAcceptHostKeyOrPwdPrompt)
                 $Counter = 0
                 while (![bool]$($($CheckExpectedSendYesOutput -split "`n") -match [regex]::Escape("'s password:")) -and 
-                ![bool]$($($CheckExpectedSendYesOutput -split "`n") -match "^}") -and $Counter -le 30
+                ![bool]$($($CheckExpectedSendYesOutput -split "`n") -match "^}") -and $Counter -le 60
                 ) {
                     $SuccessOrAcceptHostKeyOrPwdPrompt = Receive-AwaitResponse
                     $null = $CheckExpectedSendYesOutput.Add($SuccessOrAcceptHostKeyOrPwdPrompt)
                     Start-Sleep -Seconds 1
                     $Counter++
                 }
-                if ($Counter -eq 31) {
+                if ($Counter -eq 61) {
                     Write-Error "Sending 'yes' to accept the ssh host key timed out!"
                     $global:FunctionResult = "1"
                     
@@ -1693,17 +1783,20 @@ function Bootstrap-PowerShellCore {
                     [System.Collections.ArrayList]$script:SSHOutputPrep = @()
                     $null = $SSHOutputPrep.Add($SuccessOrAcceptHostKeyOrPwdPrompt)
                     $Counter = 0
-                    while (![bool]$($($SSHOutputPrep -split "`n") -match ".*") -and $Counter -le 30) {
+                    $CompleteIndicatorRegex = if ($ConfigurePSRemoting) {"^pwshConfigComplete|^powershellInstallComplete"} else {"^powershellInstallComplete"}
+                    while (![bool]$($($SSHOutputPrep -split "`n") -match $CompleteIndicatorRegex) -and $Counter -le 6) {
                         $SuccessOrAcceptHostKeyOrPwdPrompt = Receive-AwaitResponse
                         if (![System.String]::IsNullOrWhiteSpace($SuccessOrAcceptHostKeyOrPwdPrompt)) {
                             $null = $SSHOutputPrep.Add($SuccessOrAcceptHostKeyOrPwdPrompt)
                         }
-                        Start-Sleep -Seconds 1
+                        Start-Sleep -Seconds 10
                         $Counter++
                     }
-                    if ($Counter -eq 31) {
+                    if ($Counter -eq 7) {
                         Write-Error "Sending the user's password timed out!"
                         $global:FunctionResult = "1"
+
+                        $SSHOutputPrep
 
                         if ($PSAwaitProcess.Id) {
                             try {
@@ -1745,17 +1838,20 @@ function Bootstrap-PowerShellCore {
                 [System.Collections.ArrayList]$script:SSHOutputPrep = @()
                 $null = $SSHOutputPrep.Add($SuccessOrAcceptHostKeyOrPwdPrompt)
                 $Counter = 0
-                while (![bool]$($($SSHOutputPrep -split "`n") -match ".*") -and $Counter -le 30) {
+                $CompleteIndicatorRegex = if ($ConfigurePSRemoting) {"^pwshConfigComplete|^powershellInstallComplete"} else {"^powershellInstallComplete"}
+                while (![bool]$($($SSHOutputPrep -split "`n") -match $CompleteIndicatorRegex) -and $Counter -le 6) {
                     $SuccessOrAcceptHostKeyOrPwdPrompt = Receive-AwaitResponse
                     if (![System.String]::IsNullOrWhiteSpace($SuccessOrAcceptHostKeyOrPwdPrompt)) {
                         $null = $SSHOutputPrep.Add($SuccessOrAcceptHostKeyOrPwdPrompt)
                     }
-                    Start-Sleep -Seconds 1
+                    Start-Sleep -Seconds 10
                     $Counter++
                 }
-                if ($Counter -eq 31) {
+                if ($Counter -eq 7) {
                     Write-Error "Sending the user's password timed out!"
                     $global:FunctionResult = "1"
+
+                    $SSHOutputPrep
 
                     if ($PSAwaitProcess.Id) {
                         try {
@@ -1782,6 +1878,9 @@ function Bootstrap-PowerShellCore {
                     return
                 }
             }
+
+            # Give Await session a little more time to finish just in case
+            Start-Sleep -Seconds 15
 
             if ($PSAwaitProcess.Id) {
                 try {
@@ -2045,6 +2144,14 @@ function Get-SSHProbe {
         return
     }
 
+    if ($KeyFilePath) {
+        if (!$(Test-Path $KeyFilePath)) {
+            Write-Error "Unable to find KeyFilePath '$KeyFilePath'! Halting!"
+            $global:FunctionResult = "1"
+            return
+        }
+    }
+
     try {
         $RemoteHostNetworkInfo = ResolveHost -HostNameOrIP $RemoteHostNameOrIP -ErrorAction Stop
     }
@@ -2097,6 +2204,13 @@ function Get-SSHProbe {
             Write-Error $_
             $global:FunctionResult = "1"
             return
+        }
+
+        try {
+            $null = Stop-AwaitSession
+        }
+        catch {
+            Write-Verbose $_.Exception.Message
         }
     }
 
@@ -3088,6 +3202,8 @@ function Get-SSHProbe {
             # TODO: Remove this after testing finished
             #$SSHOutputPrep
 
+            $LinuxRegex = "ubuntu|debain|centos|rhel|redhat|opensuse|fedora|raspbian|kali|linux|unix"
+
             if ([bool]$($($SSHOutputPrep -split "`n") -match "^ConnectionSuccessful")) {
                 if ($SSHOutputPrep -match "ConnectionSuccessful; echo 111RootDirInfo111;") {
                     $OSDetermination = "Windows"
@@ -3109,7 +3225,7 @@ function Get-SSHProbe {
                         $OSVersionInfo = $($($($SSHOutputPrep -split "`n") -match "Cim OS Info:") -replace "Cim OS Info: ","").Trim()
                     }
                 }
-                elseif ($SSHOutputPrep -match "111RootDirInfo111" -and $SSHOutputPrep -match " etc " -and 
+                elseif ($SSHOutputPrep -match $LinuxRegex -and
                 !$($SSHOutputPrep -match "111RootDirInfo111" -and $SSHOutputPrep -match "Directory:.*[a-zA-Z]:\\")
                 ) {
                     $OSDetermination = "Linux"
@@ -3381,6 +3497,8 @@ function Get-SSHProbe {
             # NOTE: The below -replace regex string removes garbage escape sequences like: [116;1H
             $SSHOutputPrep = $ExpectOutput -replace "\e\[(\d+;)*(\d+)?[ABCDHJKfmsu]",""
 
+            $LinuxRegex = "ubuntu|debain|centos|rhel|redhat|opensuse|fedora|raspbian|kali|linux|unix"
+
             if ([bool]$($($SSHOutputPrep -split "`n") -match "^ConnectionSuccessful")) {
                 if ([bool]$($($SSHOutputPrep -split "`n") -match "'Get-Process' is not recognized as an internal or external command")) {
                     $OSDetermination = "Windows"
@@ -3402,7 +3520,7 @@ function Get-SSHProbe {
                         $OSVersionInfo = $($($($SSHOutputPrep -split "`n") -match "Cim OS Info:") -replace "Cim OS Info: ","").Trim()
                     }
                 }
-                elseif ($($SSHOutputPrep -join "") -match "111RootDirInfo111.*etc.*111ProcessInfo111" -and 
+                elseif ($($($SSHOutputPrep -join "") -match "111RootDirInfo111.*etc.*111ProcessInfo111" -or $($SSHOutputPrep -join "") -match $LinuxRegex) -and 
                 !$($($SSHOutputPrep -join "") -match "111RootDirInfo111.*Windows.*111ProcessInfo111")
                 ) {
                     $OSDetermination = "Linux"
@@ -3532,8 +3650,8 @@ if ($PSVersionTable.Platform -eq "Win32NT" -and $PSVersionTable.PSEdition -eq "C
 # SIG # Begin signature block
 # MIIMiAYJKoZIhvcNAQcCoIIMeTCCDHUCAQExCzAJBgUrDgMCGgUAMGkGCisGAQQB
 # gjcCAQSgWzBZMDQGCisGAQQBgjcCAR4wJgIDAQAABBAfzDtgWUsITrck0sYpfvNR
-# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUXzm5FiYByZaQvuxFtHtCnE1+
-# 9oygggn9MIIEJjCCAw6gAwIBAgITawAAAB/Nnq77QGja+wAAAAAAHzANBgkqhkiG
+# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQU6gJGYBrT7oT83fpFtHspmar7
+# Mlegggn9MIIEJjCCAw6gAwIBAgITawAAAB/Nnq77QGja+wAAAAAAHzANBgkqhkiG
 # 9w0BAQsFADAwMQwwCgYDVQQGEwNMQUIxDTALBgNVBAoTBFpFUk8xETAPBgNVBAMT
 # CFplcm9EQzAxMB4XDTE3MDkyMDIxMDM1OFoXDTE5MDkyMDIxMTM1OFowPTETMBEG
 # CgmSJomT8ixkARkWA0xBQjEUMBIGCgmSJomT8ixkARkWBFpFUk8xEDAOBgNVBAMT
@@ -3590,11 +3708,11 @@ if ($PSVersionTable.Platform -eq "Win32NT" -and $PSVersionTable.PSEdition -eq "C
 # ARkWA0xBQjEUMBIGCgmSJomT8ixkARkWBFpFUk8xEDAOBgNVBAMTB1plcm9TQ0EC
 # E1gAAAH5oOvjAv3166MAAQAAAfkwCQYFKw4DAhoFAKB4MBgGCisGAQQBgjcCAQwx
 # CjAIoAKAAKECgAAwGQYJKoZIhvcNAQkDMQwGCisGAQQBgjcCAQQwHAYKKwYBBAGC
-# NwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFG6YUQIJFl7Lh/ru
-# KQz7DvjBQ93FMA0GCSqGSIb3DQEBAQUABIIBADf0a5J9iZ7+GrATyzx0MA5VmruO
-# R1xW85PDHAgC0tqMA8Nbu2irtsGoOSNyRWKdew5vD4OpTY4pJ50J/V8Xcc8O/sXv
-# OAiNH5bB75bcNtuXFWSxjy7PzkaDjoTUlX654U+Ey/szMRT28OC5/udNiG8JWzK/
-# ASbyRNPR9mq+oxNlUTQvH6UtMLAEVP1p2Y/nhMaUw8J763J0MOfB6qdxOGhVZjP1
-# QNEUb1ob7AMi76LK20Zlhj+mBRPRM0X0W6J73KMR11ywNJOk17pcsX2KbG2NO/9D
-# /da6MWlCEt3tpL2BdACzXreKS0ullYQJGfSXOVYgHvoLXBBbTWQGGyajYPA=
+# NwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFISxSItQZ5jV3/3H
+# fUdTIRNKx6TiMA0GCSqGSIb3DQEBAQUABIIBAAh7A08uiHhrjOQ257OQh/RYITO3
+# jBQUMtK3BqK53VgceUXjoIk3zmUOTu/WWwJw8qctmiTKFtTcjAl+YeQfZndwB19b
+# eDRvMbAtUL+VfpZeLDBA/xpCbUfY3lot5IHZBhIxcLuKB703Jm+Qt04NoBHk4nlS
+# YMkHeQCOuMlzyJ8cIAE3bsgNk9XB0qsFLUAUFMhZLSL1XqCcFKHM8rVWdBR1piYz
+# L6gnFZTXaeT/o8HsIEfEn0bgQBybaC3qhWbq2slPa93Qvmg4v8P9+0Mz8MzpJct/
+# mB9V+cVsEpIf6yDgyLJUn3uYwxHFPPDYQ5BjcBY9dLWLn23bSny0D6IswgQ=
 # SIG # End signature block

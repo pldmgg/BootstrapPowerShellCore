@@ -128,6 +128,14 @@ function Get-SSHProbe {
         return
     }
 
+    if ($KeyFilePath) {
+        if (!$(Test-Path $KeyFilePath)) {
+            Write-Error "Unable to find KeyFilePath '$KeyFilePath'! Halting!"
+            $global:FunctionResult = "1"
+            return
+        }
+    }
+
     try {
         $RemoteHostNetworkInfo = ResolveHost -HostNameOrIP $RemoteHostNameOrIP -ErrorAction Stop
     }
@@ -180,6 +188,13 @@ function Get-SSHProbe {
             Write-Error $_
             $global:FunctionResult = "1"
             return
+        }
+
+        try {
+            $null = Stop-AwaitSession
+        }
+        catch {
+            Write-Verbose $_.Exception.Message
         }
     }
 
@@ -1171,6 +1186,8 @@ function Get-SSHProbe {
             # TODO: Remove this after testing finished
             #$SSHOutputPrep
 
+            $LinuxRegex = "ubuntu|debain|centos|rhel|redhat|opensuse|fedora|raspbian|kali|linux|unix"
+
             if ([bool]$($($SSHOutputPrep -split "`n") -match "^ConnectionSuccessful")) {
                 if ($SSHOutputPrep -match "ConnectionSuccessful; echo 111RootDirInfo111;") {
                     $OSDetermination = "Windows"
@@ -1192,7 +1209,7 @@ function Get-SSHProbe {
                         $OSVersionInfo = $($($($SSHOutputPrep -split "`n") -match "Cim OS Info:") -replace "Cim OS Info: ","").Trim()
                     }
                 }
-                elseif ($SSHOutputPrep -match "111RootDirInfo111" -and $SSHOutputPrep -match " etc " -and 
+                elseif ($SSHOutputPrep -match $LinuxRegex -and
                 !$($SSHOutputPrep -match "111RootDirInfo111" -and $SSHOutputPrep -match "Directory:.*[a-zA-Z]:\\")
                 ) {
                     $OSDetermination = "Linux"
@@ -1464,6 +1481,8 @@ function Get-SSHProbe {
             # NOTE: The below -replace regex string removes garbage escape sequences like: [116;1H
             $SSHOutputPrep = $ExpectOutput -replace "\e\[(\d+;)*(\d+)?[ABCDHJKfmsu]",""
 
+            $LinuxRegex = "ubuntu|debain|centos|rhel|redhat|opensuse|fedora|raspbian|kali|linux|unix"
+
             if ([bool]$($($SSHOutputPrep -split "`n") -match "^ConnectionSuccessful")) {
                 if ([bool]$($($SSHOutputPrep -split "`n") -match "'Get-Process' is not recognized as an internal or external command")) {
                     $OSDetermination = "Windows"
@@ -1485,7 +1504,7 @@ function Get-SSHProbe {
                         $OSVersionInfo = $($($($SSHOutputPrep -split "`n") -match "Cim OS Info:") -replace "Cim OS Info: ","").Trim()
                     }
                 }
-                elseif ($($SSHOutputPrep -join "") -match "111RootDirInfo111.*etc.*111ProcessInfo111" -and 
+                elseif ($($($SSHOutputPrep -join "") -match "111RootDirInfo111.*etc.*111ProcessInfo111" -or $($SSHOutputPrep -join "") -match $LinuxRegex) -and 
                 !$($($SSHOutputPrep -join "") -match "111RootDirInfo111.*Windows.*111ProcessInfo111")
                 ) {
                     $OSDetermination = "Linux"
@@ -1574,8 +1593,8 @@ function Get-SSHProbe {
 # SIG # Begin signature block
 # MIIMiAYJKoZIhvcNAQcCoIIMeTCCDHUCAQExCzAJBgUrDgMCGgUAMGkGCisGAQQB
 # gjcCAQSgWzBZMDQGCisGAQQBgjcCAR4wJgIDAQAABBAfzDtgWUsITrck0sYpfvNR
-# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUpfKrozzQknsCB8cpsf8Xajwi
-# 2wegggn9MIIEJjCCAw6gAwIBAgITawAAAB/Nnq77QGja+wAAAAAAHzANBgkqhkiG
+# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQU5+Bm5wKlo7nsWYG+PIvOpOMe
+# c+Wgggn9MIIEJjCCAw6gAwIBAgITawAAAB/Nnq77QGja+wAAAAAAHzANBgkqhkiG
 # 9w0BAQsFADAwMQwwCgYDVQQGEwNMQUIxDTALBgNVBAoTBFpFUk8xETAPBgNVBAMT
 # CFplcm9EQzAxMB4XDTE3MDkyMDIxMDM1OFoXDTE5MDkyMDIxMTM1OFowPTETMBEG
 # CgmSJomT8ixkARkWA0xBQjEUMBIGCgmSJomT8ixkARkWBFpFUk8xEDAOBgNVBAMT
@@ -1632,11 +1651,11 @@ function Get-SSHProbe {
 # ARkWA0xBQjEUMBIGCgmSJomT8ixkARkWBFpFUk8xEDAOBgNVBAMTB1plcm9TQ0EC
 # E1gAAAH5oOvjAv3166MAAQAAAfkwCQYFKw4DAhoFAKB4MBgGCisGAQQBgjcCAQwx
 # CjAIoAKAAKECgAAwGQYJKoZIhvcNAQkDMQwGCisGAQQBgjcCAQQwHAYKKwYBBAGC
-# NwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFOx9B2AhQROjgD32
-# diYmPNq3e+wgMA0GCSqGSIb3DQEBAQUABIIBACSGnsHqmcs5Eoy/vCDjmz65T6ml
-# f7285wx2bdBN2DUirzrYFpb4ZvLHP4W6dsJB9kz9dFkQVnQpakg8MjaMvZSQE4Sa
-# u+oY36z4r2yKaKjswcjg1AxW23Cgw7TrzPSOiX4xgLtlE7wbcqJOlFsZzxQqZRcu
-# b1OSTond1n0hnSXXmnIEqtz0BMAak5pQpSU1WrghicN7OB4fGroXhveo1iyl20oQ
-# ecSG5QYTkQHodL8GxsnRYESqlWe9DzOl2O3IBrJaq4TvNbzWK2Aw+TJadkeqsMwy
-# ISvtsDLex0s8fjNNnhsbfOtGdorQEJwNd/AbIFxUVBgDQQ0wn3r+1YEi0hs=
+# NwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFK5DZP6JVNAiwgyd
+# b/y8pho0qB0tMA0GCSqGSIb3DQEBAQUABIIBAGt009fhPf4CsPckBhDpaCXG77HD
+# dPdKrXGCLDh+JsPXpCS7+TXhblvJ6B95MDC8sdZf/BTBBjCvHYTfBuDRa/c3VHGJ
+# WQqC7xu0qozif2NRVToCb5ERTLXi+tR7Q6DJHPIcn4d6e02GoI4+AmqmLu2n1UiE
+# TbhuSNUnkviQ3Ucq8+5dUX/QZ9sFHlxrlICg/C4MqTS1glBYiVKhXsB/JqxNr8f/
+# aSNi89xLd7m5yOz1EiUKhYmVlgfcnuRLfrzKkFEFs3xT3wotbO4CxeDKPU+46R02
+# 8di/EeWNtQx7EOhjLHDcRiVnI3pWj+IvJNk3fNMzeyLy+aoSHYOcertRJ3w=
 # SIG # End signature block
