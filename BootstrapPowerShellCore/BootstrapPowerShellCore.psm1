@@ -738,18 +738,25 @@ function Bootstrap-PowerShellCore {
 
     # OpenSUSE 42.3 Install Info
     $OpenSUSE423PMInstallScriptPrep = @(
+        'zypper -n remove powershell'
+        'zypper --non-interactive rr microsoft'
         'rpm --import https://packages.microsoft.com/keys/microsoft.asc'
-        'zypper ar https://packages.microsoft.com/rhel/7/prod/'
-        'zypper update'
+        'zypper --non-interactive ar --gpgcheck-allow-unsigned-repo https://packages.microsoft.com/rhel/7/prod/ microsoft'
+        'zypper --non-interactive update'
         'echo powershellInstallComplete'
-        'zypper install powershell'
+        "rpm -ivh --nodeps $OpenSUSE423PackageUrl"
+        #"zypper -n install --force powershell"
     )
     $OpenSUSE423PMInstallScript = "sudo bash -c \```"$($OpenSUSE423PMInstallScriptPrep -join '; ')\```""
 
     $OpenSUSE423ManualInstallScriptPrep = @(
+        'zypper -n remove powershell'
+        'zypper --non-interactive rr microsoft'
         'rpm --import https://packages.microsoft.com/keys/microsoft.asc'
+        'zypper --non-interactive ar --gpgcheck-allow-unsigned-repo https://packages.microsoft.com/rhel/7/prod/ microsoft'
         'echo powershellInstallComplete'
-        "zypper install $OpenSUSE423PackageUrl"
+        "rpm -ivh --nodeps $OpenSUSE423PackageUrl"
+        #"zypper -n install --force $OpenSUSE423PackageUrl"
     )
     $OpenSUSE423ManualInstallScript = "sudo bash -c \```"$($OpenSUSE423ManualInstallScriptPrep -join '; ')\```""
 
@@ -1059,6 +1066,7 @@ function Bootstrap-PowerShellCore {
                 return
             }
 
+            $PSAwaitProcess = $null
             $null = Start-AwaitSession
             Start-Sleep -Seconds 1
             $null = Send-AwaitCommand '$host.ui.RawUI.WindowTitle = "PSAwaitSession"'
@@ -1077,7 +1085,7 @@ function Bootstrap-PowerShellCore {
             $Counter = 0
             $CompleteIndicatorRegex = if ($ConfigurePSRemoting) {"^pwshConfigComplete|^powershellInstallComplete"} else {"^powershellInstallComplete"}
             while (![bool]$($($CheckForExpectedResponses -split "`n") -match [regex]::Escape("Are you sure you want to continue connecting (yes/no)?")) -and
-            ![bool]$($($CheckForExpectedResponses -split "`n") -match [regex]::Escape("'s password:")) -and 
+            ![bool]$($($CheckForExpectedResponses -split "`n") -match [regex]::Escape("password:")) -and 
             ![bool]$($($CheckForExpectedResponses -split "`n") -match $CompleteIndicatorRegex) -and $Counter -le 60
             ) {
                 $SuccessOrAcceptHostKeyOrPwdPrompt = Receive-AwaitResponse
@@ -1105,9 +1113,11 @@ function Bootstrap-PowerShellCore {
                             if ([bool]$(Get-Process -Id $PSAwaitProcess.Id -ErrorAction SilentlyContinue)) {
                                 Stop-Process -Id $PSAwaitProcess.Id -ErrorAction SilentlyContinue
                             }
-                            while ([bool]$(Get-Process -Id $PSAwaitProcess.Id -ErrorAction SilentlyContinue)) {
+                            $Counter = 0
+                            while ([bool]$(Get-Process -Id $PSAwaitProcess.Id -ErrorAction SilentlyContinue) -and $Counter -le 15) {
                                 Write-Verbose "Waiting for Await Module Process Id $($PSAwaitProcess.Id) to end..."
                                 Start-Sleep -Seconds 1
+                                $Counter++
                             }
                         }
                     }
@@ -1137,14 +1147,17 @@ function Bootstrap-PowerShellCore {
                             if ([bool]$(Get-Process -Id $PSAwaitProcess.Id -ErrorAction SilentlyContinue)) {
                                 Stop-Process -Id $PSAwaitProcess.Id -ErrorAction SilentlyContinue
                             }
-                            while ([bool]$(Get-Process -Id $PSAwaitProcess.Id -ErrorAction SilentlyContinue)) {
+                            $Counter = 0
+                            while ([bool]$(Get-Process -Id $PSAwaitProcess.Id -ErrorAction SilentlyContinue) -and $Counter -le 15) {
                                 Write-Verbose "Waiting for Await Module Process Id $($PSAwaitProcess.Id) to end..."
                                 Start-Sleep -Seconds 1
+                                $Counter++
                             }
                         }
                     }
                 }
 
+                $PSAwaitProcess = $null
                 $null = Start-AwaitSession
                 Start-Sleep -Seconds 1
                 $null = Send-AwaitCommand '$host.ui.RawUI.WindowTitle = "PSAwaitSession"'
@@ -1163,7 +1176,7 @@ function Bootstrap-PowerShellCore {
                 $Counter = 0
                 $CompleteIndicatorRegex = if ($ConfigurePSRemoting) {"^pwshConfigComplete|^powershellInstallComplete"} else {"^powershellInstallComplete"}
                 while ($SuccessOrAcceptHostKeyOrPwdPrompt -notmatch [regex]::Escape("Are you sure you want to continue connecting (yes/no)?") -and
-                $SuccessOrAcceptHostKeyOrPwdPrompt -notmatch [regex]::Escape("'s password:") -and 
+                $SuccessOrAcceptHostKeyOrPwdPrompt -notmatch [regex]::Escape("password:") -and 
                 $SuccessOrAcceptHostKeyOrPwdPrompt -notmatch $CompleteIndicatorRegex -and $Counter -le 60
                 ) {
                     $SuccessOrAcceptHostKeyOrPwdPrompt = Receive-AwaitResponse
@@ -1191,9 +1204,11 @@ function Bootstrap-PowerShellCore {
                                 if ([bool]$(Get-Process -Id $PSAwaitProcess.Id -ErrorAction SilentlyContinue)) {
                                     Stop-Process -Id $PSAwaitProcess.Id -ErrorAction SilentlyContinue
                                 }
-                                while ([bool]$(Get-Process -Id $PSAwaitProcess.Id -ErrorAction SilentlyContinue)) {
+                                $Counter = 0
+                                while ([bool]$(Get-Process -Id $PSAwaitProcess.Id -ErrorAction SilentlyContinue) -and $Counter -le 15) {
                                     Write-Verbose "Waiting for Await Module Process Id $($PSAwaitProcess.Id) to end..."
                                     Start-Sleep -Seconds 1
+                                    $Counter++
                                 }
                             }
                         }
@@ -1227,9 +1242,11 @@ function Bootstrap-PowerShellCore {
                             if ([bool]$(Get-Process -Id $PSAwaitProcess.Id -ErrorAction SilentlyContinue)) {
                                 Stop-Process -Id $PSAwaitProcess.Id -ErrorAction SilentlyContinue
                             }
-                            while ([bool]$(Get-Process -Id $PSAwaitProcess.Id -ErrorAction SilentlyContinue)) {
+                            $Counter = 0
+                            while ([bool]$(Get-Process -Id $PSAwaitProcess.Id -ErrorAction SilentlyContinue) -and $Counter -le 15) {
                                 Write-Verbose "Waiting for Await Module Process Id $($PSAwaitProcess.Id) to end..."
                                 Start-Sleep -Seconds 1
+                                $Counter++
                             }
                         }
                     }
@@ -1251,7 +1268,7 @@ function Bootstrap-PowerShellCore {
                 $null = $CheckExpectedSendYesOutput.Add($SuccessOrAcceptHostKeyOrPwdPrompt)
                 $Counter = 0
                 $CompleteIndicatorRegex = if ($ConfigurePSRemoting) {"^pwshConfigComplete|^powershellInstallComplete"} else {"^powershellInstallComplete"}
-                while (![bool]$($($CheckExpectedSendYesOutput -split "`n") -match [regex]::Escape("'s password:")) -and 
+                while (![bool]$($($CheckExpectedSendYesOutput -split "`n") -match [regex]::Escape("password:")) -and 
                 ![bool]$($($CheckExpectedSendYesOutput -split "`n") -match $CompleteIndicatorRegex) -and $Counter -le 60
                 ) {
                     $SuccessOrAcceptHostKeyOrPwdPrompt = Receive-AwaitResponse
@@ -1277,9 +1294,11 @@ function Bootstrap-PowerShellCore {
                                 if ([bool]$(Get-Process -Id $PSAwaitProcess.Id -ErrorAction SilentlyContinue)) {
                                     Stop-Process -Id $PSAwaitProcess.Id -ErrorAction SilentlyContinue
                                 }
-                                while ([bool]$(Get-Process -Id $PSAwaitProcess.Id -ErrorAction SilentlyContinue)) {
+                                $Counter = 0
+                                while ([bool]$(Get-Process -Id $PSAwaitProcess.Id -ErrorAction SilentlyContinue) -and $Counter -le 15) {
                                     Write-Verbose "Waiting for Await Module Process Id $($PSAwaitProcess.Id) to end..."
                                     Start-Sleep -Seconds 1
+                                    $Counter++
                                 }
                             }
                         }
@@ -1290,7 +1309,7 @@ function Bootstrap-PowerShellCore {
 
                 $CheckSendYesOutput = $CheckExpectedSendYesOutput | foreach {$_ -split "`n"}
                 
-                if ($CheckSendYesOutput -match [regex]::Escape("'s password:")) {
+                if ($CheckSendYesOutput -match [regex]::Escape("password:")) {
                     if ($LocalPassword) {
                         $null = Send-AwaitCommand $LocalPassword
                     }
@@ -1333,9 +1352,11 @@ function Bootstrap-PowerShellCore {
                                     if ([bool]$(Get-Process -Id $PSAwaitProcess.Id -ErrorAction SilentlyContinue)) {
                                         Stop-Process -Id $PSAwaitProcess.Id -ErrorAction SilentlyContinue
                                     }
-                                    while ([bool]$(Get-Process -Id $PSAwaitProcess.Id -ErrorAction SilentlyContinue)) {
+                                    $Counter = 0
+                                    while ([bool]$(Get-Process -Id $PSAwaitProcess.Id -ErrorAction SilentlyContinue) -and $Counter -le 15) {
                                         Write-Verbose "Waiting for Await Module Process Id $($PSAwaitProcess.Id) to end..."
                                         Start-Sleep -Seconds 1
+                                        $Counter++
                                     }
                                 }
                             }
@@ -1345,7 +1366,7 @@ function Bootstrap-PowerShellCore {
                     }
                 }
             }
-            elseif ($CheckResponsesOutput -match [regex]::Escape("'s password:")) {
+            elseif ($CheckResponsesOutput -match [regex]::Escape("password:")) {
                 if ($LocalPassword) {
                     $null = Send-AwaitCommand $LocalPassword
                 }
@@ -1388,9 +1409,11 @@ function Bootstrap-PowerShellCore {
                                 if ([bool]$(Get-Process -Id $PSAwaitProcess.Id -ErrorAction SilentlyContinue)) {
                                     Stop-Process -Id $PSAwaitProcess.Id -ErrorAction SilentlyContinue
                                 }
-                                while ([bool]$(Get-Process -Id $PSAwaitProcess.Id -ErrorAction SilentlyContinue)) {
+                                $Counter = 0
+                                while ([bool]$(Get-Process -Id $PSAwaitProcess.Id -ErrorAction SilentlyContinue) -and $Counter -le 15) {
                                     Write-Verbose "Waiting for Await Module Process Id $($PSAwaitProcess.Id) to end..."
                                     Start-Sleep -Seconds 1
+                                    $Counter++
                                 }
                             }
                         }
@@ -1420,9 +1443,11 @@ function Bootstrap-PowerShellCore {
                         if ([bool]$(Get-Process -Id $PSAwaitProcess.Id -ErrorAction SilentlyContinue)) {
                             Stop-Process -Id $PSAwaitProcess.Id -ErrorAction SilentlyContinue
                         }
-                        while ([bool]$(Get-Process -Id $PSAwaitProcess.Id -ErrorAction SilentlyContinue)) {
+                        $Counter = 0
+                        while ([bool]$(Get-Process -Id $PSAwaitProcess.Id -ErrorAction SilentlyContinue) -and $Counter -le 15) {
                             Write-Verbose "Waiting for Await Module Process Id $($PSAwaitProcess.Id) to end..."
                             Start-Sleep -Seconds 1
+                            $Counter++
                         }
                     }
                 }
@@ -1570,6 +1595,7 @@ function Bootstrap-PowerShellCore {
                 return
             }
 
+            $PSAwaitProcess = $null
             $null = Start-AwaitSession
             Start-Sleep -Seconds 1
             $null = Send-AwaitCommand '$host.ui.RawUI.WindowTitle = "PSAwaitSession"'
@@ -1588,7 +1614,7 @@ function Bootstrap-PowerShellCore {
             $Counter = 0
             $CompleteIndicatorRegex = if ($ConfigurePSRemoting) {"^pwshConfigComplete|^powershellInstallComplete"} else {"^powershellInstallComplete"}
             while (![bool]$($($CheckForExpectedResponses -split "`n") -match [regex]::Escape("Are you sure you want to continue connecting (yes/no)?")) -and
-            ![bool]$($($CheckForExpectedResponses -split "`n") -match [regex]::Escape("'s password:")) -and 
+            ![bool]$($($CheckForExpectedResponses -split "`n") -match [regex]::Escape("password:")) -and 
             ![bool]$($($CheckForExpectedResponses -split "`n") -match $CompleteIndicatorRegex) -and $Counter -le 60
             ) {
                 $SuccessOrAcceptHostKeyOrPwdPrompt = Receive-AwaitResponse
@@ -1616,9 +1642,11 @@ function Bootstrap-PowerShellCore {
                             if ([bool]$(Get-Process -Id $PSAwaitProcess.Id -ErrorAction SilentlyContinue)) {
                                 Stop-Process -Id $PSAwaitProcess.Id -ErrorAction SilentlyContinue
                             }
-                            while ([bool]$(Get-Process -Id $PSAwaitProcess.Id -ErrorAction SilentlyContinue)) {
+                            $Counter = 0
+                            while ([bool]$(Get-Process -Id $PSAwaitProcess.Id -ErrorAction SilentlyContinue) -and $Counter -le 15) {
                                 Write-Verbose "Waiting for Await Module Process Id $($PSAwaitProcess.Id) to end..."
                                 Start-Sleep -Seconds 1
+                                $Counter++
                             }
                         }
                     }
@@ -1648,14 +1676,17 @@ function Bootstrap-PowerShellCore {
                             if ([bool]$(Get-Process -Id $PSAwaitProcess.Id -ErrorAction SilentlyContinue)) {
                                 Stop-Process -Id $PSAwaitProcess.Id -ErrorAction SilentlyContinue
                             }
-                            while ([bool]$(Get-Process -Id $PSAwaitProcess.Id -ErrorAction SilentlyContinue)) {
+                            $Counter = 0
+                            while ([bool]$(Get-Process -Id $PSAwaitProcess.Id -ErrorAction SilentlyContinue) -and $Counter -le 15) {
                                 Write-Verbose "Waiting for Await Module Process Id $($PSAwaitProcess.Id) to end..."
                                 Start-Sleep -Seconds 1
+                                $Counter++
                             }
                         }
                     }
                 }
 
+                $PSAwaitProcess = $null
                 $null = Start-AwaitSession
                 Start-Sleep -Seconds 1
                 $null = Send-AwaitCommand '$host.ui.RawUI.WindowTitle = "PSAwaitSession"'
@@ -1674,7 +1705,7 @@ function Bootstrap-PowerShellCore {
                 $Counter = 0
                 $CompleteIndicatorRegex = if ($ConfigurePSRemoting) {"^pwshConfigComplete|^powershellInstallComplete"} else {"^powershellInstallComplete"}
                 while ($SuccessOrAcceptHostKeyOrPwdPrompt -notmatch [regex]::Escape("Are you sure you want to continue connecting (yes/no)?") -and
-                $SuccessOrAcceptHostKeyOrPwdPrompt -notmatch [regex]::Escape("'s password:") -and 
+                $SuccessOrAcceptHostKeyOrPwdPrompt -notmatch [regex]::Escape("password:") -and 
                 $SuccessOrAcceptHostKeyOrPwdPrompt -notmatch $CompleteIndicatorRegex -and $Counter -le 60
                 ) {
                     $SuccessOrAcceptHostKeyOrPwdPrompt = Receive-AwaitResponse
@@ -1702,9 +1733,11 @@ function Bootstrap-PowerShellCore {
                                 if ([bool]$(Get-Process -Id $PSAwaitProcess.Id -ErrorAction SilentlyContinue)) {
                                     Stop-Process -Id $PSAwaitProcess.Id -ErrorAction SilentlyContinue
                                 }
-                                while ([bool]$(Get-Process -Id $PSAwaitProcess.Id -ErrorAction SilentlyContinue)) {
+                                $Counter = 0
+                                while ([bool]$(Get-Process -Id $PSAwaitProcess.Id -ErrorAction SilentlyContinue) -and $Counter -le 15) {
                                     Write-Verbose "Waiting for Await Module Process Id $($PSAwaitProcess.Id) to end..."
                                     Start-Sleep -Seconds 1
+                                    $Counter++
                                 }
                             }
                         }
@@ -1738,9 +1771,11 @@ function Bootstrap-PowerShellCore {
                             if ([bool]$(Get-Process -Id $PSAwaitProcess.Id -ErrorAction SilentlyContinue)) {
                                 Stop-Process -Id $PSAwaitProcess.Id -ErrorAction SilentlyContinue
                             }
-                            while ([bool]$(Get-Process -Id $PSAwaitProcess.Id -ErrorAction SilentlyContinue)) {
+                            $Counter = 0
+                            while ([bool]$(Get-Process -Id $PSAwaitProcess.Id -ErrorAction SilentlyContinue) -and $Counter -le 15) {
                                 Write-Verbose "Waiting for Await Module Process Id $($PSAwaitProcess.Id) to end..."
                                 Start-Sleep -Seconds 1
+                                $Counter++
                             }
                         }
                     }
@@ -1762,7 +1797,7 @@ function Bootstrap-PowerShellCore {
                 $null = $CheckExpectedSendYesOutput.Add($SuccessOrAcceptHostKeyOrPwdPrompt)
                 $Counter = 0
                 $CompleteIndicatorRegex = if ($ConfigurePSRemoting) {"^pwshConfigComplete|^powershellInstallComplete"} else {"^powershellInstallComplete"}
-                while (![bool]$($($CheckExpectedSendYesOutput -split "`n") -match [regex]::Escape("'s password:")) -and 
+                while (![bool]$($($CheckExpectedSendYesOutput -split "`n") -match [regex]::Escape("password:")) -and 
                 ![bool]$($($CheckExpectedSendYesOutput -split "`n") -match $CompleteIndicatorRegex) -and $Counter -le 60
                 ) {
                     $SuccessOrAcceptHostKeyOrPwdPrompt = Receive-AwaitResponse
@@ -1788,9 +1823,11 @@ function Bootstrap-PowerShellCore {
                                 if ([bool]$(Get-Process -Id $PSAwaitProcess.Id -ErrorAction SilentlyContinue)) {
                                     Stop-Process -Id $PSAwaitProcess.Id -ErrorAction SilentlyContinue
                                 }
-                                while ([bool]$(Get-Process -Id $PSAwaitProcess.Id -ErrorAction SilentlyContinue)) {
+                                $Counter = 0
+                                while ([bool]$(Get-Process -Id $PSAwaitProcess.Id -ErrorAction SilentlyContinue) -and $Counter -le 15) {
                                     Write-Verbose "Waiting for Await Module Process Id $($PSAwaitProcess.Id) to end..."
                                     Start-Sleep -Seconds 1
+                                    $Counter++
                                 }
                             }
                         }
@@ -1801,7 +1838,7 @@ function Bootstrap-PowerShellCore {
 
                 $CheckSendYesOutput = $CheckExpectedSendYesOutput | foreach {$_ -split "`n"}
                 
-                if ($CheckSendYesOutput -match [regex]::Escape("'s password:")) {
+                if ($CheckSendYesOutput -match [regex]::Escape("password:")) {
                     if ($LocalPassword) {
                         $null = Send-AwaitCommand $LocalPassword
                     }
@@ -1844,9 +1881,11 @@ function Bootstrap-PowerShellCore {
                                     if ([bool]$(Get-Process -Id $PSAwaitProcess.Id -ErrorAction SilentlyContinue)) {
                                         Stop-Process -Id $PSAwaitProcess.Id -ErrorAction SilentlyContinue
                                     }
-                                    while ([bool]$(Get-Process -Id $PSAwaitProcess.Id -ErrorAction SilentlyContinue)) {
+                                    $Counter = 0
+                                    while ([bool]$(Get-Process -Id $PSAwaitProcess.Id -ErrorAction SilentlyContinue) -and $Counter -le 15) {
                                         Write-Verbose "Waiting for Await Module Process Id $($PSAwaitProcess.Id) to end..."
                                         Start-Sleep -Seconds 1
+                                        $Counter++
                                     }
                                 }
                             }
@@ -1856,7 +1895,7 @@ function Bootstrap-PowerShellCore {
                     }
                 }
             }
-            elseif ($CheckResponsesOutput -match [regex]::Escape("'s password:")) {
+            elseif ($CheckResponsesOutput -match [regex]::Escape("password:")) {
                 if ($LocalPassword) {
                     $null = Send-AwaitCommand $LocalPassword
                 }
@@ -1899,9 +1938,11 @@ function Bootstrap-PowerShellCore {
                                 if ([bool]$(Get-Process -Id $PSAwaitProcess.Id -ErrorAction SilentlyContinue)) {
                                     Stop-Process -Id $PSAwaitProcess.Id -ErrorAction SilentlyContinue
                                 }
-                                while ([bool]$(Get-Process -Id $PSAwaitProcess.Id -ErrorAction SilentlyContinue)) {
+                                $Counter = 0
+                                while ([bool]$(Get-Process -Id $PSAwaitProcess.Id -ErrorAction SilentlyContinue) -and $Counter -le 15) {
                                     Write-Verbose "Waiting for Await Module Process Id $($PSAwaitProcess.Id) to end..."
                                     Start-Sleep -Seconds 1
+                                    $Counter++
                                 }
                             }
                         }
@@ -1931,9 +1972,11 @@ function Bootstrap-PowerShellCore {
                         if ([bool]$(Get-Process -Id $PSAwaitProcess.Id -ErrorAction SilentlyContinue)) {
                             Stop-Process -Id $PSAwaitProcess.Id -ErrorAction SilentlyContinue
                         }
-                        while ([bool]$(Get-Process -Id $PSAwaitProcess.Id -ErrorAction SilentlyContinue)) {
+                        $Counter = 0
+                        while ([bool]$(Get-Process -Id $PSAwaitProcess.Id -ErrorAction SilentlyContinue) -and $Counter -le 15) {
                             Write-Verbose "Waiting for Await Module Process Id $($PSAwaitProcess.Id) to end..."
                             Start-Sleep -Seconds 1
+                            $Counter++
                         }
                     }
                 }
@@ -2382,6 +2425,7 @@ function Get-SSHProbe {
 
             #region >> Await Attempt Number 1 of 2
             
+            $PSAwaitProcess = $null
             $null = Start-AwaitSession
             Start-Sleep -Seconds 1
             $null = Send-AwaitCommand '$host.ui.RawUI.WindowTitle = "PSAwaitSession"'
@@ -2399,7 +2443,7 @@ function Get-SSHProbe {
             $null = $CheckForExpectedResponses.Add($SuccessOrAcceptHostKeyOrPwdPrompt)
             $Counter = 0
             while (![bool]$($($CheckForExpectedResponses -split "`n") -match [regex]::Escape("Are you sure you want to continue connecting (yes/no)?")) -and
-            ![bool]$($($CheckForExpectedResponses -split "`n") -match [regex]::Escape("'s password:")) -and 
+            ![bool]$($($CheckForExpectedResponses -split "`n") -match [regex]::Escape("password:")) -and 
             ![bool]$($($CheckForExpectedResponses -split "`n") -match "^}") -and $Counter -le 30
             ) {
                 $SuccessOrAcceptHostKeyOrPwdPrompt = Receive-AwaitResponse
@@ -2427,9 +2471,11 @@ function Get-SSHProbe {
                             if ([bool]$(Get-Process -Id $PSAwaitProcess.Id -ErrorAction SilentlyContinue)) {
                                 Stop-Process -Id $PSAwaitProcess.Id -ErrorAction SilentlyContinue
                             }
-                            while ([bool]$(Get-Process -Id $PSAwaitProcess.Id -ErrorAction SilentlyContinue)) {
+                            $Counter = 0
+                            while ([bool]$(Get-Process -Id $PSAwaitProcess.Id -ErrorAction SilentlyContinue) -and $Counter -le 15) {
                                 Write-Verbose "Waiting for Await Module Process Id $($PSAwaitProcess.Id) to end..."
                                 Start-Sleep -Seconds 1
+                                $Counter++
                             }
                         }
                     }
@@ -2463,14 +2509,17 @@ function Get-SSHProbe {
                             if ([bool]$(Get-Process -Id $PSAwaitProcess.Id -ErrorAction SilentlyContinue)) {
                                 Stop-Process -Id $PSAwaitProcess.Id -ErrorAction SilentlyContinue
                             }
-                            while ([bool]$(Get-Process -Id $PSAwaitProcess.Id -ErrorAction SilentlyContinue)) {
+                            $Counter = 0
+                            while ([bool]$(Get-Process -Id $PSAwaitProcess.Id -ErrorAction SilentlyContinue) -and $Counter -le 15) {
                                 Write-Verbose "Waiting for Await Module Process Id $($PSAwaitProcess.Id) to end..."
                                 Start-Sleep -Seconds 1
+                                $Counter++
                             }
                         }
                     }
                 }
-
+                
+                $PSAwaitProcess = $null
                 $null = Start-AwaitSession
                 Start-Sleep -Seconds 1
                 $null = Send-AwaitCommand '$host.ui.RawUI.WindowTitle = "PSAwaitSession"'
@@ -2488,7 +2537,7 @@ function Get-SSHProbe {
                 $null = $CheckForExpectedResponses.Add($SuccessOrAcceptHostKeyOrPwdPrompt)
                 $Counter = 0
                 while ($SuccessOrAcceptHostKeyOrPwdPrompt -notmatch [regex]::Escape("Are you sure you want to continue connecting (yes/no)?") -and
-                $SuccessOrAcceptHostKeyOrPwdPrompt -notmatch [regex]::Escape("'s password:") -and 
+                $SuccessOrAcceptHostKeyOrPwdPrompt -notmatch [regex]::Escape("password:") -and 
                 $SuccessOrAcceptHostKeyOrPwdPrompt -notmatch "^}" -and $Counter -le 30
                 ) {
                     $SuccessOrAcceptHostKeyOrPwdPrompt = Receive-AwaitResponse
@@ -2513,9 +2562,11 @@ function Get-SSHProbe {
                                 if ([bool]$(Get-Process -Id $PSAwaitProcess.Id -ErrorAction SilentlyContinue)) {
                                     Stop-Process -Id $PSAwaitProcess.Id -ErrorAction SilentlyContinue
                                 }
-                                while ([bool]$(Get-Process -Id $PSAwaitProcess.Id -ErrorAction SilentlyContinue)) {
+                                $Counter = 0
+                                while ([bool]$(Get-Process -Id $PSAwaitProcess.Id -ErrorAction SilentlyContinue) -and $Counter -le 15) {
                                     Write-Verbose "Waiting for Await Module Process Id $($PSAwaitProcess.Id) to end..."
                                     Start-Sleep -Seconds 1
+                                    $Counter++
                                 }
                             }
                         }
@@ -2536,7 +2587,7 @@ function Get-SSHProbe {
             ![bool]$($CheckResponsesOutput -match "background process reported an error")) {
                 Write-Verbose "Something went wrong within the PowerShell Await Module!"
 
-                Write-Host "Await ScriptBlock (`$PwshCmdString) was:`n    $PwshCmdString"
+                #Write-Host "Await ScriptBlock (`$PwshCmdString) was:`n    $PwshCmdString"
 
                 if ($PSAwaitProcess.Id) {
                     try {
@@ -2552,14 +2603,15 @@ function Get-SSHProbe {
                             if ([bool]$(Get-Process -Id $PSAwaitProcess.Id -ErrorAction SilentlyContinue)) {
                                 Stop-Process -Id $PSAwaitProcess.Id -ErrorAction SilentlyContinue
                             }
-                            while ([bool]$(Get-Process -Id $PSAwaitProcess.Id -ErrorAction SilentlyContinue)) {
+                            $Counter = 0
+                            while ([bool]$(Get-Process -Id $PSAwaitProcess.Id -ErrorAction SilentlyContinue) -and $Counter -le 15) {
                                 Write-Verbose "Waiting for Await Module Process Id $($PSAwaitProcess.Id) to end..."
                                 Start-Sleep -Seconds 1
+                                $Counter++
                             }
                         }
                     }
                 }
-
                 $TrySSHExe = $True
             }
 
@@ -2575,7 +2627,7 @@ function Get-SSHProbe {
                 [System.Collections.ArrayList]$CheckExpectedSendYesOutput = @()
                 $null = $CheckExpectedSendYesOutput.Add($SuccessOrAcceptHostKeyOrPwdPrompt)
                 $Counter = 0
-                while (![bool]$($($CheckExpectedSendYesOutput -split "`n") -match [regex]::Escape("'s password:")) -and 
+                while (![bool]$($($CheckExpectedSendYesOutput -split "`n") -match [regex]::Escape("password:")) -and 
                 ![bool]$($($CheckExpectedSendYesOutput -split "`n") -match "^}") -and $Counter -le 30
                 ) {
                     $SuccessOrAcceptHostKeyOrPwdPrompt = Receive-AwaitResponse
@@ -2601,9 +2653,11 @@ function Get-SSHProbe {
                                 if ([bool]$(Get-Process -Id $PSAwaitProcess.Id -ErrorAction SilentlyContinue)) {
                                     Stop-Process -Id $PSAwaitProcess.Id -ErrorAction SilentlyContinue
                                 }
-                                while ([bool]$(Get-Process -Id $PSAwaitProcess.Id -ErrorAction SilentlyContinue)) {
+                                $Counter = 0
+                                while ([bool]$(Get-Process -Id $PSAwaitProcess.Id -ErrorAction SilentlyContinue) -and $Counter -le 15) {
                                     Write-Verbose "Waiting for Await Module Process Id $($PSAwaitProcess.Id) to end..."
                                     Start-Sleep -Seconds 1
+                                    $Counter++
                                 }
                             }
                         }
@@ -2614,7 +2668,7 @@ function Get-SSHProbe {
 
                 $CheckSendYesOutput = $CheckExpectedSendYesOutput | foreach {$_ -split "`n"}
                 
-                if ($CheckSendYesOutput -match [regex]::Escape("'s password:")) {
+                if ($CheckSendYesOutput -match [regex]::Escape("password:")) {
                     if ($LocalPassword) {
                         $null = Send-AwaitCommand $LocalPassword
                     }
@@ -2653,9 +2707,11 @@ function Get-SSHProbe {
                                     if ([bool]$(Get-Process -Id $PSAwaitProcess.Id -ErrorAction SilentlyContinue)) {
                                         Stop-Process -Id $PSAwaitProcess.Id -ErrorAction SilentlyContinue
                                     }
-                                    while ([bool]$(Get-Process -Id $PSAwaitProcess.Id -ErrorAction SilentlyContinue)) {
-                                        Write-Warning "Waiting for Await Module Process Id $($PSAwaitProcess.Id) to end..."
+                                    $Counter = 0
+                                    while ([bool]$(Get-Process -Id $PSAwaitProcess.Id -ErrorAction SilentlyContinue) -and $Counter -le 15) {
+                                        Write-Verbose "Waiting for Await Module Process Id $($PSAwaitProcess.Id) to end..."
                                         Start-Sleep -Seconds 1
+                                        $Counter++
                                     }
                                 }
                             }
@@ -2664,13 +2720,13 @@ function Get-SSHProbe {
                         $TrySSHExe = $True
                     }
 
-                    [System.Collections.ArrayList]$JsonOutputPrep = $($JsonOutputPrep | foreach {$_ -split "`n"}) | Where-Object {$_ -notmatch "^PS "}
+                    [System.Collections.ArrayList][array]$JsonOutputPrep = $($JsonOutputPrep | foreach {$_ -split "`n"}) | Where-Object {$_ -notmatch "^PS "}
                     if (![bool]$($JsonOutputPrep[0] -match "^{")) {
                         $null = $JsonOutputPrep.Insert(0,'{')
                     }
                 }
             }
-            elseif ($CheckResponsesOutput -match [regex]::Escape("'s password:")) {
+            elseif ($CheckResponsesOutput -match [regex]::Escape("password:")) {
                 if ($LocalPassword) {
                     $null = Send-AwaitCommand $LocalPassword
                 }
@@ -2709,9 +2765,11 @@ function Get-SSHProbe {
                                 if ([bool]$(Get-Process -Id $PSAwaitProcess.Id -ErrorAction SilentlyContinue)) {
                                     Stop-Process -Id $PSAwaitProcess.Id -ErrorAction SilentlyContinue
                                 }
-                                while ([bool]$(Get-Process -Id $PSAwaitProcess.Id -ErrorAction SilentlyContinue)) {
-                                    Write-Warning "Waiting for Await Module Process Id $($PSAwaitProcess.Id) to end..."
+                                $Counter = 0
+                                while ([bool]$(Get-Process -Id $PSAwaitProcess.Id -ErrorAction SilentlyContinue) -and $Counter -le 15) {
+                                    Write-Verbose "Waiting for Await Module Process Id $($PSAwaitProcess.Id) to end..."
                                     Start-Sleep -Seconds 1
+                                    $Counter++
                                 }
                             }
                         }
@@ -2720,7 +2778,7 @@ function Get-SSHProbe {
                     $TrySSHExe = $True
                 }
 
-                [System.Collections.ArrayList]$JsonOutputPrep = $($JsonOutputPrep | foreach {$_ -split "`n"}) | Where-Object {$_ -notmatch "^PS "}
+                [System.Collections.ArrayList][array]$JsonOutputPrep = $($JsonOutputPrep | foreach {$_ -split "`n"}) | Where-Object {$_ -notmatch "^PS "}
                 if (![bool]$($JsonOutputPrep[0] -match "^{")) {
                     $null = $JsonOutputPrep.Insert(0,'{')
                 }
@@ -2781,9 +2839,11 @@ function Get-SSHProbe {
                         if ([bool]$(Get-Process -Id $PSAwaitProcess.Id -ErrorAction SilentlyContinue)) {
                             Stop-Process -Id $PSAwaitProcess.Id -ErrorAction SilentlyContinue
                         }
-                        while ([bool]$(Get-Process -Id $PSAwaitProcess.Id -ErrorAction SilentlyContinue)) {
+                        $Counter = 0
+                        while ([bool]$(Get-Process -Id $PSAwaitProcess.Id -ErrorAction SilentlyContinue) -and $Counter -le 15) {
                             Write-Verbose "Waiting for Await Module Process Id $($PSAwaitProcess.Id) to end..."
                             Start-Sleep -Seconds 1
+                            $Counter++
                         }
                     }
                 }
@@ -2887,6 +2947,7 @@ function Get-SSHProbe {
 
             #region >> Await Attempt Number 1 of 2
             
+            $PSAwaitProcess = $null
             $null = Start-AwaitSession
             Start-Sleep -Seconds 1
             $null = Send-AwaitCommand '$host.ui.RawUI.WindowTitle = "PSAwaitSession"'
@@ -2904,7 +2965,7 @@ function Get-SSHProbe {
             $null = $CheckForExpectedResponses.Add($SuccessOrAcceptHostKeyOrPwdPrompt)
             $Counter = 0
             while (![bool]$($($CheckForExpectedResponses -split "`n") -match [regex]::Escape("Are you sure you want to continue connecting (yes/no)?")) -and
-            ![bool]$($($CheckForExpectedResponses -split "`n") -match [regex]::Escape("'s password:")) -and 
+            ![bool]$($($CheckForExpectedResponses -split "`n") -match [regex]::Escape("password:")) -and 
             ![bool]$($($CheckForExpectedResponses -split "`n") -match "^111HostnamectlOutput111") -and $Counter -le 30
             ) {
                 $SuccessOrAcceptHostKeyOrPwdPrompt = Receive-AwaitResponse
@@ -2932,9 +2993,11 @@ function Get-SSHProbe {
                             if ([bool]$(Get-Process -Id $PSAwaitProcess.Id -ErrorAction SilentlyContinue)) {
                                 Stop-Process -Id $PSAwaitProcess.Id -ErrorAction SilentlyContinue
                             }
-                            while ([bool]$(Get-Process -Id $PSAwaitProcess.Id -ErrorAction SilentlyContinue)) {
+                            $Counter = 0
+                            while ([bool]$(Get-Process -Id $PSAwaitProcess.Id -ErrorAction SilentlyContinue) -and $Counter -le 15) {
                                 Write-Verbose "Waiting for Await Module Process Id $($PSAwaitProcess.Id) to end..."
                                 Start-Sleep -Seconds 1
+                                $Counter++
                             }
                         }
                     }
@@ -2964,14 +3027,17 @@ function Get-SSHProbe {
                             if ([bool]$(Get-Process -Id $PSAwaitProcess.Id -ErrorAction SilentlyContinue)) {
                                 Stop-Process -Id $PSAwaitProcess.Id -ErrorAction SilentlyContinue
                             }
-                            while ([bool]$(Get-Process -Id $PSAwaitProcess.Id -ErrorAction SilentlyContinue)) {
+                            $Counter = 0
+                            while ([bool]$(Get-Process -Id $PSAwaitProcess.Id -ErrorAction SilentlyContinue) -and $Counter -le 15) {
                                 Write-Verbose "Waiting for Await Module Process Id $($PSAwaitProcess.Id) to end..."
                                 Start-Sleep -Seconds 1
+                                $Counter++
                             }
                         }
                     }
                 }
-
+                
+                $PSAwaitProcess = $null
                 $null = Start-AwaitSession
                 Start-Sleep -Seconds 1
                 $null = Send-AwaitCommand '$host.ui.RawUI.WindowTitle = "PSAwaitSession"'
@@ -2989,7 +3055,7 @@ function Get-SSHProbe {
                 $null = $CheckForExpectedResponses.Add($SuccessOrAcceptHostKeyOrPwdPrompt)
                 $Counter = 0
                 while ($SuccessOrAcceptHostKeyOrPwdPrompt -notmatch [regex]::Escape("Are you sure you want to continue connecting (yes/no)?") -and
-                $SuccessOrAcceptHostKeyOrPwdPrompt -notmatch [regex]::Escape("'s password:") -and 
+                $SuccessOrAcceptHostKeyOrPwdPrompt -notmatch [regex]::Escape("password:") -and 
                 $SuccessOrAcceptHostKeyOrPwdPrompt -notmatch "^111HostnamectlOutput111" -and $Counter -le 30
                 ) {
                     $SuccessOrAcceptHostKeyOrPwdPrompt = Receive-AwaitResponse
@@ -3000,6 +3066,8 @@ function Get-SSHProbe {
                 if ($Counter -eq 31) {
                     Write-Error "SSH via '$($SSHCmdStringArray -join " ")' timed out!"
                     $global:FunctionResult = "1"
+
+                    #$CheckForExpectedResponses
 
                     if ($PSAwaitProcess.Id) {
                         try {
@@ -3015,9 +3083,11 @@ function Get-SSHProbe {
                                 if ([bool]$(Get-Process -Id $PSAwaitProcess.Id -ErrorAction SilentlyContinue)) {
                                     Stop-Process -Id $PSAwaitProcess.Id -ErrorAction SilentlyContinue
                                 }
-                                while ([bool]$(Get-Process -Id $PSAwaitProcess.Id -ErrorAction SilentlyContinue)) {
+                                $Counter = 0
+                                while ([bool]$(Get-Process -Id $PSAwaitProcess.Id -ErrorAction SilentlyContinue) -and $Counter -le 15) {
                                     Write-Verbose "Waiting for Await Module Process Id $($PSAwaitProcess.Id) to end..."
                                     Start-Sleep -Seconds 1
+                                    $Counter++
                                 }
                             }
                         }
@@ -3053,9 +3123,11 @@ function Get-SSHProbe {
                             if ([bool]$(Get-Process -Id $PSAwaitProcess.Id -ErrorAction SilentlyContinue)) {
                                 Stop-Process -Id $PSAwaitProcess.Id -ErrorAction SilentlyContinue
                             }
-                            while ([bool]$(Get-Process -Id $PSAwaitProcess.Id -ErrorAction SilentlyContinue)) {
+                            $Counter = 0
+                            while ([bool]$(Get-Process -Id $PSAwaitProcess.Id -ErrorAction SilentlyContinue) -and $Counter -le 15) {
                                 Write-Verbose "Waiting for Await Module Process Id $($PSAwaitProcess.Id) to end..."
                                 Start-Sleep -Seconds 1
+                                $Counter++
                             }
                         }
                     }
@@ -3076,7 +3148,7 @@ function Get-SSHProbe {
                 [System.Collections.ArrayList]$CheckExpectedSendYesOutput = @()
                 $null = $CheckExpectedSendYesOutput.Add($SuccessOrAcceptHostKeyOrPwdPrompt)
                 $Counter = 0
-                while (![bool]$($($CheckExpectedSendYesOutput -split "`n") -match [regex]::Escape("'s password:")) -and 
+                while (![bool]$($($CheckExpectedSendYesOutput -split "`n") -match [regex]::Escape("password:")) -and 
                 ![bool]$($($CheckExpectedSendYesOutput -split "`n") -match "^111HostnamectlOutput111") -and $Counter -le 30
                 ) {
                     $SuccessOrAcceptHostKeyOrPwdPrompt = Receive-AwaitResponse
@@ -3102,9 +3174,11 @@ function Get-SSHProbe {
                                 if ([bool]$(Get-Process -Id $PSAwaitProcess.Id -ErrorAction SilentlyContinue)) {
                                     Stop-Process -Id $PSAwaitProcess.Id -ErrorAction SilentlyContinue
                                 }
-                                while ([bool]$(Get-Process -Id $PSAwaitProcess.Id -ErrorAction SilentlyContinue)) {
+                                $Counter = 0
+                                while ([bool]$(Get-Process -Id $PSAwaitProcess.Id -ErrorAction SilentlyContinue) -and $Counter -le 15) {
                                     Write-Verbose "Waiting for Await Module Process Id $($PSAwaitProcess.Id) to end..."
                                     Start-Sleep -Seconds 1
+                                    $Counter++
                                 }
                             }
                         }
@@ -3115,7 +3189,7 @@ function Get-SSHProbe {
 
                 $CheckSendYesOutput = $CheckExpectedSendYesOutput | foreach {$_ -split "`n"}
                 
-                if ($CheckSendYesOutput -match [regex]::Escape("'s password:")) {
+                if ($CheckSendYesOutput -match [regex]::Escape("password:")) {
                     if ($LocalPassword) {
                         $null = Send-AwaitCommand $LocalPassword
                     }
@@ -3157,9 +3231,11 @@ function Get-SSHProbe {
                                     if ([bool]$(Get-Process -Id $PSAwaitProcess.Id -ErrorAction SilentlyContinue)) {
                                         Stop-Process -Id $PSAwaitProcess.Id -ErrorAction SilentlyContinue
                                     }
-                                    while ([bool]$(Get-Process -Id $PSAwaitProcess.Id -ErrorAction SilentlyContinue)) {
+                                    $Counter = 0
+                                    while ([bool]$(Get-Process -Id $PSAwaitProcess.Id -ErrorAction SilentlyContinue) -and $Counter -le 15) {
                                         Write-Verbose "Waiting for Await Module Process Id $($PSAwaitProcess.Id) to end..."
                                         Start-Sleep -Seconds 1
+                                        $Counter++
                                     }
                                 }
                             }
@@ -3169,7 +3245,7 @@ function Get-SSHProbe {
                     }
                 }
             }
-            elseif ($CheckResponsesOutput -match [regex]::Escape("'s password:")) {
+            elseif ($CheckResponsesOutput -match [regex]::Escape("password:")) {
                 if ($LocalPassword) {
                     $null = Send-AwaitCommand $LocalPassword
                 }
@@ -3211,9 +3287,11 @@ function Get-SSHProbe {
                                 if ([bool]$(Get-Process -Id $PSAwaitProcess.Id -ErrorAction SilentlyContinue)) {
                                     Stop-Process -Id $PSAwaitProcess.Id -ErrorAction SilentlyContinue
                                 }
-                                while ([bool]$(Get-Process -Id $PSAwaitProcess.Id -ErrorAction SilentlyContinue)) {
+                                $Counter = 0
+                                while ([bool]$(Get-Process -Id $PSAwaitProcess.Id -ErrorAction SilentlyContinue) -and $Counter -le 15) {
                                     Write-Verbose "Waiting for Await Module Process Id $($PSAwaitProcess.Id) to end..."
                                     Start-Sleep -Seconds 1
+                                    $Counter++
                                 }
                             }
                         }
@@ -3241,9 +3319,11 @@ function Get-SSHProbe {
                         if ([bool]$(Get-Process -Id $PSAwaitProcess.Id -ErrorAction SilentlyContinue)) {
                             Stop-Process -Id $PSAwaitProcess.Id -ErrorAction SilentlyContinue
                         }
-                        while ([bool]$(Get-Process -Id $PSAwaitProcess.Id -ErrorAction SilentlyContinue)) {
+                        $Counter = 0
+                        while ([bool]$(Get-Process -Id $PSAwaitProcess.Id -ErrorAction SilentlyContinue) -and $Counter -le 15) {
                             Write-Verbose "Waiting for Await Module Process Id $($PSAwaitProcess.Id) to end..."
                             Start-Sleep -Seconds 1
+                            $Counter++
                         }
                     }
                 }
@@ -3630,9 +3710,11 @@ function Get-SSHProbe {
                     if ([bool]$(Get-Process -Id $PSAwaitProcess.Id -ErrorAction SilentlyContinue)) {
                         Stop-Process -Id $PSAwaitProcess.Id -ErrorAction SilentlyContinue
                     }
-                    while ([bool]$(Get-Process -Id $PSAwaitProcess.Id -ErrorAction SilentlyContinue)) {
+                    $Counter = 0
+                    while ([bool]$(Get-Process -Id $PSAwaitProcess.Id -ErrorAction SilentlyContinue) -and $Counter -le 15) {
                         Write-Verbose "Waiting for Await Module Process Id $($PSAwaitProcess.Id) to end..."
                         Start-Sleep -Seconds 1
+                        $Counter++
                     }
                 }
             }
@@ -3710,8 +3792,8 @@ if ($PSVersionTable.Platform -eq "Win32NT" -and $PSVersionTable.PSEdition -eq "C
 # SIG # Begin signature block
 # MIIMiAYJKoZIhvcNAQcCoIIMeTCCDHUCAQExCzAJBgUrDgMCGgUAMGkGCisGAQQB
 # gjcCAQSgWzBZMDQGCisGAQQBgjcCAR4wJgIDAQAABBAfzDtgWUsITrck0sYpfvNR
-# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUh092s1cXq3fmkQdbedIHnwAf
-# k42gggn9MIIEJjCCAw6gAwIBAgITawAAAB/Nnq77QGja+wAAAAAAHzANBgkqhkiG
+# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUnRDd/OCB8jr4wjBj9m94ALYl
+# T2qgggn9MIIEJjCCAw6gAwIBAgITawAAAB/Nnq77QGja+wAAAAAAHzANBgkqhkiG
 # 9w0BAQsFADAwMQwwCgYDVQQGEwNMQUIxDTALBgNVBAoTBFpFUk8xETAPBgNVBAMT
 # CFplcm9EQzAxMB4XDTE3MDkyMDIxMDM1OFoXDTE5MDkyMDIxMTM1OFowPTETMBEG
 # CgmSJomT8ixkARkWA0xBQjEUMBIGCgmSJomT8ixkARkWBFpFUk8xEDAOBgNVBAMT
@@ -3768,11 +3850,11 @@ if ($PSVersionTable.Platform -eq "Win32NT" -and $PSVersionTable.PSEdition -eq "C
 # ARkWA0xBQjEUMBIGCgmSJomT8ixkARkWBFpFUk8xEDAOBgNVBAMTB1plcm9TQ0EC
 # E1gAAAH5oOvjAv3166MAAQAAAfkwCQYFKw4DAhoFAKB4MBgGCisGAQQBgjcCAQwx
 # CjAIoAKAAKECgAAwGQYJKoZIhvcNAQkDMQwGCisGAQQBgjcCAQQwHAYKKwYBBAGC
-# NwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFMAWINwp66s2p80z
-# rE24Qn4DZpvTMA0GCSqGSIb3DQEBAQUABIIBAHKnuxa3OPMpr7I3fjNPou4/iQzU
-# GWDfYnhFh4uv2Uw/LxNpl+2rc9sU9uWuKO2nlc5XWhvMM4snYqU7mwP29900VATC
-# YVIMUtjnLDEVpShhjQksOkWpfPIGcqNwiIVCoqyL4nZzX8qXdjykmR4NR4DzfJHM
-# U0q5e2yhXRItys0yF7vxvdp1aKf/LDqu59qwGHT5jB+Gu/vY9Nc4L8KCfH4GTzUh
-# Oc6p6eQz+LBKnllvRiaX1Eb47tn5a9YZ2KNnRvIgvO4NGNDAx7zDShR9jxwh+NPv
-# JJm3eE+pZMYYE7aAi7G/2RbOI1mPVlB1P5O/VW+nGmRnjhexft/EPW3LFxM=
+# NwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFEGPpobDzW+eH9fN
+# TdliWpQVjLGmMA0GCSqGSIb3DQEBAQUABIIBAFCvVEVXX5sFfVOXG05yM6KJ1Ljr
+# yXj8ai02zWlNcm0Byq/CTp5m9z+lPotjymsjeLx7lyRuqv4iOm3tJ/fc2IiA37uT
+# 3fIV0MGazxJWy+7wVrs1sl7WYWoja1yS5K28OMTsUB4+Wqp9NFHwpzP0l0SU4Ica
+# VEO4VXNuKU6Gl+l90qEG65fHxw04F9omGGQR1MecALX1FmoYmxeq71Wm9uDGG+O0
+# OogG3WzBehs+fnOZw8sphKy66bxs5QNl7e0bn/eBcS5VJPrmqr/4/B5Wg+XUrWZB
+# syvYKsGGkS60x334HWtg87mgA9AzWLqTOYx53z0L8oDTGj8tYmJekbIjglk=
 # SIG # End signature block
