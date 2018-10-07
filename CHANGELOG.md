@@ -1,5 +1,9 @@
 # Change log
 
+## 0.8.5 (October 07, 2018)
+
+- Fixed issues with various Linux install scripts.
+
 ## 0.8.4 (October 05, 2018)
 
 - Fixed various syntax issued targeting Linux from pwsh on Windows.
