@@ -640,12 +640,14 @@ function Bootstrap-PowerShellCore {
     # 'curl -s https://packages.microsoft.com/config/rhel/7/prod.repo > /etc/yum.repos.d/microsoft.repo'
     $CentOS7PMInstallScriptPrep = $RHELPMInstallScriptPrep = @(
         'curl https://packages.microsoft.com/config/rhel/7/prod.repo | sudo tee /etc/yum.repos.d/microsoft.repo'
-        'yum install -y powershell && echo powershellInstallComplete'
+        'echo powershellInstallComplete'
+        'yum install -y powershell'
     )
     $CentOS7PMInstallScript = $RHEL7PMInstallScript = "sudo bash -c \```"$($CentOS7PMInstallScriptPrep -join '; ')\```""
 
     $CentOS7ManualInstallScriptPrep = $RHEL7ManualInstallScriptPrep = @(
-        "yum install $CentOS7PackageUrl && echo powershellInstallComplete"
+        'echo powershellInstallComplete'
+        "yum install $CentOS7PackageUrl"
     )
     $CentOS7ManualInstallScript = $RHEL7ManualInstallScript = "sudo bash -c \```"$($CentOS7ManualInstallScriptPrep -join '; ')\```""
 
@@ -670,13 +672,15 @@ function Bootstrap-PowerShellCore {
         'rpm --import https://packages.microsoft.com/keys/microsoft.asc'
         'zypper ar https://packages.microsoft.com/rhel/7/prod/'
         'zypper update'
-        'zypper install powershell && echo powershellInstallComplete'
+        'echo powershellInstallComplete'
+        'zypper install powershell'
     )
     $OpenSUSE423PMInstallScript = "sudo bash -c \```"$($OpenSUSE423PMInstallScriptPrep -join '; ')\```""
 
     $OpenSUSE423ManualInstallScriptPrep = @(
         'rpm --import https://packages.microsoft.com/keys/microsoft.asc'
-        "zypper install $OpenSUSE423PackageUrl && echo powershellInstallComplete"
+        'echo powershellInstallComplete'
+        "zypper install $OpenSUSE423PackageUrl"
     )
     $OpenSUSE423ManualInstallScript = "sudo bash -c \```"$($OpenSUSE423ManualInstallScriptPrep -join '; ')\```""
 
@@ -702,13 +706,15 @@ function Bootstrap-PowerShellCore {
         'curl https://packages.microsoft.com/config/rhel/7/prod.repo | sudo tee /etc/yum.repos.d/microsoft.repo'
         'dnf update'
         'dnf install compat-openssl10'
-        'dnf install -y powershell && echo powershellInstallComplete'
+        'echo powershellInstallComplete'
+        'dnf install -y powershell'
     )
     $FedoraPMInstallScript = "sudo bash -c \```"$($FedoraPMInstallScriptPrep -join '; ')\```""
 
     $FedoraManualInstallScriptPrep = @(
         'dnf install compat-openssl10'
-        "dnf install $FedoraPackageUrl && echo powershellInstallComplete"
+        'echo powershellInstallComplete'
+        "dnf install $FedoraPackageUrl"
     )
     $FedoraManualInstallScript = "sudo bash -c \```"$($FedoraManualInstallScriptPrep -join '; ')\```""
 
@@ -733,7 +739,8 @@ function Bootstrap-PowerShellCore {
         'apt install libunwind8'
         "wget -q $LinuxGenericArmPackageUrl"
         'mkdir ~/powershell'
-        "tar -xvf ./$LinuxGenericArmPackageName -C ~/powershell && echo powershellInstallComplete"
+        'echo powershellInstallComplete'
+        "tar -xvf ./$LinuxGenericArmPackageName -C ~/powershell"
     )
     $RaspbianManualInstallScript = "sudo bash -c \```"$($RaspbianManualInstallScriptPrep -join '; ')\```""
 
@@ -999,9 +1006,10 @@ function Bootstrap-PowerShellCore {
             [System.Collections.ArrayList]$CheckForExpectedResponses = @()
             $null = $CheckForExpectedResponses.Add($SuccessOrAcceptHostKeyOrPwdPrompt)
             $Counter = 0
+            $CompleteIndicatorRegex = if ($ConfigurePSRemoting) {"^pwshConfigComplete|^powershellInstallComplete"} else {"^powershellInstallComplete"}
             while (![bool]$($($CheckForExpectedResponses -split "`n") -match [regex]::Escape("Are you sure you want to continue connecting (yes/no)?")) -and
             ![bool]$($($CheckForExpectedResponses -split "`n") -match [regex]::Escape("'s password:")) -and 
-            ![bool]$($($CheckForExpectedResponses -split "`n") -match "^}") -and $Counter -le 60
+            ![bool]$($($CheckForExpectedResponses -split "`n") -match $CompleteIndicatorRegex) -and $Counter -le 60
             ) {
                 $SuccessOrAcceptHostKeyOrPwdPrompt = Receive-AwaitResponse
                 $null = $CheckForExpectedResponses.Add($SuccessOrAcceptHostKeyOrPwdPrompt)
@@ -1084,9 +1092,10 @@ function Bootstrap-PowerShellCore {
                 [System.Collections.ArrayList]$CheckForExpectedResponses = @()
                 $null = $CheckForExpectedResponses.Add($SuccessOrAcceptHostKeyOrPwdPrompt)
                 $Counter = 0
+                $CompleteIndicatorRegex = if ($ConfigurePSRemoting) {"^pwshConfigComplete|^powershellInstallComplete"} else {"^powershellInstallComplete"}
                 while ($SuccessOrAcceptHostKeyOrPwdPrompt -notmatch [regex]::Escape("Are you sure you want to continue connecting (yes/no)?") -and
                 $SuccessOrAcceptHostKeyOrPwdPrompt -notmatch [regex]::Escape("'s password:") -and 
-                $SuccessOrAcceptHostKeyOrPwdPrompt -notmatch "^}" -and $Counter -le 60
+                $SuccessOrAcceptHostKeyOrPwdPrompt -notmatch $CompleteIndicatorRegex -and $Counter -le 60
                 ) {
                     $SuccessOrAcceptHostKeyOrPwdPrompt = Receive-AwaitResponse
                     $null = $CheckForExpectedResponses.Add($SuccessOrAcceptHostKeyOrPwdPrompt)
@@ -1096,6 +1105,8 @@ function Bootstrap-PowerShellCore {
                 if ($Counter -eq 61) {
                     Write-Error "SSH via '$($SSHCmdStringArray -join " ")' timed out!"
                     $global:FunctionResult = "1"
+
+                    #$CheckForExpectedResponses
 
                     if ($PSAwaitProcess.Id) {
                         try {
@@ -1170,8 +1181,9 @@ function Bootstrap-PowerShellCore {
                 [System.Collections.ArrayList]$CheckExpectedSendYesOutput = @()
                 $null = $CheckExpectedSendYesOutput.Add($SuccessOrAcceptHostKeyOrPwdPrompt)
                 $Counter = 0
+                $CompleteIndicatorRegex = if ($ConfigurePSRemoting) {"^pwshConfigComplete|^powershellInstallComplete"} else {"^powershellInstallComplete"}
                 while (![bool]$($($CheckExpectedSendYesOutput -split "`n") -match [regex]::Escape("'s password:")) -and 
-                ![bool]$($($CheckExpectedSendYesOutput -split "`n") -match "^}") -and $Counter -le 60
+                ![bool]$($($CheckExpectedSendYesOutput -split "`n") -match $CompleteIndicatorRegex) -and $Counter -le 60
                 ) {
                     $SuccessOrAcceptHostKeyOrPwdPrompt = Receive-AwaitResponse
                     $null = $CheckExpectedSendYesOutput.Add($SuccessOrAcceptHostKeyOrPwdPrompt)
@@ -1236,7 +1248,7 @@ function Bootstrap-PowerShellCore {
                         Write-Error "Sending the user's password timed out!"
                         $global:FunctionResult = "1"
 
-                        $SSHOutputPrep
+                        #$SSHOutputPrep
 
                         if ($PSAwaitProcess.Id) {
                             try {
@@ -1291,7 +1303,7 @@ function Bootstrap-PowerShellCore {
                     Write-Error "Sending the user's password timed out!"
                     $global:FunctionResult = "1"
 
-                    $SSHOutputPrep
+                    #$SSHOutputPrep
 
                     if ($PSAwaitProcess.Id) {
                         try {
@@ -1317,6 +1329,9 @@ function Bootstrap-PowerShellCore {
 
                     return
                 }
+            }
+            else {
+                $SSHOutputPrep = $($CheckResponsesOutput | Out-String) -split "`n"
             }
 
             # Give Await session a little more time to finish just in case
@@ -1353,7 +1368,7 @@ function Bootstrap-PowerShellCore {
             if (!$SSHOutputPrep) {
                 $TentativeResult = "ManualVerificationRequired"
             }
-            elseif ($SSHOutputPrep -notmatch "powershell") {
+            elseif (![bool]$($SSHOutputPrep -match "powershell")) {
                 $TentativeResult = "ReviewAllOutput"
             }
             else {
@@ -1430,7 +1445,7 @@ function Bootstrap-PowerShellCore {
             if (!$SSHOutputPrep) {
                 $TentativeResult = "ManualVerificationRequired"
             }
-            elseif ($SSHOutputPrep -notmatch "powershell") {
+            elseif (![bool]$($SSHOutputPrep -match "powershell")) {
                 $TentativeResult = "ReviewAllOutput"
             }
             else {
@@ -1502,9 +1517,10 @@ function Bootstrap-PowerShellCore {
             [System.Collections.ArrayList]$CheckForExpectedResponses = @()
             $null = $CheckForExpectedResponses.Add($SuccessOrAcceptHostKeyOrPwdPrompt)
             $Counter = 0
+            $CompleteIndicatorRegex = if ($ConfigurePSRemoting) {"^pwshConfigComplete|^powershellInstallComplete"} else {"^powershellInstallComplete"}
             while (![bool]$($($CheckForExpectedResponses -split "`n") -match [regex]::Escape("Are you sure you want to continue connecting (yes/no)?")) -and
             ![bool]$($($CheckForExpectedResponses -split "`n") -match [regex]::Escape("'s password:")) -and 
-            ![bool]$($($CheckForExpectedResponses -split "`n") -match "^}") -and $Counter -le 60
+            ![bool]$($($CheckForExpectedResponses -split "`n") -match $CompleteIndicatorRegex) -and $Counter -le 60
             ) {
                 $SuccessOrAcceptHostKeyOrPwdPrompt = Receive-AwaitResponse
                 $null = $CheckForExpectedResponses.Add($SuccessOrAcceptHostKeyOrPwdPrompt)
@@ -1587,9 +1603,10 @@ function Bootstrap-PowerShellCore {
                 [System.Collections.ArrayList]$CheckForExpectedResponses = @()
                 $null = $CheckForExpectedResponses.Add($SuccessOrAcceptHostKeyOrPwdPrompt)
                 $Counter = 0
+                $CompleteIndicatorRegex = if ($ConfigurePSRemoting) {"^pwshConfigComplete|^powershellInstallComplete"} else {"^powershellInstallComplete"}
                 while ($SuccessOrAcceptHostKeyOrPwdPrompt -notmatch [regex]::Escape("Are you sure you want to continue connecting (yes/no)?") -and
                 $SuccessOrAcceptHostKeyOrPwdPrompt -notmatch [regex]::Escape("'s password:") -and 
-                $SuccessOrAcceptHostKeyOrPwdPrompt -notmatch "^}" -and $Counter -le 60
+                $SuccessOrAcceptHostKeyOrPwdPrompt -notmatch $CompleteIndicatorRegex -and $Counter -le 60
                 ) {
                     $SuccessOrAcceptHostKeyOrPwdPrompt = Receive-AwaitResponse
                     $null = $CheckForExpectedResponses.Add($SuccessOrAcceptHostKeyOrPwdPrompt)
@@ -1599,6 +1616,8 @@ function Bootstrap-PowerShellCore {
                 if ($Counter -eq 61) {
                     Write-Error "SSH via '$($SSHCmdStringArray -join " ")' timed out!"
                     $global:FunctionResult = "1"
+
+                    #$CheckForExpectedResponses
 
                     if ($PSAwaitProcess.Id) {
                         try {
@@ -1673,8 +1692,9 @@ function Bootstrap-PowerShellCore {
                 [System.Collections.ArrayList]$CheckExpectedSendYesOutput = @()
                 $null = $CheckExpectedSendYesOutput.Add($SuccessOrAcceptHostKeyOrPwdPrompt)
                 $Counter = 0
+                $CompleteIndicatorRegex = if ($ConfigurePSRemoting) {"^pwshConfigComplete|^powershellInstallComplete"} else {"^powershellInstallComplete"}
                 while (![bool]$($($CheckExpectedSendYesOutput -split "`n") -match [regex]::Escape("'s password:")) -and 
-                ![bool]$($($CheckExpectedSendYesOutput -split "`n") -match "^}") -and $Counter -le 60
+                ![bool]$($($CheckExpectedSendYesOutput -split "`n") -match $CompleteIndicatorRegex) -and $Counter -le 60
                 ) {
                     $SuccessOrAcceptHostKeyOrPwdPrompt = Receive-AwaitResponse
                     $null = $CheckExpectedSendYesOutput.Add($SuccessOrAcceptHostKeyOrPwdPrompt)
@@ -1739,7 +1759,7 @@ function Bootstrap-PowerShellCore {
                         Write-Error "Sending the user's password timed out!"
                         $global:FunctionResult = "1"
 
-                        $SSHOutputPrep
+                        #$SSHOutputPrep
 
                         if ($PSAwaitProcess.Id) {
                             try {
@@ -1794,7 +1814,7 @@ function Bootstrap-PowerShellCore {
                     Write-Error "Sending the user's password timed out!"
                     $global:FunctionResult = "1"
 
-                    $SSHOutputPrep
+                    #$SSHOutputPrep
 
                     if ($PSAwaitProcess.Id) {
                         try {
@@ -1820,6 +1840,9 @@ function Bootstrap-PowerShellCore {
 
                     return
                 }
+            }
+            else {
+                $SSHOutputPrep = $($CheckResponsesOutput | Out-String) -split "`n"
             }
 
             # Give Await session a little more time to finish just in case
@@ -1850,7 +1873,7 @@ function Bootstrap-PowerShellCore {
             if (!$SSHOutputPrep) {
                 $TentativeResult = "ManualVerificationRequired"
             }
-            elseif ($SSHOutputPrep -notmatch "powershell") {
+            elseif (![bool]$($SSHOutputPrep -match "powershell")) {
                 $TentativeResult = "ReviewAllOutput"
             }
             else {
@@ -1936,7 +1959,7 @@ function Bootstrap-PowerShellCore {
             if (!$SSHOutputPrep) {
                 $TentativeResult = "ManualVerificationRequired"
             }
-            elseif ($SSHOutputPrep -notmatch "powershell") {
+            elseif (![bool]$($SSHOutputPrep -match "powershell")) {
                 $TentativeResult = "ReviewAllOutput"
             }
             else {
@@ -1959,8 +1982,8 @@ function Bootstrap-PowerShellCore {
 # SIG # Begin signature block
 # MIIMiAYJKoZIhvcNAQcCoIIMeTCCDHUCAQExCzAJBgUrDgMCGgUAMGkGCisGAQQB
 # gjcCAQSgWzBZMDQGCisGAQQBgjcCAR4wJgIDAQAABBAfzDtgWUsITrck0sYpfvNR
-# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQU8O7/FLBtCwAsALcF0yEBlemU
-# wrigggn9MIIEJjCCAw6gAwIBAgITawAAAB/Nnq77QGja+wAAAAAAHzANBgkqhkiG
+# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUT8i5X8fvNBrz267WWeNqJatT
+# qROgggn9MIIEJjCCAw6gAwIBAgITawAAAB/Nnq77QGja+wAAAAAAHzANBgkqhkiG
 # 9w0BAQsFADAwMQwwCgYDVQQGEwNMQUIxDTALBgNVBAoTBFpFUk8xETAPBgNVBAMT
 # CFplcm9EQzAxMB4XDTE3MDkyMDIxMDM1OFoXDTE5MDkyMDIxMTM1OFowPTETMBEG
 # CgmSJomT8ixkARkWA0xBQjEUMBIGCgmSJomT8ixkARkWBFpFUk8xEDAOBgNVBAMT
@@ -2017,11 +2040,11 @@ function Bootstrap-PowerShellCore {
 # ARkWA0xBQjEUMBIGCgmSJomT8ixkARkWBFpFUk8xEDAOBgNVBAMTB1plcm9TQ0EC
 # E1gAAAH5oOvjAv3166MAAQAAAfkwCQYFKw4DAhoFAKB4MBgGCisGAQQBgjcCAQwx
 # CjAIoAKAAKECgAAwGQYJKoZIhvcNAQkDMQwGCisGAQQBgjcCAQQwHAYKKwYBBAGC
-# NwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFHMv+KCk87gX+Xnt
-# TcVUEMk9dE9wMA0GCSqGSIb3DQEBAQUABIIBAHG7dh7mbSD8wUXPlSwM3ZThsgUE
-# c5u25IShGQM+Ze6TqhJdPDnqovO+GgdyCNO3gdzSmnilyzZYprqVSMGtoq8Dnu+I
-# LrcCoClzzXb2p/Jtzp6irWv1qoc75BOwCGlHy4oMlry9cE4cwE3P1pkTDNvfaNoW
-# srM2M4P1jQ3RwgYhj2l+ADCCrGmZsKzqXFfNJ91Qh8M1SZuV+psm39Fo7GNZwV34
-# 0Rg5n2FB2i85mxeUh7oFYAeHzueLSDtucNYKiQ+b2Z7kHJVIvOINJz3lgvLo6FXM
-# 2lRN2UMoIP3+6SC+AltNVm16mUaikFZsz8kZjeX1dC6KHEGBlXRu2WfWZI0=
+# NwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFMnfhXWYZOy/QLOR
+# j5sRU7hyzBbOMA0GCSqGSIb3DQEBAQUABIIBAAYwD6ie15W/bPQ6LL8h+MpRDos2
+# PLfJfIpZN5PjHG/x/AaZkm5WZvVuzhcwTOHxgzIVf9EEC1h2wDecRA6WdgxvQ2Ny
+# CC2J5FsK6x2V67dFrAy3DyHVZKPnl382r4iEuwFcibLJ22OEr6717ZS+Lki5oHTU
+# Aj4nTchw3XCfPjGRFAAC961HDs4UoWO8lEuE/kZy5i5TroACcntFJY8eb8Op92eR
+# Q+0G+bzjrY1a9Sq+5IrxXZdvXkWKiRDnesM9jK91XiHoBGENsrwNIpmZTKMV7rDR
+# IdV1qD1thiOrolYKVw/bAl3vhFBCf2fRMAH55u40nooPAmvkDTMUcQY0c6E=
 # SIG # End signature block
