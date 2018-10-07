@@ -202,13 +202,13 @@ function Bootstrap-PowerShellCore {
         [string]$DomainUserName,
 
         [Parameter(
-            Mandatory=$True,
+            Mandatory=$False,
             ParameterSetName='Local'    
         )]
         [securestring]$LocalPasswordSS,
 
         [Parameter(
-            Mandatory=$True,
+            Mandatory=$False,
             ParameterSetName='Domain'
         )]
         [securestring]$DomainPasswordSS,
@@ -660,28 +660,32 @@ function Bootstrap-PowerShellCore {
 
     # Debian 9 Install Info
     $Debian9PMInstallScriptPrep = @(
-        'apt update'
-        'apt install install curl gnupg apt-transport-https'
+        'apt-get remove -y powershell'
+        'apt-get install -y curl gnupg apt-transport-https ca-certificates'
         'curl https://packages.microsoft.com/keys/microsoft.asc | sudo apt-key add -'
         "sh -c 'echo \`"\`"deb [arch=amd64] https://packages.microsoft.com/repos/microsoft-debian-stretch-prod stretch main\`"\`" > /etc/apt/sources.list.d/microsoft.list'"
-        'apt update'
-        'apt install -y powershell && echo powershellInstallComplete'
+        'apt-get update'
+        'echo powershellInstallComplete'
+        'apt-get install -y powershell'
     )
     $Debian9PMInstallScript = "sudo bash -c \```"$($Debian9PMInstallScriptPrep -join '; ')\```""
 
     $Debian9PMInstallScriptPrepForExpect = @(
-        'apt update'
-        'apt install install curl gnupg apt-transport-https'
+        'apt-get remove -y powershell'
+        'apt-get install -y curl gnupg apt-transport-https ca-certificates'
         'curl https://packages.microsoft.com/keys/microsoft.asc | sudo apt-key add -'
         "sh -c 'echo \\\`"deb \[arch=amd64\] https://packages.microsoft.com/repos/microsoft-debian-stretch-prod stretch main\\\`" > /etc/apt/sources.list.d/microsoft.list'"
-        'apt update'
-        'apt install -y powershell && echo powershellInstallComplete'
+        'apt-get update'
+        'echo powershellInstallComplete'
+        'apt install -y powershell'
     )
 
     $Debian9ManualInstallScriptPrep = @(
+        "ls $Debian9PackageName && rm -f $Debian9PackageName"
         "wget -q $Debian9PackageUrl"
         "dpkg -i $Debian9PackageName"
-        'apt install -f && echo powershellInstallComplete'
+        'echo powershellInstallComplete'
+        'apt install -f'
     )
     $Debian9ManualInstallScript = "sudo bash -c \```"$($Debian9ManualInstallScriptPrep -join '; ')\```""
 
@@ -832,12 +836,16 @@ function Bootstrap-PowerShellCore {
         if ($KeyFilePath) {
             $GetSSHProbeSplatParams.Add("KeyFilePath",$KeyFilePath)
         }
-        elseif ($LocalUserName -and $LocalPasswordSS) {
+        if ($LocalUserName) {
             $GetSSHProbeSplatParams.Add("LocalUserName",$LocalUserName)
+        }
+        if ($DomainUserName) {
+            $GetSSHProbeSplatParams.Add("DomainUserName",$DomainUserName)
+        }
+        if ($LocalPasswordSS -and !$KeyFilePath) {
             $GetSSHProbeSplatParams.Add("LocalPasswordSS",$LocalPasswordSS)
         }
-        elseif ($DomainUserName -and $DomainPasswordSS) {
-            $GetSSHProbeSplatParams.Add("DomainUserName",$DomainUserName)
+        if ($DomainPasswordSS -and !$KeyFilePath) {
             $GetSSHProbeSplatParams.Add("DomainPasswordSS",$DomainPasswordSS)
         }
         
@@ -858,19 +866,23 @@ function Bootstrap-PowerShellCore {
     if (!$OSCheck.OS -or !$OSCheck.Shell) {
         try {
             Write-Host "Probing $RemoteHostNameOrIP to determine OS and available shell..."
-    
+
             $GetSSHProbeSplatParams = @{
                 RemoteHostNameOrIP  = $RemoteHostNameOrIP
             }
             if ($KeyFilePath) {
                 $GetSSHProbeSplatParams.Add("KeyFilePath",$KeyFilePath)
             }
-            elseif ($LocalUserName -and $LocalPasswordSS) {
+            if ($LocalUserName) {
                 $GetSSHProbeSplatParams.Add("LocalUserName",$LocalUserName)
+            }
+            if ($DomainUserName) {
+                $GetSSHProbeSplatParams.Add("DomainUserName",$DomainUserName)
+            }
+            if ($LocalPasswordSS -and !$KeyFilePath) {
                 $GetSSHProbeSplatParams.Add("LocalPasswordSS",$LocalPasswordSS)
             }
-            elseif ($DomainUserName -and $DomainPasswordSS) {
-                $GetSSHProbeSplatParams.Add("DomainUserName",$DomainUserName)
+            if ($DomainPasswordSS -and !$KeyFilePath) {
                 $GetSSHProbeSplatParams.Add("DomainPasswordSS",$DomainPasswordSS)
             }
             
@@ -999,10 +1011,10 @@ function Bootstrap-PowerShellCore {
         $null = $SSHCmdStringArray.Add("-i")
         $null = $SSHCmdStringArray.Add("'" + $KeyFilePath + "'")
     }
-    elseif ($LocalUserName) {
+    if ($LocalUserName) {
         $null = $SSHCmdStringArray.Add("$FullUserName@$HostNameValue")
     }
-    elseif ($DomainUserName) {
+    if ($DomainUserName) {
         $null = $SSHCmdStringArray.Add("$FullUserName@$DomainNameShort@$HostNameValue")
     }
 
@@ -2121,13 +2133,13 @@ function Get-SSHProbe {
         [string]$DomainUserName,
 
         [Parameter(
-            Mandatory=$True,
+            Mandatory=$False,
             ParameterSetName='Local'    
         )]
         [securestring]$LocalPasswordSS,
 
         [Parameter(
-            Mandatory=$True,
+            Mandatory=$False,
             ParameterSetName='Domain'
         )]
         [securestring]$DomainPasswordSS,
@@ -2147,6 +2159,12 @@ function Get-SSHProbe {
     if ($KeyFilePath) {
         if (!$(Test-Path $KeyFilePath)) {
             Write-Error "Unable to find KeyFilePath '$KeyFilePath'! Halting!"
+            $global:FunctionResult = "1"
+            return
+        }
+
+        if (!$LocalUserName -and !$DomainUserName) {
+            Write-Error "You must suppy either -LocalUserName or -DomainUserName when using the -KeyFilePath parameter! Halting!"
             $global:FunctionResult = "1"
             return
         }
@@ -2493,8 +2511,9 @@ function Get-SSHProbe {
             # At this point, if we don't have the expected output, we need to fail
             if ($CheckResponsesOutput -match "must be greater than zero" -or @($CheckResponsesOutput)[-1] -notmatch "[a-zA-Z]" -and
             ![bool]$($CheckResponsesOutput -match "background process reported an error")) {
-                Write-Error "Something went wrong with the PowerShell Await Module! Halting!"
-                $global:FunctionResult = "1"
+                Write-Verbose "Something went wrong within the PowerShell Await Module!"
+
+                Write-Host "Await ScriptBlock (`$PwshCmdString) was:`n    $PwshCmdString"
 
                 if ($PSAwaitProcess.Id) {
                     try {
@@ -2518,7 +2537,7 @@ function Get-SSHProbe {
                     }
                 }
 
-                return
+                $TrySSHExe = $True
             }
 
             # Now we should either have a prompt to accept the host key, a prompt for a password, or it already worked...
@@ -2841,6 +2860,8 @@ function Get-SSHProbe {
             # NOTE: The below -replace regex string removes garbage escape sequences like: [116;1H
             $SSHCmdString = $script:SSHCmdString = '@($(' + $($SSHCmdStringArray -join " ") + ') -replace "\e\[(\d+;)*(\d+)?[ABCDHJKfmsu]","") 2>$null'
 
+            Write-Host "`$SSHCmdString is:`n    $SSHCmdString"
+
             #region >> Await Attempt Number 1 of 2
             
             $null = Start-AwaitSession
@@ -2861,7 +2882,7 @@ function Get-SSHProbe {
             $Counter = 0
             while (![bool]$($($CheckForExpectedResponses -split "`n") -match [regex]::Escape("Are you sure you want to continue connecting (yes/no)?")) -and
             ![bool]$($($CheckForExpectedResponses -split "`n") -match [regex]::Escape("'s password:")) -and 
-            ![bool]$($($CheckForExpectedResponses -split "`n") -match "^}") -and $Counter -le 30
+            ![bool]$($($CheckForExpectedResponses -split "`n") -match "^111HostnamectlOutput111") -and $Counter -le 30
             ) {
                 $SuccessOrAcceptHostKeyOrPwdPrompt = Receive-AwaitResponse
                 $null = $CheckForExpectedResponses.Add($SuccessOrAcceptHostKeyOrPwdPrompt)
@@ -2946,7 +2967,7 @@ function Get-SSHProbe {
                 $Counter = 0
                 while ($SuccessOrAcceptHostKeyOrPwdPrompt -notmatch [regex]::Escape("Are you sure you want to continue connecting (yes/no)?") -and
                 $SuccessOrAcceptHostKeyOrPwdPrompt -notmatch [regex]::Escape("'s password:") -and 
-                $SuccessOrAcceptHostKeyOrPwdPrompt -notmatch "^}" -and $Counter -le 30
+                $SuccessOrAcceptHostKeyOrPwdPrompt -notmatch "^111HostnamectlOutput111" -and $Counter -le 30
                 ) {
                     $SuccessOrAcceptHostKeyOrPwdPrompt = Receive-AwaitResponse
                     $null = $CheckForExpectedResponses.Add($SuccessOrAcceptHostKeyOrPwdPrompt)
@@ -2993,6 +3014,8 @@ function Get-SSHProbe {
                 Write-Error "Something went wrong with the PowerShell Await Module! Halting!"
                 $global:FunctionResult = "1"
 
+                Write-Host "Await ScriptBlock (`$SSHCmdString) was:`n    $SSHCmdString"
+
                 if ($PSAwaitProcess.Id) {
                     try {
                         $null = Stop-AwaitSession
@@ -3031,7 +3054,7 @@ function Get-SSHProbe {
                 $null = $CheckExpectedSendYesOutput.Add($SuccessOrAcceptHostKeyOrPwdPrompt)
                 $Counter = 0
                 while (![bool]$($($CheckExpectedSendYesOutput -split "`n") -match [regex]::Escape("'s password:")) -and 
-                ![bool]$($($CheckExpectedSendYesOutput -split "`n") -match "^}") -and $Counter -le 30
+                ![bool]$($($CheckExpectedSendYesOutput -split "`n") -match "^111HostnamectlOutput111") -and $Counter -le 30
                 ) {
                     $SuccessOrAcceptHostKeyOrPwdPrompt = Receive-AwaitResponse
                     $null = $CheckExpectedSendYesOutput.Add($SuccessOrAcceptHostKeyOrPwdPrompt)
@@ -3176,6 +3199,10 @@ function Get-SSHProbe {
                     return
                 }
             }
+            else {
+                $SSHOutputPrep = $($CheckResponsesOutput | Out-String) -split "`n"
+                #$SSHOutputPrep | Export-CliXml "$HOME\SSHOutputPrepA.xml"
+            }
 
             if ($PSAwaitProcess.Id) {
                 try {
@@ -3239,12 +3266,21 @@ function Get-SSHProbe {
                     #$SSHOutputPrep | Export-Clixml "$HOME\SSHOutputPrep.xml"
 
                     $UnameOutputHeader = $($SSHOutputPrep -split "`n") -match "111UnameOutput111"
+                    if ($UnameOutputHeader.Count -gt 1) {$UnameOutputHeader = $UnameOutputHeader[-1]}
                     $UnameOutputHeaderIndex = $($SSHOutputPrep -split "`n").IndexOf($UnameOutputHeader)
                     if ($UnameOutputHeaderIndex -eq "-1") {
                         $UnameOutputHeaderIndex = $($SSHOutputPrep -split "`n").IndexOf($UnameOutputHeader[0])
                     }
                     $UnameOutput = $($SSHOutputPrep -split "`n")[$($UnameOutputHeaderIndex + 1)]
-                    $HostnamectlOutput = $($SSHOutputPrep -split "`n")[$($UnameOutputHeaderIndex + 2)..$($($SSHOutputPrep -split "`n").Count-1)]
+
+                    $HostNamectlOutputHeader = $($SSHOutputPrep -split "`n") -match "111HostnamectlOutput111"
+                    if ($HostNamectlOutputHeader.Count -gt 1) {$HostNamectlOutputHeader = $HostNamectlOutputHeader[-1]}
+                    $HostNamectlOutputHeaderIndex = $($SSHOutputPrep -split "`n").IndexOf($HostNamectlOutputHeader)
+                    if ($HostNamectlOutputHeaderIndex -eq "-1") {
+                        $HostNamectlOutputHeaderIndex = $($SSHOutputPrep -split "`n").IndexOf($HostNamectlOutputHeader[0])
+                    }
+                    $HostNamectlOutput = $($SSHOutputPrep -split "`n")[$($HostNamectlOutputHeaderIndex+1)..$($($SSHOutputPrep -split "`n").Count-1)]
+
                     [System.Collections.ArrayList]$OSVersionInfo = @()
                     if ($UnameOutput) {
                         $null = $OSVersionInfo.Add($UnameOutput)
@@ -3261,12 +3297,6 @@ function Get-SSHProbe {
                     AllOutput       = $SSHOutputPrep
                 }
             }
-        }
-
-        if ($SSHCheckAsJson.Output -ne "ConnectionSuccessful" -and ![bool]$($($SSHOutputPrep -split "`n") -match "^ConnectionSuccessful")) {
-            Write-Error "SSH attempts via PowerShell Core 'Invoke-Command' and ssh.exe have failed!"
-            $global:FunctionResult = "1"
-            return
         }
     }
     elseif ($PSVersionTable.Platform -eq "Unix") {
@@ -3468,6 +3498,12 @@ function Get-SSHProbe {
 
             $FinalPassword = if ($DomainPassword) {$DomainPassword} else {$LocalPassword}
 
+            $SSHScript = $SSHScript | foreach {
+                'send -- \"' + $_ + '\r\"' + "`n" + 'expect \"*\"'
+            }
+
+            Write-Host "`$SSHScript is:`n    $SSHScript"
+
             $ExpectScriptPrep = @(
                 'expect - << EOF'
                 'set timeout 10'
@@ -3485,7 +3521,7 @@ function Get-SSHProbe {
                 '    }'
                 '}'
                 'expect \"*\"'
-                $SSHScript | foreach {'send -- \"' + $_ + '\r\"' + "`n" + 'expect \"*\"'}
+                $SSHScript
                 'expect eof'
                 'EOF'
             )
@@ -3534,6 +3570,7 @@ function Get-SSHProbe {
                     $UnameOutputHeaderIndex = $($SSHOutputPrep -split "`n").IndexOf($($($SSHOutputPrep -split "`n") -match "uname -a"))
                     $UnameOutput = $($SSHOutputPrep -split "`n")[$($UnameOutputHeaderIndex + 1)]
                     $HostnamectlOutput = $($SSHOutputPrep -split "`n")[$($UnameOutputHeaderIndex + 2)..$($($SSHOutputPrep -split "`n").Count-1)]
+
                     [System.Collections.ArrayList]$OSVersionInfo = @()
                     if ($UnameOutput) {
                         $null = $OSVersionInfo.Add($UnameOutput)
@@ -3650,8 +3687,8 @@ if ($PSVersionTable.Platform -eq "Win32NT" -and $PSVersionTable.PSEdition -eq "C
 # SIG # Begin signature block
 # MIIMiAYJKoZIhvcNAQcCoIIMeTCCDHUCAQExCzAJBgUrDgMCGgUAMGkGCisGAQQB
 # gjcCAQSgWzBZMDQGCisGAQQBgjcCAR4wJgIDAQAABBAfzDtgWUsITrck0sYpfvNR
-# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQU6gJGYBrT7oT83fpFtHspmar7
-# Mlegggn9MIIEJjCCAw6gAwIBAgITawAAAB/Nnq77QGja+wAAAAAAHzANBgkqhkiG
+# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUsfW5tIHdqsvXeCIzDz2ENlIU
+# /76gggn9MIIEJjCCAw6gAwIBAgITawAAAB/Nnq77QGja+wAAAAAAHzANBgkqhkiG
 # 9w0BAQsFADAwMQwwCgYDVQQGEwNMQUIxDTALBgNVBAoTBFpFUk8xETAPBgNVBAMT
 # CFplcm9EQzAxMB4XDTE3MDkyMDIxMDM1OFoXDTE5MDkyMDIxMTM1OFowPTETMBEG
 # CgmSJomT8ixkARkWA0xBQjEUMBIGCgmSJomT8ixkARkWBFpFUk8xEDAOBgNVBAMT
@@ -3708,11 +3745,11 @@ if ($PSVersionTable.Platform -eq "Win32NT" -and $PSVersionTable.PSEdition -eq "C
 # ARkWA0xBQjEUMBIGCgmSJomT8ixkARkWBFpFUk8xEDAOBgNVBAMTB1plcm9TQ0EC
 # E1gAAAH5oOvjAv3166MAAQAAAfkwCQYFKw4DAhoFAKB4MBgGCisGAQQBgjcCAQwx
 # CjAIoAKAAKECgAAwGQYJKoZIhvcNAQkDMQwGCisGAQQBgjcCAQQwHAYKKwYBBAGC
-# NwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFISxSItQZ5jV3/3H
-# fUdTIRNKx6TiMA0GCSqGSIb3DQEBAQUABIIBAAh7A08uiHhrjOQ257OQh/RYITO3
-# jBQUMtK3BqK53VgceUXjoIk3zmUOTu/WWwJw8qctmiTKFtTcjAl+YeQfZndwB19b
-# eDRvMbAtUL+VfpZeLDBA/xpCbUfY3lot5IHZBhIxcLuKB703Jm+Qt04NoBHk4nlS
-# YMkHeQCOuMlzyJ8cIAE3bsgNk9XB0qsFLUAUFMhZLSL1XqCcFKHM8rVWdBR1piYz
-# L6gnFZTXaeT/o8HsIEfEn0bgQBybaC3qhWbq2slPa93Qvmg4v8P9+0Mz8MzpJct/
-# mB9V+cVsEpIf6yDgyLJUn3uYwxHFPPDYQ5BjcBY9dLWLn23bSny0D6IswgQ=
+# NwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFNouo4abud/zleEu
+# rQmNNUmDcsx3MA0GCSqGSIb3DQEBAQUABIIBAC7m/OOBj8w5qP8Qx64zgR0/Nypn
+# 8J3AXVNFsWxD18D3eaigG07oPIHR0zvhNFVQAJQjHHaRHuLLYWbwgDJFskKsQ/jl
+# w4QS8AjxMsttrMxc902qlGcZcqzKQPYnHVhK2YtPwQaBnyMEAt6pCvH4PUiuhubp
+# ws45mLAyRsAl7m70RC4y1xi99mVdvRPuaS2Kf0Gct+ElWrXnL5pqupQobBq7Z6bg
+# Vd/z6Vf3dZ/zK9tykZsWqNtGmtqt8LLXXVREqlEEVwmu6/GzWk0ekoQ9cRGQObX0
+# 8TM/H5fU1E5Fv204XGdZfpN9yeuj6qheeRTs6ElAhJl75g5cY04VrEy0OHw=
 # SIG # End signature block

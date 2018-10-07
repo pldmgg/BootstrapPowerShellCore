@@ -105,13 +105,13 @@ function Get-SSHProbe {
         [string]$DomainUserName,
 
         [Parameter(
-            Mandatory=$True,
+            Mandatory=$False,
             ParameterSetName='Local'    
         )]
         [securestring]$LocalPasswordSS,
 
         [Parameter(
-            Mandatory=$True,
+            Mandatory=$False,
             ParameterSetName='Domain'
         )]
         [securestring]$DomainPasswordSS,
@@ -131,6 +131,12 @@ function Get-SSHProbe {
     if ($KeyFilePath) {
         if (!$(Test-Path $KeyFilePath)) {
             Write-Error "Unable to find KeyFilePath '$KeyFilePath'! Halting!"
+            $global:FunctionResult = "1"
+            return
+        }
+
+        if (!$LocalUserName -and !$DomainUserName) {
+            Write-Error "You must suppy either -LocalUserName or -DomainUserName when using the -KeyFilePath parameter! Halting!"
             $global:FunctionResult = "1"
             return
         }
@@ -477,8 +483,9 @@ function Get-SSHProbe {
             # At this point, if we don't have the expected output, we need to fail
             if ($CheckResponsesOutput -match "must be greater than zero" -or @($CheckResponsesOutput)[-1] -notmatch "[a-zA-Z]" -and
             ![bool]$($CheckResponsesOutput -match "background process reported an error")) {
-                Write-Error "Something went wrong with the PowerShell Await Module! Halting!"
-                $global:FunctionResult = "1"
+                Write-Verbose "Something went wrong within the PowerShell Await Module!"
+
+                Write-Host "Await ScriptBlock (`$PwshCmdString) was:`n    $PwshCmdString"
 
                 if ($PSAwaitProcess.Id) {
                     try {
@@ -502,7 +509,7 @@ function Get-SSHProbe {
                     }
                 }
 
-                return
+                $TrySSHExe = $True
             }
 
             # Now we should either have a prompt to accept the host key, a prompt for a password, or it already worked...
@@ -825,6 +832,8 @@ function Get-SSHProbe {
             # NOTE: The below -replace regex string removes garbage escape sequences like: [116;1H
             $SSHCmdString = $script:SSHCmdString = '@($(' + $($SSHCmdStringArray -join " ") + ') -replace "\e\[(\d+;)*(\d+)?[ABCDHJKfmsu]","") 2>$null'
 
+            Write-Host "`$SSHCmdString is:`n    $SSHCmdString"
+
             #region >> Await Attempt Number 1 of 2
             
             $null = Start-AwaitSession
@@ -845,7 +854,7 @@ function Get-SSHProbe {
             $Counter = 0
             while (![bool]$($($CheckForExpectedResponses -split "`n") -match [regex]::Escape("Are you sure you want to continue connecting (yes/no)?")) -and
             ![bool]$($($CheckForExpectedResponses -split "`n") -match [regex]::Escape("'s password:")) -and 
-            ![bool]$($($CheckForExpectedResponses -split "`n") -match "^}") -and $Counter -le 30
+            ![bool]$($($CheckForExpectedResponses -split "`n") -match "^111HostnamectlOutput111") -and $Counter -le 30
             ) {
                 $SuccessOrAcceptHostKeyOrPwdPrompt = Receive-AwaitResponse
                 $null = $CheckForExpectedResponses.Add($SuccessOrAcceptHostKeyOrPwdPrompt)
@@ -930,7 +939,7 @@ function Get-SSHProbe {
                 $Counter = 0
                 while ($SuccessOrAcceptHostKeyOrPwdPrompt -notmatch [regex]::Escape("Are you sure you want to continue connecting (yes/no)?") -and
                 $SuccessOrAcceptHostKeyOrPwdPrompt -notmatch [regex]::Escape("'s password:") -and 
-                $SuccessOrAcceptHostKeyOrPwdPrompt -notmatch "^}" -and $Counter -le 30
+                $SuccessOrAcceptHostKeyOrPwdPrompt -notmatch "^111HostnamectlOutput111" -and $Counter -le 30
                 ) {
                     $SuccessOrAcceptHostKeyOrPwdPrompt = Receive-AwaitResponse
                     $null = $CheckForExpectedResponses.Add($SuccessOrAcceptHostKeyOrPwdPrompt)
@@ -977,6 +986,8 @@ function Get-SSHProbe {
                 Write-Error "Something went wrong with the PowerShell Await Module! Halting!"
                 $global:FunctionResult = "1"
 
+                Write-Host "Await ScriptBlock (`$SSHCmdString) was:`n    $SSHCmdString"
+
                 if ($PSAwaitProcess.Id) {
                     try {
                         $null = Stop-AwaitSession
@@ -1015,7 +1026,7 @@ function Get-SSHProbe {
                 $null = $CheckExpectedSendYesOutput.Add($SuccessOrAcceptHostKeyOrPwdPrompt)
                 $Counter = 0
                 while (![bool]$($($CheckExpectedSendYesOutput -split "`n") -match [regex]::Escape("'s password:")) -and 
-                ![bool]$($($CheckExpectedSendYesOutput -split "`n") -match "^}") -and $Counter -le 30
+                ![bool]$($($CheckExpectedSendYesOutput -split "`n") -match "^111HostnamectlOutput111") -and $Counter -le 30
                 ) {
                     $SuccessOrAcceptHostKeyOrPwdPrompt = Receive-AwaitResponse
                     $null = $CheckExpectedSendYesOutput.Add($SuccessOrAcceptHostKeyOrPwdPrompt)
@@ -1160,6 +1171,10 @@ function Get-SSHProbe {
                     return
                 }
             }
+            else {
+                $SSHOutputPrep = $($CheckResponsesOutput | Out-String) -split "`n"
+                #$SSHOutputPrep | Export-CliXml "$HOME\SSHOutputPrepA.xml"
+            }
 
             if ($PSAwaitProcess.Id) {
                 try {
@@ -1223,12 +1238,21 @@ function Get-SSHProbe {
                     #$SSHOutputPrep | Export-Clixml "$HOME\SSHOutputPrep.xml"
 
                     $UnameOutputHeader = $($SSHOutputPrep -split "`n") -match "111UnameOutput111"
+                    if ($UnameOutputHeader.Count -gt 1) {$UnameOutputHeader = $UnameOutputHeader[-1]}
                     $UnameOutputHeaderIndex = $($SSHOutputPrep -split "`n").IndexOf($UnameOutputHeader)
                     if ($UnameOutputHeaderIndex -eq "-1") {
                         $UnameOutputHeaderIndex = $($SSHOutputPrep -split "`n").IndexOf($UnameOutputHeader[0])
                     }
                     $UnameOutput = $($SSHOutputPrep -split "`n")[$($UnameOutputHeaderIndex + 1)]
-                    $HostnamectlOutput = $($SSHOutputPrep -split "`n")[$($UnameOutputHeaderIndex + 2)..$($($SSHOutputPrep -split "`n").Count-1)]
+
+                    $HostNamectlOutputHeader = $($SSHOutputPrep -split "`n") -match "111HostnamectlOutput111"
+                    if ($HostNamectlOutputHeader.Count -gt 1) {$HostNamectlOutputHeader = $HostNamectlOutputHeader[-1]}
+                    $HostNamectlOutputHeaderIndex = $($SSHOutputPrep -split "`n").IndexOf($HostNamectlOutputHeader)
+                    if ($HostNamectlOutputHeaderIndex -eq "-1") {
+                        $HostNamectlOutputHeaderIndex = $($SSHOutputPrep -split "`n").IndexOf($HostNamectlOutputHeader[0])
+                    }
+                    $HostNamectlOutput = $($SSHOutputPrep -split "`n")[$($HostNamectlOutputHeaderIndex+1)..$($($SSHOutputPrep -split "`n").Count-1)]
+
                     [System.Collections.ArrayList]$OSVersionInfo = @()
                     if ($UnameOutput) {
                         $null = $OSVersionInfo.Add($UnameOutput)
@@ -1245,12 +1269,6 @@ function Get-SSHProbe {
                     AllOutput       = $SSHOutputPrep
                 }
             }
-        }
-
-        if ($SSHCheckAsJson.Output -ne "ConnectionSuccessful" -and ![bool]$($($SSHOutputPrep -split "`n") -match "^ConnectionSuccessful")) {
-            Write-Error "SSH attempts via PowerShell Core 'Invoke-Command' and ssh.exe have failed!"
-            $global:FunctionResult = "1"
-            return
         }
     }
     elseif ($PSVersionTable.Platform -eq "Unix") {
@@ -1452,6 +1470,12 @@ function Get-SSHProbe {
 
             $FinalPassword = if ($DomainPassword) {$DomainPassword} else {$LocalPassword}
 
+            $SSHScript = $SSHScript | foreach {
+                'send -- \"' + $_ + '\r\"' + "`n" + 'expect \"*\"'
+            }
+
+            Write-Host "`$SSHScript is:`n    $SSHScript"
+
             $ExpectScriptPrep = @(
                 'expect - << EOF'
                 'set timeout 10'
@@ -1469,7 +1493,7 @@ function Get-SSHProbe {
                 '    }'
                 '}'
                 'expect \"*\"'
-                $SSHScript | foreach {'send -- \"' + $_ + '\r\"' + "`n" + 'expect \"*\"'}
+                $SSHScript
                 'expect eof'
                 'EOF'
             )
@@ -1518,6 +1542,7 @@ function Get-SSHProbe {
                     $UnameOutputHeaderIndex = $($SSHOutputPrep -split "`n").IndexOf($($($SSHOutputPrep -split "`n") -match "uname -a"))
                     $UnameOutput = $($SSHOutputPrep -split "`n")[$($UnameOutputHeaderIndex + 1)]
                     $HostnamectlOutput = $($SSHOutputPrep -split "`n")[$($UnameOutputHeaderIndex + 2)..$($($SSHOutputPrep -split "`n").Count-1)]
+
                     [System.Collections.ArrayList]$OSVersionInfo = @()
                     if ($UnameOutput) {
                         $null = $OSVersionInfo.Add($UnameOutput)
@@ -1593,8 +1618,8 @@ function Get-SSHProbe {
 # SIG # Begin signature block
 # MIIMiAYJKoZIhvcNAQcCoIIMeTCCDHUCAQExCzAJBgUrDgMCGgUAMGkGCisGAQQB
 # gjcCAQSgWzBZMDQGCisGAQQBgjcCAR4wJgIDAQAABBAfzDtgWUsITrck0sYpfvNR
-# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQU5+Bm5wKlo7nsWYG+PIvOpOMe
-# c+Wgggn9MIIEJjCCAw6gAwIBAgITawAAAB/Nnq77QGja+wAAAAAAHzANBgkqhkiG
+# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUeoZmIQ4VyBF4C2EpvV55Qvjt
+# fAqgggn9MIIEJjCCAw6gAwIBAgITawAAAB/Nnq77QGja+wAAAAAAHzANBgkqhkiG
 # 9w0BAQsFADAwMQwwCgYDVQQGEwNMQUIxDTALBgNVBAoTBFpFUk8xETAPBgNVBAMT
 # CFplcm9EQzAxMB4XDTE3MDkyMDIxMDM1OFoXDTE5MDkyMDIxMTM1OFowPTETMBEG
 # CgmSJomT8ixkARkWA0xBQjEUMBIGCgmSJomT8ixkARkWBFpFUk8xEDAOBgNVBAMT
@@ -1651,11 +1676,11 @@ function Get-SSHProbe {
 # ARkWA0xBQjEUMBIGCgmSJomT8ixkARkWBFpFUk8xEDAOBgNVBAMTB1plcm9TQ0EC
 # E1gAAAH5oOvjAv3166MAAQAAAfkwCQYFKw4DAhoFAKB4MBgGCisGAQQBgjcCAQwx
 # CjAIoAKAAKECgAAwGQYJKoZIhvcNAQkDMQwGCisGAQQBgjcCAQQwHAYKKwYBBAGC
-# NwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFK5DZP6JVNAiwgyd
-# b/y8pho0qB0tMA0GCSqGSIb3DQEBAQUABIIBAGt009fhPf4CsPckBhDpaCXG77HD
-# dPdKrXGCLDh+JsPXpCS7+TXhblvJ6B95MDC8sdZf/BTBBjCvHYTfBuDRa/c3VHGJ
-# WQqC7xu0qozif2NRVToCb5ERTLXi+tR7Q6DJHPIcn4d6e02GoI4+AmqmLu2n1UiE
-# TbhuSNUnkviQ3Ucq8+5dUX/QZ9sFHlxrlICg/C4MqTS1glBYiVKhXsB/JqxNr8f/
-# aSNi89xLd7m5yOz1EiUKhYmVlgfcnuRLfrzKkFEFs3xT3wotbO4CxeDKPU+46R02
-# 8di/EeWNtQx7EOhjLHDcRiVnI3pWj+IvJNk3fNMzeyLy+aoSHYOcertRJ3w=
+# NwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFKRjIA0busMMgDCV
+# pgAa4E/jQjPKMA0GCSqGSIb3DQEBAQUABIIBAGqJ2r16PRBT13WyKC+YUA/6o6TK
+# 2sYUjK4e1Y5SmOLytU/e29PERIx0TbXkmJJO7nn57rBYPI7WE0DbW51phbsyqEJX
+# cWt0p721DH4XKV1VHjuDjjhK+zeZWtc4owRMUW8008FlSZ09RRAoRp2PZM4Ny6CE
+# O6DZKs1oSIrZXFDnSUbhueQAxC8JXkvKsRf4cyfF7gfvf4chPjKWeai8zCioGgEa
+# Ss/tkzTsH7VgzSUY/XcrXMBeomF/Ft3FA1uHnlZcDwkV3fqVXRKJBrIhVQ8gNrVv
+# XHs4X7kIpNIsNJzg/ckot3P6be7+mUwJJ+yH6Hybx3hGaZTZaH+db52o0uw=
 # SIG # End signature block

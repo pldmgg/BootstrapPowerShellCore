@@ -133,13 +133,13 @@ function Bootstrap-PowerShellCore {
         [string]$DomainUserName,
 
         [Parameter(
-            Mandatory=$True,
+            Mandatory=$False,
             ParameterSetName='Local'    
         )]
         [securestring]$LocalPasswordSS,
 
         [Parameter(
-            Mandatory=$True,
+            Mandatory=$False,
             ParameterSetName='Domain'
         )]
         [securestring]$DomainPasswordSS,
@@ -591,28 +591,32 @@ function Bootstrap-PowerShellCore {
 
     # Debian 9 Install Info
     $Debian9PMInstallScriptPrep = @(
-        'apt update'
-        'apt install install curl gnupg apt-transport-https'
+        'apt-get remove -y powershell'
+        'apt-get install -y curl gnupg apt-transport-https ca-certificates'
         'curl https://packages.microsoft.com/keys/microsoft.asc | sudo apt-key add -'
         "sh -c 'echo \`"\`"deb [arch=amd64] https://packages.microsoft.com/repos/microsoft-debian-stretch-prod stretch main\`"\`" > /etc/apt/sources.list.d/microsoft.list'"
-        'apt update'
-        'apt install -y powershell && echo powershellInstallComplete'
+        'apt-get update'
+        'echo powershellInstallComplete'
+        'apt-get install -y powershell'
     )
     $Debian9PMInstallScript = "sudo bash -c \```"$($Debian9PMInstallScriptPrep -join '; ')\```""
 
     $Debian9PMInstallScriptPrepForExpect = @(
-        'apt update'
-        'apt install install curl gnupg apt-transport-https'
+        'apt-get remove -y powershell'
+        'apt-get install -y curl gnupg apt-transport-https ca-certificates'
         'curl https://packages.microsoft.com/keys/microsoft.asc | sudo apt-key add -'
         "sh -c 'echo \\\`"deb \[arch=amd64\] https://packages.microsoft.com/repos/microsoft-debian-stretch-prod stretch main\\\`" > /etc/apt/sources.list.d/microsoft.list'"
-        'apt update'
-        'apt install -y powershell && echo powershellInstallComplete'
+        'apt-get update'
+        'echo powershellInstallComplete'
+        'apt install -y powershell'
     )
 
     $Debian9ManualInstallScriptPrep = @(
+        "ls $Debian9PackageName && rm -f $Debian9PackageName"
         "wget -q $Debian9PackageUrl"
         "dpkg -i $Debian9PackageName"
-        'apt install -f && echo powershellInstallComplete'
+        'echo powershellInstallComplete'
+        'apt install -f'
     )
     $Debian9ManualInstallScript = "sudo bash -c \```"$($Debian9ManualInstallScriptPrep -join '; ')\```""
 
@@ -763,12 +767,16 @@ function Bootstrap-PowerShellCore {
         if ($KeyFilePath) {
             $GetSSHProbeSplatParams.Add("KeyFilePath",$KeyFilePath)
         }
-        elseif ($LocalUserName -and $LocalPasswordSS) {
+        if ($LocalUserName) {
             $GetSSHProbeSplatParams.Add("LocalUserName",$LocalUserName)
+        }
+        if ($DomainUserName) {
+            $GetSSHProbeSplatParams.Add("DomainUserName",$DomainUserName)
+        }
+        if ($LocalPasswordSS -and !$KeyFilePath) {
             $GetSSHProbeSplatParams.Add("LocalPasswordSS",$LocalPasswordSS)
         }
-        elseif ($DomainUserName -and $DomainPasswordSS) {
-            $GetSSHProbeSplatParams.Add("DomainUserName",$DomainUserName)
+        if ($DomainPasswordSS -and !$KeyFilePath) {
             $GetSSHProbeSplatParams.Add("DomainPasswordSS",$DomainPasswordSS)
         }
         
@@ -789,19 +797,23 @@ function Bootstrap-PowerShellCore {
     if (!$OSCheck.OS -or !$OSCheck.Shell) {
         try {
             Write-Host "Probing $RemoteHostNameOrIP to determine OS and available shell..."
-    
+
             $GetSSHProbeSplatParams = @{
                 RemoteHostNameOrIP  = $RemoteHostNameOrIP
             }
             if ($KeyFilePath) {
                 $GetSSHProbeSplatParams.Add("KeyFilePath",$KeyFilePath)
             }
-            elseif ($LocalUserName -and $LocalPasswordSS) {
+            if ($LocalUserName) {
                 $GetSSHProbeSplatParams.Add("LocalUserName",$LocalUserName)
+            }
+            if ($DomainUserName) {
+                $GetSSHProbeSplatParams.Add("DomainUserName",$DomainUserName)
+            }
+            if ($LocalPasswordSS -and !$KeyFilePath) {
                 $GetSSHProbeSplatParams.Add("LocalPasswordSS",$LocalPasswordSS)
             }
-            elseif ($DomainUserName -and $DomainPasswordSS) {
-                $GetSSHProbeSplatParams.Add("DomainUserName",$DomainUserName)
+            if ($DomainPasswordSS -and !$KeyFilePath) {
                 $GetSSHProbeSplatParams.Add("DomainPasswordSS",$DomainPasswordSS)
             }
             
@@ -930,10 +942,10 @@ function Bootstrap-PowerShellCore {
         $null = $SSHCmdStringArray.Add("-i")
         $null = $SSHCmdStringArray.Add("'" + $KeyFilePath + "'")
     }
-    elseif ($LocalUserName) {
+    if ($LocalUserName) {
         $null = $SSHCmdStringArray.Add("$FullUserName@$HostNameValue")
     }
-    elseif ($DomainUserName) {
+    if ($DomainUserName) {
         $null = $SSHCmdStringArray.Add("$FullUserName@$DomainNameShort@$HostNameValue")
     }
 
@@ -1947,8 +1959,8 @@ function Bootstrap-PowerShellCore {
 # SIG # Begin signature block
 # MIIMiAYJKoZIhvcNAQcCoIIMeTCCDHUCAQExCzAJBgUrDgMCGgUAMGkGCisGAQQB
 # gjcCAQSgWzBZMDQGCisGAQQBgjcCAR4wJgIDAQAABBAfzDtgWUsITrck0sYpfvNR
-# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUJ3s8SgTGvgNeIYWNd6gVpbw4
-# 6Begggn9MIIEJjCCAw6gAwIBAgITawAAAB/Nnq77QGja+wAAAAAAHzANBgkqhkiG
+# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQU8O7/FLBtCwAsALcF0yEBlemU
+# wrigggn9MIIEJjCCAw6gAwIBAgITawAAAB/Nnq77QGja+wAAAAAAHzANBgkqhkiG
 # 9w0BAQsFADAwMQwwCgYDVQQGEwNMQUIxDTALBgNVBAoTBFpFUk8xETAPBgNVBAMT
 # CFplcm9EQzAxMB4XDTE3MDkyMDIxMDM1OFoXDTE5MDkyMDIxMTM1OFowPTETMBEG
 # CgmSJomT8ixkARkWA0xBQjEUMBIGCgmSJomT8ixkARkWBFpFUk8xEDAOBgNVBAMT
@@ -2005,11 +2017,11 @@ function Bootstrap-PowerShellCore {
 # ARkWA0xBQjEUMBIGCgmSJomT8ixkARkWBFpFUk8xEDAOBgNVBAMTB1plcm9TQ0EC
 # E1gAAAH5oOvjAv3166MAAQAAAfkwCQYFKw4DAhoFAKB4MBgGCisGAQQBgjcCAQwx
 # CjAIoAKAAKECgAAwGQYJKoZIhvcNAQkDMQwGCisGAQQBgjcCAQQwHAYKKwYBBAGC
-# NwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFEQrtv/SRCJYpOIk
-# cmSrGkdBxdvbMA0GCSqGSIb3DQEBAQUABIIBAESGx1F5DQbAC/yc0+19zXHwBRVt
-# 6xze0WbJMUc3I4eVTWcTKP5JLeClGAYxQ6C1XGVhJwkRH7nOUBmtPEDnBEs/t2HC
-# fUEHuGFLhTkshDBxhwFCfVeDKwiL6yRL5Sf7IBr6Tf4V1kfGCss6MkIpdINYm5iE
-# MvWXWRMWDd1nniaUhKT74lXpvTebaLNkWzrh+2qHcWNJfOsg+wRpizVodxWc3DFb
-# UsrwsnKgTRqA00iGVcXnZy5tHDJs3HHQ0IPt3TPSt7u7TnZT8Xmmtc+3cIPuP/TN
-# t8P5HhbkQaDkVxDhqCx3cTJ5NuqVIJKtO+Hydue/nzAFTLTEwNvgNYqoLm4=
+# NwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFHMv+KCk87gX+Xnt
+# TcVUEMk9dE9wMA0GCSqGSIb3DQEBAQUABIIBAHG7dh7mbSD8wUXPlSwM3ZThsgUE
+# c5u25IShGQM+Ze6TqhJdPDnqovO+GgdyCNO3gdzSmnilyzZYprqVSMGtoq8Dnu+I
+# LrcCoClzzXb2p/Jtzp6irWv1qoc75BOwCGlHy4oMlry9cE4cwE3P1pkTDNvfaNoW
+# srM2M4P1jQ3RwgYhj2l+ADCCrGmZsKzqXFfNJ91Qh8M1SZuV+psm39Fo7GNZwV34
+# 0Rg5n2FB2i85mxeUh7oFYAeHzueLSDtucNYKiQ+b2Z7kHJVIvOINJz3lgvLo6FXM
+# 2lRN2UMoIP3+6SC+AltNVm16mUaikFZsz8kZjeX1dC6KHEGBlXRu2WfWZI0=
 # SIG # End signature block
