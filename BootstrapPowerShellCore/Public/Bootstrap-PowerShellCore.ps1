@@ -709,19 +709,21 @@ function Bootstrap-PowerShellCore {
 
     # Fedora Install Info
     $FedoraPMInstallScriptPrep = @(
+        'dnf remove powershell -y'
         'rpm --import https://packages.microsoft.com/keys/microsoft.asc'
         'curl https://packages.microsoft.com/config/rhel/7/prod.repo | sudo tee /etc/yum.repos.d/microsoft.repo'
-        'dnf update'
-        'dnf install compat-openssl10'
+        'dnf update -y'
+        'dnf install -y compat-openssl10'
         'echo powershellInstallComplete'
         'dnf install -y powershell'
     )
     $FedoraPMInstallScript = "sudo bash -c \```"$($FedoraPMInstallScriptPrep -join '; ')\```""
 
     $FedoraManualInstallScriptPrep = @(
-        'dnf install compat-openssl10'
+        'dnf remove powershell -y'
+        'dnf install -y compat-openssl10'
         'echo powershellInstallComplete'
-        "dnf install $FedoraPackageUrl"
+        "dnf install -y $FedoraPackageUrl"
     )
     $FedoraManualInstallScript = "sudo bash -c \```"$($FedoraManualInstallScriptPrep -join '; ')\```""
 
@@ -2025,8 +2027,8 @@ function Bootstrap-PowerShellCore {
 # SIG # Begin signature block
 # MIIMiAYJKoZIhvcNAQcCoIIMeTCCDHUCAQExCzAJBgUrDgMCGgUAMGkGCisGAQQB
 # gjcCAQSgWzBZMDQGCisGAQQBgjcCAR4wJgIDAQAABBAfzDtgWUsITrck0sYpfvNR
-# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUNtndU+5K75FNfkkXJzy7pStJ
-# wB2gggn9MIIEJjCCAw6gAwIBAgITawAAAB/Nnq77QGja+wAAAAAAHzANBgkqhkiG
+# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQU2xQJo7EJ0kO2MRWX8BGD9nUS
+# +qWgggn9MIIEJjCCAw6gAwIBAgITawAAAB/Nnq77QGja+wAAAAAAHzANBgkqhkiG
 # 9w0BAQsFADAwMQwwCgYDVQQGEwNMQUIxDTALBgNVBAoTBFpFUk8xETAPBgNVBAMT
 # CFplcm9EQzAxMB4XDTE3MDkyMDIxMDM1OFoXDTE5MDkyMDIxMTM1OFowPTETMBEG
 # CgmSJomT8ixkARkWA0xBQjEUMBIGCgmSJomT8ixkARkWBFpFUk8xEDAOBgNVBAMT
@@ -2083,11 +2085,11 @@ function Bootstrap-PowerShellCore {
 # ARkWA0xBQjEUMBIGCgmSJomT8ixkARkWBFpFUk8xEDAOBgNVBAMTB1plcm9TQ0EC
 # E1gAAAH5oOvjAv3166MAAQAAAfkwCQYFKw4DAhoFAKB4MBgGCisGAQQBgjcCAQwx
 # CjAIoAKAAKECgAAwGQYJKoZIhvcNAQkDMQwGCisGAQQBgjcCAQQwHAYKKwYBBAGC
-# NwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFBEZ9WixJllyN3fj
-# rev3+Ep7R/4oMA0GCSqGSIb3DQEBAQUABIIBAMUvGIQUIGUJClR0+6EP6TgtS7Fe
-# wougJO/vAKEW+Sp1WrzhKQgVYgYLJMOmIGREex9SgFz9UQYJdr2iuioq39Kg3Gv6
-# DXZ1bnSqJALCBrOuU/iBbCunIe1MnCUnlpZgN4a5MrZZFK1vYSKHB7lUXrGa//Pd
-# t/1dt4IEveytqpn/hhKdY/+A25uOce+uO+7lcaWo/SUw3JUV9WDc32176m0sV7yp
-# 0THyuqZE538mNHMhCfYzVAQXYa8QXK6AwYEeqmD19/f+nyLGBxLIDpp0q+Wzqirw
-# fYYx524rMFlsyGB9J6O0tLYllOqyWDBCuMG34TICXMslekY/1iJXuKZ4y6I=
+# NwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFLzCRP7Fx6YMhJWn
+# Crhg67DWnbVRMA0GCSqGSIb3DQEBAQUABIIBAHL/DzNfpaWOb0oRK9Sc9vly8ttY
+# UooTKccHk208dcj16uutH6XyM1DHVj4pTjGtAqihucBfZqEsSItc7VuY+xDu5Efa
+# 3lN9uXGjP3ijZ7qnPWcuexE49qWtBVnb0JMLRh0c+mPKWxLQW2mHnSzq+dB2xuYr
+# Tjrgmj6ZzFEOVpWx76VYPMUWieJLs/8uFXvJXpl5/ipAMc30Ru8RYFfwLnRkep1N
+# tI0r9vmV0dx78Hp3oX5c3OEpaIDWtRwJdy+CSd6+S9AWteMhhanRz8XplGoCFBRU
+# PyGuv1x94/Fr2eITggk0IASEj9/Vuo6ZW0H03HlDNoQfW4VUsDP/WZIZfAw=
 # SIG # End signature block
