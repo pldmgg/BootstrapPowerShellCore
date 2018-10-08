@@ -217,7 +217,7 @@ function Bootstrap-PowerShellCore {
         [string]$KeyFilePath,
 
         [Parameter(Mandatory=$False)]
-        [ValidateSet("Windows","Ubuntu1404","Ubuntu1604","Ubuntu1804","Ubuntu1810","Debian8","Debian9","CentOS7","RHEL7","OpenSUSE423","Fedora","Raspbian")]
+        [ValidateSet("Windows","MacOS","Ubuntu1404","Ubuntu1604","Ubuntu1804","Ubuntu1810","Debian8","Debian9","CentOS7","RHEL7","OpenSUSE423","Fedora","Raspbian")]
         [string]$OS,
 
         [Parameter(Mandatory=$False)]
@@ -838,6 +838,82 @@ function Bootstrap-PowerShellCore {
         }
     }
 
+    # MacOS Install Info
+    <#
+    $MacBrewInstall = @'
+        usrlocaldir=$(echo "$HOME/usr/local")
+        if [ ! -d "$usrlocaldir" ]; then mkdir -p "$usrlocaldir"; fi
+        brewscript=$(echo "$(curl -fsSL https://gist.githubusercontent.com/skyl/36563a5be809e54dc139/raw/ad509acb9a3accc6408e184ec5e577657bdae7b3/install.rb)" | sed "s,YOUR_HOME = '',YOUR_HOME = '$HOME',g")
+        yes '' | /usr/bin/ruby -e "$brewscript"
+        export HOMEBREW_PREFIX=$usrlocaldir
+        PATH=$PATH:$HOMEBREW_PREFIX/bin
+        chown -R $USER $HOME/usr/local
+        brew update
+        brew tap caskroom/cask
+        brew install openssl
+        brew cask reinstall powershell
+    '@
+    #>
+    $BrewInstallNoSudoUrl = 'https://gist.githubusercontent.com/skyl/36563a5be809e54dc139/raw/ad509acb9a3accc6408e184ec5e577657bdae7b3/install.rb'
+    $MacOSPMInstallScriptPrep = @(
+        'usrlocaldir=$(echo \"\"$HOME/usr/local\"\")'
+        'if [ ! -d \"\"$usrlocaldir/Cellar\"\" ]; then mkdir -p \"\"$usrlocaldir/Cellar\"\"; fi'
+        'chmod -R $USER $usrlocaldir'
+        "brewscript=`$(echo \`"\`"`$(curl -fsSL $BrewInstallNoSudoUrl)\`"\`" | sed \`"\`"s|YOUR_HOME = ''|YOUR_HOME = '`$HOME'|g\`"\`")"
+        'checkbrew=$(command -v brew)'
+        'if test -z $checkbrew; then yes "" | /usr/bin/ruby -e \"\"$brewscript\"\" && export HOMEBREW_PREFIX=$usrlocaldir && PATH=$PATH:$HOMEBREW_PREFIX/bin; fi'
+        'brew update'
+        'brew tap caskroom/cask'
+        'brew install openssl'
+        'brew cask reinstall powershell' # IMPORTANT NOTE: This will prompt for a password!
+    )
+    $MacOSPMInstallScript = "bash -c \```"$($MacOSPMInstallScriptPrep)\```""
+
+    $MacOSPMInstallScriptPrepWindowsToLinux = @(
+        'usrlocaldir=\`$(echo \\\`"\`$HOME/usr/local\\\`")'
+        'if [ ! -d \\\`"\`$usrlocaldir/Cellar\\\`" ]; then mkdir -p \\\`"\`$usrlocaldir/Cellar\\\`"; fi'
+        'chmod -R $USER $usrlocaldir'
+        "brewscript=\```$(echo \\\```"\```$(curl -fsSL $BrewInstallNoSudoUrl)\\\`" | sed \\\`"s|YOUR_HOME = ''|YOUR_HOME = '\```$HOME'|g\\\`")"
+        'checkbrew=\`$(command -v brew)'
+        'if test -z \`$checkbrew; then yes \\\`"\\\`" | /usr/bin/ruby -e \\\`"\`$brewscript\\\`" && export HOMEBREW_PREFIX=\`$usrlocaldir && PATH=\`$PATH:\`$HOMEBREW_PREFIX/bin; fi'
+        'brew update'
+        'brew tap caskroom/cask'
+        'brew install openssl'
+        'brew cask reinstall powershell' # IMPORTANT NOTE: This will prompt for a password!
+    )
+    $MacOSPMInstallScriptWindowsToLinux = "bash -c \```"$($MacOSPMInstallScriptPrepWindowsToLinux -join '; ')\```""
+
+    $MacOSScriptPrepForExpect = @(
+        'usrlocaldir=\\\$(echo \\\"\\\$HOME/usr/local\\\")'
+        'if [ ! -d \\\"\\\$usrlocaldir/Cellar\\\" ]; then mkdir -p \\\"$usrlocaldir/Cellar\\\"; fi'
+        'chmod -R \\\$USER \\\$usrlocaldir'
+        "brewscript=\\\`$(echo \\\`"\\\`$(curl -fsSL $BrewInstallNoSudoUrl)\\\`" | sed \\\`"s|YOUR_HOME = ''|YOUR_HOME = '\\\`$HOME'|g\\\`")"
+        'checkbrew=\\\$(command -v brew)'
+        'if test -z \\\$checkbrew; then yes \\\"\\\" | /usr/bin/ruby -e \\\"\\\$brewscript\\\" && export HOMEBREW_PREFIX=\\\$usrlocaldir && PATH=\\\$PATH:\\\$HOMEBREW_PREFIX/bin; fi'
+        'brew update'
+        'brew tap caskroom/cask'
+        'brew install openssl'
+        'brew cask reinstall powershell' # IMPORTANT NOTE: This will prompt for a password!
+    )
+
+    $MacOSUninstallScript = 'brew cask uninstall powershell'
+
+    $MacOS = [pscustomobject]@{
+        PackageManagerInstallScript                 = $MacOSPMInstallScript
+        ManualInstallScript                         = $MacOSPMInstallScript
+        PackageManagerInstallScriptWindowsToLinux   = $MacOSPMInstallScriptWindowsToLinux
+        ManualInstallScriptWindowsToLinux           = $MacOSPMInstallScriptWindowsToLinux
+        UninstallScript                             = $MacOSUninstallScript
+        ConfigurePwshRemotingScript                 = $PwshRemotingScript
+        ConfigurePwshRemotingScriptWindowsToLinux   = $PwshRemotingScriptWindowsToLinux
+        ExpectScripts               = [pscustomobject]@{
+            PackageManagerInstallScript = $MacOSScriptPrepForExpect
+            ManualInstallScript         = $MacOSScriptPrepForExpect
+            UninstallScript             = $MacOSUninstallScript
+            ConfigurePwshRemotingScript = $PwshRemotingScriptPrepForExpect
+        }
+    }
+
     #endregion >> Prep
 
     #region >> Main Body
@@ -929,9 +1005,14 @@ function Bootstrap-PowerShellCore {
 
     if (!$OS) {
         switch ($OSCheck.OSVersionInfo) {
-            {$_ -match 'Microsoft|Windows' -or $OSCheck.OS -eq "Windows"} {
+            {$($_ -match 'Microsoft|Windows' -and ![bool]$($_ -match "Linux")) -or $OSCheck.OS -eq "Windows"} {
                 $OS = "Windows"
                 $WindowsVersion = $OSCheck.OSVersionInfo
+            }
+
+            {$_ -match 'Darwin'} {
+                $OS = "MacOS"
+                $MacOSVersion = $OSCheck.OSVersionInfo
             }
 
             {$_ -match "Ubuntu 18\.04|18\.04\.[0-9]+-Ubuntu" -or $_ -match "Ubuntu.*1804|Ubuntu.*18\.04|1804.*Ubuntu|18\.04.*Ubuntu"} {
@@ -1022,6 +1103,7 @@ function Bootstrap-PowerShellCore {
     #     ssh pdadmin@192.168.2.10 "$SSHCmdString"
     [System.Collections.ArrayList]$SSHCmdStringArray = @(
         'ssh'
+        '-t'
     )
     if ($KeyFilePath) {
         $null = $SSHCmdStringArray.Add("-i")
@@ -1087,7 +1169,7 @@ function Bootstrap-PowerShellCore {
             $Counter = 0
             $CompleteIndicatorRegex = if ($ConfigurePSRemoting) {"^pwshConfigComplete|^powershellInstallComplete"} else {"^powershellInstallComplete"}
             while (![bool]$($($CheckForExpectedResponses -split "`n") -match [regex]::Escape("Are you sure you want to continue connecting (yes/no)?")) -and
-            ![bool]$($($CheckForExpectedResponses -split "`n") -match [regex]::Escape("password:")) -and 
+            ![bool]$($($CheckForExpectedResponses -split "`n") -match "password.*:") -and 
             ![bool]$($($CheckForExpectedResponses -split "`n") -match $CompleteIndicatorRegex) -and $Counter -le 60
             ) {
                 $SuccessOrAcceptHostKeyOrPwdPrompt = Receive-AwaitResponse
@@ -1177,9 +1259,9 @@ function Bootstrap-PowerShellCore {
                 $null = $CheckForExpectedResponses.Add($SuccessOrAcceptHostKeyOrPwdPrompt)
                 $Counter = 0
                 $CompleteIndicatorRegex = if ($ConfigurePSRemoting) {"^pwshConfigComplete|^powershellInstallComplete"} else {"^powershellInstallComplete"}
-                while ($SuccessOrAcceptHostKeyOrPwdPrompt -notmatch [regex]::Escape("Are you sure you want to continue connecting (yes/no)?") -and
-                $SuccessOrAcceptHostKeyOrPwdPrompt -notmatch [regex]::Escape("password:") -and 
-                $SuccessOrAcceptHostKeyOrPwdPrompt -notmatch $CompleteIndicatorRegex -and $Counter -le 60
+                while (![bool]$($SuccessOrAcceptHostKeyOrPwdPrompt -match [regex]::Escape("Are you sure you want to continue connecting (yes/no)?")) -and
+                ![bool]$($SuccessOrAcceptHostKeyOrPwdPrompt -match "password.*:") -and 
+                ![bool]$($SuccessOrAcceptHostKeyOrPwdPrompt -match $CompleteIndicatorRegex) -and $Counter -le 60
                 ) {
                     $SuccessOrAcceptHostKeyOrPwdPrompt = Receive-AwaitResponse
                     $null = $CheckForExpectedResponses.Add($SuccessOrAcceptHostKeyOrPwdPrompt)
@@ -1270,7 +1352,7 @@ function Bootstrap-PowerShellCore {
                 $null = $CheckExpectedSendYesOutput.Add($SuccessOrAcceptHostKeyOrPwdPrompt)
                 $Counter = 0
                 $CompleteIndicatorRegex = if ($ConfigurePSRemoting) {"^pwshConfigComplete|^powershellInstallComplete"} else {"^powershellInstallComplete"}
-                while (![bool]$($($CheckExpectedSendYesOutput -split "`n") -match [regex]::Escape("password:")) -and 
+                while (![bool]$($($CheckExpectedSendYesOutput -split "`n") -match "password.*:") -and 
                 ![bool]$($($CheckExpectedSendYesOutput -split "`n") -match $CompleteIndicatorRegex) -and $Counter -le 60
                 ) {
                     $SuccessOrAcceptHostKeyOrPwdPrompt = Receive-AwaitResponse
@@ -1311,7 +1393,7 @@ function Bootstrap-PowerShellCore {
 
                 $CheckSendYesOutput = $CheckExpectedSendYesOutput | foreach {$_ -split "`n"}
                 
-                if ($CheckSendYesOutput -match [regex]::Escape("password:")) {
+                if ($CheckSendYesOutput -match "password.*:") {
                     if ($LocalPassword) {
                         $null = Send-AwaitCommand $LocalPassword
                     }
@@ -1338,7 +1420,7 @@ function Bootstrap-PowerShellCore {
                         Write-Error "Sending the user's password timed out!"
                         $global:FunctionResult = "1"
 
-                        #$SSHOutputPrep
+                        $SSHOutputPrep
 
                         if ($PSAwaitProcess.Id) {
                             try {
@@ -1368,7 +1450,7 @@ function Bootstrap-PowerShellCore {
                     }
                 }
             }
-            elseif ($CheckResponsesOutput -match [regex]::Escape("password:")) {
+            elseif ($CheckResponsesOutput -match "password.*:") {
                 if ($LocalPassword) {
                     $null = Send-AwaitCommand $LocalPassword
                 }
@@ -1395,7 +1477,7 @@ function Bootstrap-PowerShellCore {
                     Write-Error "Sending the user's password timed out!"
                     $global:FunctionResult = "1"
 
-                    #$SSHOutputPrep
+                    $SSHOutputPrep
 
                     if ($PSAwaitProcess.Id) {
                         try {
@@ -1480,6 +1562,7 @@ function Bootstrap-PowerShellCore {
 
         if ($PSVersionTable.Platform -eq "Unix") {
             $FinalPassword = if ($DomainPassword) {$DomainPassword} else {$LocalPassword}
+            $FinalPassword = $FinalPassowrd -replace [regex]::Escape('$'),'\\\$' -replace [regex]::Escape('"'),'\\\"'
             $ExpectScripts = $(Get-Variable -Name $OS -ValueOnly).ExpectScripts
 
             if ($UsePackageManagement) {
@@ -1555,27 +1638,51 @@ function Bootstrap-PowerShellCore {
             }
         }
     }
-    if ($OSCheck.OS -eq "Linux") {
+    if ($OSCheck.OS -eq "Linux" -or $OSCheck.OS -eq "MacOS") {
         if (!$PSVersionTable.Platform -or $PSVersionTable.Platform -eq "Win32NT") {
             $BootstrapSB = {
-                if ($UsePackageManagement) {
-                    if ($ConfigurePSRemoting) {
-                        $SSHCmdString = $($SSHCmdStringArray -join " ") + ' "' +
-                        $($args[0].PackageManagerInstallScript.Substring(0,$($args[0].PackageManagerInstallScript.Length-3)) -replace [regex]::Escape('\"'),'\`"' -replace [regex]::Escape('$'),'\`$') + '; ' +
-                        $($args[0].ConfigurePwshRemotingScriptWindowsToLinux -replace [regex]::Escape('sudo bash -c \`"'),'') + '"'
+                if ($OS -ne "MacOS") {
+                    if ($UsePackageManagement) {
+                        if ($ConfigurePSRemoting) {
+                            $SSHCmdString = $($SSHCmdStringArray -join " ") + ' "' +
+                            $($args[0].PackageManagerInstallScript.Substring(0,$($args[0].PackageManagerInstallScript.Length-3)) -replace [regex]::Escape('\"'),'\`"' -replace [regex]::Escape('$'),'\`$') + '; ' +
+                            $($args[0].ConfigurePwshRemotingScriptWindowsToLinux -replace [regex]::Escape('sudo bash -c \`"'),'') + '"'
+                        }
+                        else {
+                            $SSHCmdString = $($SSHCmdStringArray -join " ") + ' "' + $($args[0].PackageManagerInstallScript -replace [regex]::Escape('\"'),'\`"' -replace [regex]::Escape('$'),'\`$') + '"'
+                        }
                     }
                     else {
-                        $SSHCmdString = $($SSHCmdStringArray -join " ") + ' "' + $($args[0].PackageManagerInstallScript -replace [regex]::Escape('\"'),'\`"' -replace [regex]::Escape('$'),'\`$') + '"'
+                        if ($ConfigurePSRemoting) {
+                            $SSHCmdString = $($SSHCmdStringArray -join " ") + ' "' +
+                            $($args[0].ManualInstallScript.Substring(0,$($args[0].ManualInstallScript.Length-3)) -replace [regex]::Escape('\"'),'\`"' -replace [regex]::Escape('$'),'\`$') + '; ' +
+                            $($args[0].ConfigurePwshRemotingScriptWindowsToLinux -replace [regex]::Escape('sudo bash -c \`"'),'') + '"'
+                        }
+                        else {
+                            $SSHCmdString = $($SSHCmdStringArray -join " ") + ' "' + $($args[0].ManualInstallScript -replace [regex]::Escape('\"'),'\`"' -replace [regex]::Escape('$'),'\`$') + '"'
+                        }
                     }
                 }
                 else {
-                    if ($ConfigurePSRemoting) {
-                        $SSHCmdString = $($SSHCmdStringArray -join " ") + ' "' +
-                        $($args[0].ManualInstallScript.Substring(0,$($args[0].ManualInstallScript.Length-3)) -replace [regex]::Escape('\"'),'\`"' -replace [regex]::Escape('$'),'\`$') + '; ' +
-                        $($args[0].ConfigurePwshRemotingScriptWindowsToLinux -replace [regex]::Escape('sudo bash -c \`"'),'') + '"'
+                    if ($UsePackageManagement) {
+                        if ($ConfigurePSRemoting) {
+                            $SSHCmdString = $($SSHCmdStringArray -join " ") + ' "' +
+                            $($args[0].PackageManagerInstallScriptWindowsToLinux.Substring(0,$($args[0].PackageManagerInstallScriptWindowsToLinux.Length-3)) -replace [regex]::Escape('\"'),'\`"' -replace [regex]::Escape('$'),'\`$') + '; ' +
+                            $($args[0].ConfigurePwshRemotingScriptWindowsToLinux -replace [regex]::Escape('sudo bash -c \`"'),'') + '"'
+                        }
+                        else {
+                            $SSHCmdString = $($SSHCmdStringArray -join " ") + ' "' + $($args[0].PackageManagerInstallScriptWindowsToLinux -replace [regex]::Escape('\"'),'\`"' -replace [regex]::Escape('$'),'\`$') + '"'
+                        }
                     }
                     else {
-                        $SSHCmdString = $($SSHCmdStringArray -join " ") + ' "' + $($args[0].ManualInstallScript -replace [regex]::Escape('\"'),'\`"' -replace [regex]::Escape('$'),'\`$') + '"'
+                        if ($ConfigurePSRemoting) {
+                            $SSHCmdString = $($SSHCmdStringArray -join " ") + ' "' +
+                            $($args[0].ManualInstallScriptWindowsToLinux.Substring(0,$($args[0].ManualInstallScriptWindowsToLinux.Length-3)) -replace [regex]::Escape('\"'),'\`"' -replace [regex]::Escape('$'),'\`$') + '; ' +
+                            $($args[0].ConfigurePwshRemotingScriptWindowsToLinux -replace [regex]::Escape('sudo bash -c \`"'),'') + '"'
+                        }
+                        else {
+                            $SSHCmdString = $($SSHCmdStringArray -join " ") + ' "' + $($args[0].ManualInstallScriptWindowsToLinux -replace [regex]::Escape('\"'),'\`"' -replace [regex]::Escape('$'),'\`$') + '"'
+                        }
                     }
                 }
             
@@ -1616,7 +1723,7 @@ function Bootstrap-PowerShellCore {
             $Counter = 0
             $CompleteIndicatorRegex = if ($ConfigurePSRemoting) {"^pwshConfigComplete|^powershellInstallComplete"} else {"^powershellInstallComplete"}
             while (![bool]$($($CheckForExpectedResponses -split "`n") -match [regex]::Escape("Are you sure you want to continue connecting (yes/no)?")) -and
-            ![bool]$($($CheckForExpectedResponses -split "`n") -match [regex]::Escape("password:")) -and 
+            ![bool]$($($CheckForExpectedResponses -split "`n") -match "password.*:") -and 
             ![bool]$($($CheckForExpectedResponses -split "`n") -match $CompleteIndicatorRegex) -and $Counter -le 60
             ) {
                 $SuccessOrAcceptHostKeyOrPwdPrompt = Receive-AwaitResponse
@@ -1706,9 +1813,9 @@ function Bootstrap-PowerShellCore {
                 $null = $CheckForExpectedResponses.Add($SuccessOrAcceptHostKeyOrPwdPrompt)
                 $Counter = 0
                 $CompleteIndicatorRegex = if ($ConfigurePSRemoting) {"^pwshConfigComplete|^powershellInstallComplete"} else {"^powershellInstallComplete"}
-                while ($SuccessOrAcceptHostKeyOrPwdPrompt -notmatch [regex]::Escape("Are you sure you want to continue connecting (yes/no)?") -and
-                $SuccessOrAcceptHostKeyOrPwdPrompt -notmatch [regex]::Escape("password:") -and 
-                $SuccessOrAcceptHostKeyOrPwdPrompt -notmatch $CompleteIndicatorRegex -and $Counter -le 60
+                while (![bool]$($SuccessOrAcceptHostKeyOrPwdPrompt -match [regex]::Escape("Are you sure you want to continue connecting (yes/no)?")) -and
+                ![bool]$($SuccessOrAcceptHostKeyOrPwdPrompt -match "password.*:") -and 
+                ![bool]$($SuccessOrAcceptHostKeyOrPwdPrompt -match $CompleteIndicatorRegex) -and $Counter -le 60
                 ) {
                     $SuccessOrAcceptHostKeyOrPwdPrompt = Receive-AwaitResponse
                     $null = $CheckForExpectedResponses.Add($SuccessOrAcceptHostKeyOrPwdPrompt)
@@ -1799,7 +1906,7 @@ function Bootstrap-PowerShellCore {
                 $null = $CheckExpectedSendYesOutput.Add($SuccessOrAcceptHostKeyOrPwdPrompt)
                 $Counter = 0
                 $CompleteIndicatorRegex = if ($ConfigurePSRemoting) {"^pwshConfigComplete|^powershellInstallComplete"} else {"^powershellInstallComplete"}
-                while (![bool]$($($CheckExpectedSendYesOutput -split "`n") -match [regex]::Escape("password:")) -and 
+                while (![bool]$($($CheckExpectedSendYesOutput -split "`n") -match "password.*:") -and 
                 ![bool]$($($CheckExpectedSendYesOutput -split "`n") -match $CompleteIndicatorRegex) -and $Counter -le 60
                 ) {
                     $SuccessOrAcceptHostKeyOrPwdPrompt = Receive-AwaitResponse
@@ -1840,7 +1947,7 @@ function Bootstrap-PowerShellCore {
 
                 $CheckSendYesOutput = $CheckExpectedSendYesOutput | foreach {$_ -split "`n"}
                 
-                if ($CheckSendYesOutput -match [regex]::Escape("password:")) {
+                if ($CheckSendYesOutput -match "password.*:") {
                     if ($LocalPassword) {
                         $null = Send-AwaitCommand $LocalPassword
                     }
@@ -1851,8 +1958,72 @@ function Bootstrap-PowerShellCore {
 
                     $SuccessOrAcceptHostKeyOrPwdPrompt = Receive-AwaitResponse
 
-                    [System.Collections.ArrayList]$script:SSHOutputPrep = @()
-                    $null = $SSHOutputPrep.Add($SuccessOrAcceptHostKeyOrPwdPrompt)
+                    # Now we may or may not receive a password prompt for sudo...
+                    if ($SuccessOrAcceptHostKeyOrPwdPrompt -match "password.*:") {
+                        if ($LocalPassword) {
+                            $null = Send-AwaitCommand $LocalPassword
+                        }
+                        if ($DomainPassword) {
+                            $null = Send-AwaitCommand $DomainPassword
+                        }
+                        Start-Sleep -Seconds 3
+
+                        $SuccessOrAcceptHostKeyOrPwdPrompt = Receive-AwaitResponse
+                    }
+
+                    # If $OS is MacOS, we need to wait for another password prompt because 'brew cask reinstall powershell' WILL prompt for 'Password:'
+                    # Sometimes, the preceding step of installing openssl (dependency) can take up to 10 minutes, so we need to sit here for awhile
+                    if ($OS -eq "MacOS") {
+                        Write-Warning "Attempting install on MacOS! This could take up to 15 minutes! Please be patient..."
+                        [System.Collections.ArrayList]$script:SSHOutputPrep = @()
+                        $null = $SSHOutputPrep.Add($SuccessOrAcceptHostKeyOrPwdPrompt)
+                        $Counter = 0
+                        while (![bool]$($($SSHOutputPrep -split "`n") -match "password.*:") -and $Counter -le 90) {
+                            $SuccessOrAcceptHostKeyOrPwdPrompt = Receive-AwaitResponse
+                            if (![System.String]::IsNullOrWhiteSpace($SuccessOrAcceptHostKeyOrPwdPrompt)) {
+                                $null = $SSHOutputPrep.Add($SuccessOrAcceptHostKeyOrPwdPrompt)
+                            }
+                            Start-Sleep -Seconds 10
+                            $Counter++
+                        }
+                        if ($Counter -eq 91) {
+                            Write-Error "Sending the user's password timed out!"
+                            $global:FunctionResult = "1"
+
+                            $SSHOutputPrep
+
+                            if ($PSAwaitProcess.Id) {
+                                try {
+                                    $null = Stop-AwaitSession
+                                }
+                                catch {
+                                    if ($PSAwaitProcess.Id -eq $PID) {
+                                        Write-Error "The PSAwaitSession never spawned! Halting!"
+                                        $global:FunctionResult = "1"
+                                        return
+                                    }
+                                    else {
+                                        if ([bool]$(Get-Process -Id $PSAwaitProcess.Id -ErrorAction SilentlyContinue)) {
+                                            Stop-Process -Id $PSAwaitProcess.Id -ErrorAction SilentlyContinue
+                                        }
+                                        $Counter = 0
+                                        while ([bool]$(Get-Process -Id $PSAwaitProcess.Id -ErrorAction SilentlyContinue) -and $Counter -le 15) {
+                                            Write-Verbose "Waiting for Await Module Process Id $($PSAwaitProcess.Id) to end..."
+                                            Start-Sleep -Seconds 1
+                                            $Counter++
+                                        }
+                                    }
+                                }
+                            }
+
+                            return
+                        }
+                    }
+
+                    if (!$SSHOutputPrep) {
+                        [System.Collections.ArrayList]$script:SSHOutputPrep = @()
+                        $null = $SSHOutputPrep.Add($SuccessOrAcceptHostKeyOrPwdPrompt)
+                    }
                     $Counter = 0
                     $CompleteIndicatorRegex = if ($ConfigurePSRemoting) {"^pwshConfigComplete|^powershellInstallComplete"} else {"^powershellInstallComplete"}
                     while (![bool]$($($SSHOutputPrep -split "`n") -match $CompleteIndicatorRegex) -and $Counter -le 6) {
@@ -1867,7 +2038,7 @@ function Bootstrap-PowerShellCore {
                         Write-Error "Sending the user's password timed out!"
                         $global:FunctionResult = "1"
 
-                        #$SSHOutputPrep
+                        $SSHOutputPrep
 
                         if ($PSAwaitProcess.Id) {
                             try {
@@ -1897,7 +2068,7 @@ function Bootstrap-PowerShellCore {
                     }
                 }
             }
-            elseif ($CheckResponsesOutput -match [regex]::Escape("password:")) {
+            elseif ($CheckResponsesOutput -match "password.*:") {
                 if ($LocalPassword) {
                     $null = Send-AwaitCommand $LocalPassword
                 }
@@ -1908,8 +2079,72 @@ function Bootstrap-PowerShellCore {
 
                 $SuccessOrAcceptHostKeyOrPwdPrompt = Receive-AwaitResponse
 
-                [System.Collections.ArrayList]$script:SSHOutputPrep = @()
-                $null = $SSHOutputPrep.Add($SuccessOrAcceptHostKeyOrPwdPrompt)
+                # Now we may or may not receive a password prompt for sudo...
+                if ($SuccessOrAcceptHostKeyOrPwdPrompt -match "password.*:") {
+                    if ($LocalPassword) {
+                        $null = Send-AwaitCommand $LocalPassword
+                    }
+                    if ($DomainPassword) {
+                        $null = Send-AwaitCommand $DomainPassword
+                    }
+                    Start-Sleep -Seconds 3
+
+                    $SuccessOrAcceptHostKeyOrPwdPrompt = Receive-AwaitResponse
+                }
+
+                # If $OS is MacOS, we need to wait for another password prompt because 'brew cask reinstall powershell' WILL prompt for 'Password:'
+                # Sometimes, the preceding step of installing openssl (dependency) can take up to 10 minutes, so we need to sit here for awhile
+                if ($OS -eq "MacOS") {
+                    Write-Warning "Attempting install on MacOS! This could take up to 15 minutes! Please be patient..."
+                    [System.Collections.ArrayList]$script:SSHOutputPrep = @()
+                    $null = $SSHOutputPrep.Add($SuccessOrAcceptHostKeyOrPwdPrompt)
+                    $Counter = 0
+                    while (![bool]$($($SSHOutputPrep -split "`n") -match "password.*:") -and $Counter -le 90) {
+                        $SuccessOrAcceptHostKeyOrPwdPrompt = Receive-AwaitResponse
+                        if (![System.String]::IsNullOrWhiteSpace($SuccessOrAcceptHostKeyOrPwdPrompt)) {
+                            $null = $SSHOutputPrep.Add($SuccessOrAcceptHostKeyOrPwdPrompt)
+                        }
+                        Start-Sleep -Seconds 10
+                        $Counter++
+                    }
+                    if ($Counter -eq 91) {
+                        Write-Error "Sending the user's password timed out!"
+                        $global:FunctionResult = "1"
+
+                        $SSHOutputPrep
+
+                        if ($PSAwaitProcess.Id) {
+                            try {
+                                $null = Stop-AwaitSession
+                            }
+                            catch {
+                                if ($PSAwaitProcess.Id -eq $PID) {
+                                    Write-Error "The PSAwaitSession never spawned! Halting!"
+                                    $global:FunctionResult = "1"
+                                    return
+                                }
+                                else {
+                                    if ([bool]$(Get-Process -Id $PSAwaitProcess.Id -ErrorAction SilentlyContinue)) {
+                                        Stop-Process -Id $PSAwaitProcess.Id -ErrorAction SilentlyContinue
+                                    }
+                                    $Counter = 0
+                                    while ([bool]$(Get-Process -Id $PSAwaitProcess.Id -ErrorAction SilentlyContinue) -and $Counter -le 15) {
+                                        Write-Verbose "Waiting for Await Module Process Id $($PSAwaitProcess.Id) to end..."
+                                        Start-Sleep -Seconds 1
+                                        $Counter++
+                                    }
+                                }
+                            }
+                        }
+
+                        return
+                    }
+                }
+
+                if (!$SSHOutputPrep) {
+                    [System.Collections.ArrayList]$script:SSHOutputPrep = @()
+                    $null = $SSHOutputPrep.Add($SuccessOrAcceptHostKeyOrPwdPrompt)
+                }
                 $Counter = 0
                 $CompleteIndicatorRegex = if ($ConfigurePSRemoting) {"^pwshConfigComplete|^powershellInstallComplete"} else {"^powershellInstallComplete"}
                 while (![bool]$($($SSHOutputPrep -split "`n") -match $CompleteIndicatorRegex) -and $Counter -le 6) {
@@ -1924,7 +2159,7 @@ function Bootstrap-PowerShellCore {
                     Write-Error "Sending the user's password timed out!"
                     $global:FunctionResult = "1"
 
-                    #$SSHOutputPrep
+                    $SSHOutputPrep
 
                     if ($PSAwaitProcess.Id) {
                         try {
@@ -2003,6 +2238,7 @@ function Bootstrap-PowerShellCore {
 
         if ($PSVersionTable.Platform -eq "Unix") {
             $FinalPassword = if ($DomainPassword) {$DomainPassword} else {$LocalPassword}
+            $FinalPassword = $FinalPassowrd -replace [regex]::Escape('$'),'\\\$' -replace [regex]::Escape('"'),'\\\"'
             $ExpectScripts = $(Get-Variable -Name $OS -ValueOnly).ExpectScripts
 
             if ($UsePackageManagement) {
@@ -2538,9 +2774,9 @@ function Get-SSHProbe {
                 [System.Collections.ArrayList]$CheckForExpectedResponses = @()
                 $null = $CheckForExpectedResponses.Add($SuccessOrAcceptHostKeyOrPwdPrompt)
                 $Counter = 0
-                while ($SuccessOrAcceptHostKeyOrPwdPrompt -notmatch [regex]::Escape("Are you sure you want to continue connecting (yes/no)?") -and
-                $SuccessOrAcceptHostKeyOrPwdPrompt -notmatch [regex]::Escape("password:") -and 
-                $SuccessOrAcceptHostKeyOrPwdPrompt -notmatch "^}" -and $Counter -le 30
+                while (![bool]$($SuccessOrAcceptHostKeyOrPwdPrompt -match [regex]::Escape("Are you sure you want to continue connecting (yes/no)?")) -and
+                ![bool]$($SuccessOrAcceptHostKeyOrPwdPrompt -match [regex]::Escape("password:")) -and 
+                ![bool]$($SuccessOrAcceptHostKeyOrPwdPrompt -match "^}") -and $Counter -le 30
                 ) {
                     $SuccessOrAcceptHostKeyOrPwdPrompt = Receive-AwaitResponse
                     $null = $CheckForExpectedResponses.Add($SuccessOrAcceptHostKeyOrPwdPrompt)
@@ -2863,24 +3099,23 @@ function Get-SSHProbe {
                 if ($SSHCheckAsJson.Platform -eq "Win32NT") {
                     $OSDetermination = "Windows"
                     $ShellDetermination = "pwsh"
-                    [System.Collections.ArrayList]$OSVersionInfo = @()
-                    if ($SSHCheckAsJson.DistroInfo) {
-                        $null = $OSVersionInfo.Add($SSHCheckAsJson.DistroInfo)
-                    }
-                    if ($SSHCheckAsJson.Hostnamectl) {
-                        $null = $OSVersionInfo.Add($SSHCheckAsJson.Hostnamectl)
-                    }
+                }
+                elseif ($SSHCheckAsJson.Platform -match "Darwin") {
+                    $OSDetermination = "MacOS"
+                    $ShellDetermination = "pwsh"
+                    
                 }
                 else {
                     $OSDetermination = "Linux"
                     $ShellDetermination = "pwsh"
-                    [System.Collections.ArrayList]$OSVersionInfo = @()
-                    if ($SSHCheckAsJson.DistroInfo) {
-                        $null = $OSVersionInfo.Add($SSHCheckAsJson.DistroInfo)
-                    }
-                    if ($SSHCheckAsJson.Hostnamectl) {
-                        $null = $OSVersionInfo.Add($SSHCheckAsJson.Hostnamectl)
-                    }
+                }
+
+                [System.Collections.ArrayList]$OSVersionInfo = @()
+                if ($SSHCheckAsJson.DistroInfo) {
+                    $null = $OSVersionInfo.Add($SSHCheckAsJson.DistroInfo)
+                }
+                if ($SSHCheckAsJson.Hostnamectl) {
+                    $null = $OSVersionInfo.Add($SSHCheckAsJson.Hostnamectl)
                 }
 
                 $FinalOutput = [pscustomobject]@{
@@ -3056,9 +3291,9 @@ function Get-SSHProbe {
                 [System.Collections.ArrayList]$CheckForExpectedResponses = @()
                 $null = $CheckForExpectedResponses.Add($SuccessOrAcceptHostKeyOrPwdPrompt)
                 $Counter = 0
-                while ($SuccessOrAcceptHostKeyOrPwdPrompt -notmatch [regex]::Escape("Are you sure you want to continue connecting (yes/no)?") -and
-                $SuccessOrAcceptHostKeyOrPwdPrompt -notmatch [regex]::Escape("password:") -and 
-                $SuccessOrAcceptHostKeyOrPwdPrompt -notmatch "^111HostnamectlOutput111" -and $Counter -le 30
+                while (![bool]$($SuccessOrAcceptHostKeyOrPwdPrompt -match [regex]::Escape("Are you sure you want to continue connecting (yes/no)?")) -and
+                ![bool]$($SuccessOrAcceptHostKeyOrPwdPrompt -match [regex]::Escape("password:")) -and 
+                ![bool]$($SuccessOrAcceptHostKeyOrPwdPrompt -match "^111HostnamectlOutput111") -and $Counter -le 30
                 ) {
                     $SuccessOrAcceptHostKeyOrPwdPrompt = Receive-AwaitResponse
                     $null = $CheckForExpectedResponses.Add($SuccessOrAcceptHostKeyOrPwdPrompt)
@@ -3069,7 +3304,7 @@ function Get-SSHProbe {
                     Write-Error "SSH via '$($SSHCmdStringArray -join " ")' timed out!"
                     $global:FunctionResult = "1"
 
-                    #$CheckForExpectedResponses
+                    $CheckForExpectedResponses
 
                     if ($PSAwaitProcess.Id) {
                         try {
@@ -3357,6 +3592,39 @@ function Get-SSHProbe {
                         $OSVersionInfo = $($($($SSHOutputPrep -split "`n") -match "Cim OS Info:") -replace "Cim OS Info: ","").Trim()
                     }
                 }
+                elseif ($SSHOutputPrep -match "Darwin") {
+                    $OSDetermination = "MacOS"
+                    if ($SSHOutputPrep -match "111ProcessInfo111" -and $SSHOutputPrep -match "Name[\s]+:[\s]+pwsh") {
+                        $ShellDetermination = "pwsh"
+                    }
+                    else {
+                        $ShellDetermination = "bash"
+                    }
+
+                    $UnameOutputHeader = $($SSHOutputPrep -split "`n") -match "111UnameOutput111"
+                    if ($UnameOutputHeader.Count -gt 1) {$UnameOutputHeader = $UnameOutputHeader[-1]}
+                    $UnameOutputHeaderIndex = $($SSHOutputPrep -split "`n").IndexOf($UnameOutputHeader)
+                    if ($UnameOutputHeaderIndex -eq "-1") {
+                        $UnameOutputHeaderIndex = $($SSHOutputPrep -split "`n").IndexOf($UnameOutputHeader[0])
+                    }
+                    $UnameOutput = $($SSHOutputPrep -split "`n")[$($UnameOutputHeaderIndex + 1)]
+
+                    $HostNamectlOutputHeader = $($SSHOutputPrep -split "`n") -match "111HostnamectlOutput111"
+                    if ($HostNamectlOutputHeader.Count -gt 1) {$HostNamectlOutputHeader = $HostNamectlOutputHeader[-1]}
+                    $HostNamectlOutputHeaderIndex = $($SSHOutputPrep -split "`n").IndexOf($HostNamectlOutputHeader)
+                    if ($HostNamectlOutputHeaderIndex -eq "-1") {
+                        $HostNamectlOutputHeaderIndex = $($SSHOutputPrep -split "`n").IndexOf($HostNamectlOutputHeader[0])
+                    }
+                    $HostNamectlOutput = $($SSHOutputPrep -split "`n")[$($HostNamectlOutputHeaderIndex+1)..$($($SSHOutputPrep -split "`n").Count-1)]
+
+                    [System.Collections.ArrayList]$OSVersionInfo = @()
+                    if ($UnameOutput) {
+                        $null = $OSVersionInfo.Add($UnameOutput)
+                    }
+                    if ($HostnamectlOutput) {
+                        $null = $OSVersionInfo.Add($HostnamectlOutput)
+                    }
+                }
                 elseif ($SSHOutputPrep -match $LinuxRegex -and
                 !$($SSHOutputPrep -match "111RootDirInfo111" -and $SSHOutputPrep -match "Directory:.*[a-zA-Z]:\\")
                 ) {
@@ -3517,24 +3785,23 @@ function Get-SSHProbe {
                 if ($SSHCheckAsJson.Platform -eq "Win32NT") {
                     $OSDetermination = "Windows"
                     $ShellDetermination = "pwsh"
-                    [System.Collections.ArrayList]$OSVersionInfo = @()
-                    if ($SSHCheckAsJson.DistroInfo) {
-                        $null = $OSVersionInfo.Add($SSHCheckAsJson.DistroInfo)
-                    }
-                    if ($SSHCheckAsJson.Hostnamectl) {
-                        $null = $OSVersionInfo.Add($SSHCheckAsJson.Hostnamectl)
-                    }
+                }
+                elseif ($SSHCheckAsJson.Platform -match "Darwin") {
+                    $OSDetermination = "MacOS"
+                    $ShellDetermination = "pwsh"
+                    
                 }
                 else {
                     $OSDetermination = "Linux"
                     $ShellDetermination = "pwsh"
-                    [System.Collections.ArrayList]$OSVersionInfo = @()
-                    if ($SSHCheckAsJson.DistroInfo) {
-                        $null = $OSVersionInfo.Add($SSHCheckAsJson.DistroInfo)
-                    }
-                    if ($SSHCheckAsJson.Hostnamectl) {
-                        $null = $OSVersionInfo.Add($SSHCheckAsJson.Hostnamectl)
-                    }
+                }
+
+                [System.Collections.ArrayList]$OSVersionInfo = @()
+                if ($SSHCheckAsJson.DistroInfo) {
+                    $null = $OSVersionInfo.Add($SSHCheckAsJson.DistroInfo)
+                }
+                if ($SSHCheckAsJson.Hostnamectl) {
+                    $null = $OSVersionInfo.Add($SSHCheckAsJson.Hostnamectl)
                 }
 
                 $FinalOutput = [pscustomobject]@{
@@ -3659,6 +3926,27 @@ function Get-SSHProbe {
                         # The below $OSVersionInfo will be a string that looks something like:
                         #   Microsoft Windows Server 2016 Standard Evaluation
                         $OSVersionInfo = $($($($SSHOutputPrep -split "`n") -match "Cim OS Info:") -replace "Cim OS Info: ","").Trim()
+                    }
+                }
+                elseif ($SSHOutputPrep -match "Darwin") {
+                    $OSDetermination = "MacOS"
+                    if ($SSHOutputPrep -match "111ProcessInfo111" -and $SSHOutputPrep -match "Name[\s]+:[\s]+pwsh") {
+                        $ShellDetermination = "pwsh"
+                    }
+                    else {
+                        $ShellDetermination = "bash"
+                    }
+
+                    $UnameOutputHeaderIndex = $($SSHOutputPrep -split "`n").IndexOf($($($SSHOutputPrep -split "`n") -match "uname -a"))
+                    $UnameOutput = $($SSHOutputPrep -split "`n")[$($UnameOutputHeaderIndex + 1)]
+                    $HostnamectlOutput = $($SSHOutputPrep -split "`n")[$($UnameOutputHeaderIndex + 2)..$($($SSHOutputPrep -split "`n").Count-1)]
+
+                    [System.Collections.ArrayList]$OSVersionInfo = @()
+                    if ($UnameOutput) {
+                        $null = $OSVersionInfo.Add($UnameOutput)
+                    }
+                    if ($HostnamectlOutput) {
+                        $null = $OSVersionInfo.Add($HostnamectlOutput)
                     }
                 }
                 elseif ($($($SSHOutputPrep -join "") -match "111RootDirInfo111.*etc.*111ProcessInfo111" -or $($SSHOutputPrep -join "") -match $LinuxRegex) -and 
@@ -3791,11 +4079,243 @@ if ($PSVersionTable.Platform -eq "Win32NT" -and $PSVersionTable.PSEdition -eq "C
     ${Function:Get-SSHProbe}.Ast.Extent.Text
 )
 
+
+# From: https://gist.github.com/skyl/36563a5be809e54dc139
+$MacBrewInstallNoSudo = @'
+#!/System/Library/Frameworks/Ruby.framework/Versions/Current/usr/bin/ruby
+
+# SET YOUR_HOME TO THE ABSOLUTE PATH OF YOUR HOME DIRECTORY
+# chmod +x install.rb
+# ./install.rb
+YOUR_HOME = ''
+
+HOMEBREW_PREFIX = "#{YOUR_HOME}/usr/local"
+HOMEBREW_CACHE = '/Library/Caches/Homebrew'
+HOMEBREW_REPO = 'https://github.com/Homebrew/homebrew'
+
+module Tty extend self
+  def blue; bold 34; end
+  def white; bold 39; end
+  def red; underline 31; end
+  def reset; escape 0; end
+  def bold n; escape "1;#{n}" end
+  def underline n; escape "4;#{n}" end
+  def escape n; "\033[#{n}m" if STDOUT.tty? end
+end
+
+class Array
+  def shell_s
+    cp = dup
+    first = cp.shift
+    cp.map{ |arg| arg.gsub " ", "\\ " }.unshift(first) * " "
+  end
+end
+
+def ohai *args
+  puts "#{Tty.blue}==>#{Tty.white} #{args.shell_s}#{Tty.reset}"
+end
+
+def warn warning
+  puts "#{Tty.red}Warning#{Tty.reset}: #{warning.chomp}"
+end
+
+def system *args
+  abort "Failed during: #{args.shell_s}" unless Kernel.system(*args)
+end
+
+def sudo *args
+  #ohai "/usr/bin/sudo", *args
+  #system "/usr/bin/sudo", *args
+  system *args
+end
+
+def getc  # NOTE only tested on OS X
+  system "/bin/stty raw -echo"
+  if STDIN.respond_to?(:getbyte)
+    STDIN.getbyte
+  else
+    STDIN.getc
+  end
+ensure
+  system "/bin/stty -raw echo"
+end
+
+def wait_for_user
+  puts
+  puts "Press RETURN to continue or any other key to abort"
+  c = getc
+  # we test for \r and \n because some stuff does \r instead
+  abort unless c == 13 or c == 10
+end
+
+module Version
+  def <=>(other)
+    split(".").map { |i| i.to_i } <=> other.split(".").map { |i| i.to_i }
+  end
+end
+
+def macos_version
+  @macos_version ||= `/usr/bin/sw_vers -productVersion`.chomp[/10\.\d+/].extend(Version)
+end
+
+def git
+  @git ||= if ENV['GIT'] and File.executable? ENV['GIT']
+    ENV['GIT']
+  elsif Kernel.system '/usr/bin/which -s git'
+    'git'
+  else
+    exe = `xcrun -find git 2>/dev/null`.chomp
+    exe if $? && $?.success? && !exe.empty? && File.executable?(exe)
+  end
+
+  return unless @git
+  # Github only supports HTTPS fetches on 1.7.10 or later:
+  # https://help.github.com/articles/https-cloning-errors
+  `#{@git} --version` =~ /git version (\d\.\d+\.\d+)/
+  return if $1.nil? or $1.extend(Version) < "1.7.10"
+
+  @git
+end
+
+def chmod?(d)
+  File.directory?(d) && !(File.readable?(d) && File.writable?(d) && File.executable?(d))
+end
+
+def chgrp?(d)
+  !File.grpowned?(d)
+end
+
+# Invalidate sudo timestamp before exiting
+#at_exit { Kernel.system "/usr/bin/sudo", "-k" }
+
+# The block form of Dir.chdir fails later if Dir.CWD doesn't exist which I
+# guess is fair enough. Also sudo prints a warning message for no good reason
+Dir.chdir "#{YOUR_HOME}/usr"
+
+####################################################################### script
+abort "See Linuxbrew: http://brew.sh/linuxbrew/" if /linux/i === RUBY_PLATFORM
+abort "MacOS too old, see: https://github.com/mistydemeo/tigerbrew" if macos_version < "10.5"
+abort "Don't run this as root!" if Process.uid == 0
+#abort <<-EOABORT unless `groups`.split.include? "admin"
+#This script requires the user #{ENV['USER']} to be an Administrator. If this
+#sucks for you then you can install Homebrew in your home directory or however
+#you please; please refer to our homepage. If you still want to use this script
+#set your user to be an Administrator in System Preferences or `su' to a
+#non-root user with Administrator privileges.
+#EOABORT
+abort <<-EOABORT unless Dir["#{HOMEBREW_PREFIX}/.git/*"].empty?
+It appears Homebrew is already installed. If your intent is to reinstall you
+should do the following before running this installer again:
+    rm -rf #{HOMEBREW_PREFIX}/Cellar #{HOMEBREW_PREFIX}/.git && brew cleanup
+EOABORT
+# Tests will fail if the prefix exists, but we don't have execution
+# permissions. Abort in this case.
+abort <<-EOABORT if File.directory? HOMEBREW_PREFIX and not File.executable? HOMEBREW_PREFIX
+The Homebrew prefix, #{HOMEBREW_PREFIX}, exists but is not searchable. If this is
+not intentional, please restore the default permissions and try running the
+installer again:
+    sudo chmod 775 #{HOMEBREW_PREFIX}
+EOABORT
+abort <<-EOABORT if `/usr/bin/xcrun clang 2>&1` =~ /license/ && !$?.success?
+You have not agreed to the Xcode license.
+Before running the installer again please agree to the license by opening
+Xcode.app or running:
+    sudo xcodebuild -license
+EOABORT
+
+ohai "This script will install:"
+puts "#{HOMEBREW_PREFIX}/bin/brew"
+puts "#{HOMEBREW_PREFIX}/Library/..."
+puts "#{HOMEBREW_PREFIX}/share/man/man1/brew.1"
+
+chmods = %w( . bin etc include lib lib/pkgconfig Library sbin share var var/log share/locale share/man
+             share/man/man1 share/man/man2 share/man/man3 share/man/man4
+             share/man/man5 share/man/man6 share/man/man7 share/man/man8
+             share/info share/doc share/aclocal ).
+             map { |d| File.join(HOMEBREW_PREFIX, d) }.select { |d| chmod?(d) }
+chgrps = chmods.select { |d| chgrp?(d) }
+
+unless chmods.empty?
+  ohai "The following directories will be made group writable:"
+  puts(*chmods)
+end
+unless chgrps.empty?
+  ohai "The following directories will have their group set to #{Tty.underline 39}admin#{Tty.reset}:"
+  puts(*chgrps)
+end
+
+wait_for_user if STDIN.tty?
+
+if File.directory? HOMEBREW_PREFIX
+  sudo "/bin/chmod", "g+rwx", *chmods unless chmods.empty?
+  sudo "/usr/bin/chgrp", "admin", *chgrps unless chgrps.empty?
+else
+  sudo "/bin/mkdir", HOMEBREW_PREFIX
+  sudo "/bin/chmod", "g+rwx", HOMEBREW_PREFIX
+  # the group is set to wheel by default for some reason
+  sudo "/usr/bin/chgrp", "admin", HOMEBREW_PREFIX
+end
+
+sudo "/bin/mkdir", HOMEBREW_CACHE unless File.directory? HOMEBREW_CACHE
+sudo "/bin/chmod", "g+rwx", HOMEBREW_CACHE if chmod? HOMEBREW_CACHE
+
+if macos_version >= "10.9"
+  developer_dir = `/usr/bin/xcode-select -print-path 2>/dev/null`.chomp
+  if developer_dir.empty? || !File.exist?("#{developer_dir}/usr/bin/git")
+    ohai "Installing the Command Line Tools (expect a GUI popup):"
+    sudo "/usr/bin/xcode-select", "--install"
+    puts "Press any key when the installation has completed."
+    getc
+  end
+end
+
+ohai "Downloading and installing Homebrew..."
+Dir.chdir HOMEBREW_PREFIX do
+  if git
+    # we do it in four steps to avoid merge errors when reinstalling
+    system git, "init", "-q"
+
+    # "git remote add" will fail if the remote is defined in the global config
+    system git, "config", "remote.origin.url", HOMEBREW_REPO
+    system git, "config", "remote.origin.fetch", "+refs/heads/*:refs/remotes/origin/*"
+
+    args = git, "fetch", "origin", "master:refs/remotes/origin/master", "-n"
+    args << "--depth=1" if ARGV.include? "--fast"
+    system(*args)
+
+    system git, "reset", "--hard", "origin/master"
+  else
+    # -m to stop tar erroring out if it can't modify the mtime for root owned directories
+    # pipefail to cause the exit status from curl to propogate if it fails
+    # we use -k for curl because Leopard has a bunch of bad SSL certificates
+    curl_flags = "fsSL"
+    curl_flags << "k" if macos_version <= "10.5"
+    system "/bin/bash -o pipefail -c '/usr/bin/curl -#{curl_flags} #{HOMEBREW_REPO}/tarball/master | /usr/bin/tar xz -m --strip 1'"
+  end
+end
+
+warn "#{HOMEBREW_PREFIX}/bin is not in your PATH." unless ENV['PATH'].split(':').include? "#{HOMEBREW_PREFIX}/bin"
+
+ohai "Installation successful!"
+ohai "Next steps"
+
+if macos_version < "10.9" and macos_version > "10.6"
+  `/usr/bin/cc --version 2> /dev/null` =~ %r[clang-(\d{2,})]
+  version = $1.to_i
+  puts "Install the #{Tty.white}Command Line Tools for Xcode#{Tty.reset}: https://developer.apple.com/downloads" if version < 425
+else
+  puts "Install #{Tty.white}Xcode#{Tty.reset}: https://developer.apple.com/xcode" unless File.exist? "/usr/bin/cc"
+end
+
+puts "Run `brew doctor` #{Tty.white}before#{Tty.reset} you install anything"
+puts "Run `brew help` to get started"
+'@
+
 # SIG # Begin signature block
 # MIIMiAYJKoZIhvcNAQcCoIIMeTCCDHUCAQExCzAJBgUrDgMCGgUAMGkGCisGAQQB
 # gjcCAQSgWzBZMDQGCisGAQQBgjcCAR4wJgIDAQAABBAfzDtgWUsITrck0sYpfvNR
-# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUcAE4gx9JdYZyWtvDYeNpwTdH
-# V5qgggn9MIIEJjCCAw6gAwIBAgITawAAAB/Nnq77QGja+wAAAAAAHzANBgkqhkiG
+# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUOJ1Hi8VScZERPqglbLrxS3nG
+# 34agggn9MIIEJjCCAw6gAwIBAgITawAAAB/Nnq77QGja+wAAAAAAHzANBgkqhkiG
 # 9w0BAQsFADAwMQwwCgYDVQQGEwNMQUIxDTALBgNVBAoTBFpFUk8xETAPBgNVBAMT
 # CFplcm9EQzAxMB4XDTE3MDkyMDIxMDM1OFoXDTE5MDkyMDIxMTM1OFowPTETMBEG
 # CgmSJomT8ixkARkWA0xBQjEUMBIGCgmSJomT8ixkARkWBFpFUk8xEDAOBgNVBAMT
@@ -3852,11 +4372,11 @@ if ($PSVersionTable.Platform -eq "Win32NT" -and $PSVersionTable.PSEdition -eq "C
 # ARkWA0xBQjEUMBIGCgmSJomT8ixkARkWBFpFUk8xEDAOBgNVBAMTB1plcm9TQ0EC
 # E1gAAAH5oOvjAv3166MAAQAAAfkwCQYFKw4DAhoFAKB4MBgGCisGAQQBgjcCAQwx
 # CjAIoAKAAKECgAAwGQYJKoZIhvcNAQkDMQwGCisGAQQBgjcCAQQwHAYKKwYBBAGC
-# NwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFL2wcPxm+GHV4q2J
-# ofUa43GEfgKQMA0GCSqGSIb3DQEBAQUABIIBAFoKV2Y4A9z+ZlCT50D89XWsMzOw
-# HEcgOlIZIHsB1wb2wEQt1bIggYX2atOtSb7fFA/AIuWYCFMrU3eG5Cbn9icMDndG
-# KIGCzA1SH+yLVZmLKwAURpt+Ua3deq90dpo+/sQdWBcxHS7A2PBY223+qoRNvAsx
-# lhOoxrL5z6km54RA+svvu8syT/S9wD2PtxB7V/hHEdT38jI0/yVNv04x3Sjc35L8
-# I0RBdk2yCglJTOBhTYbIPMPscSef99s/k+iNWA5XtKt5JfPXdyo8EUSy4XCWBKPb
-# mn72mLZmkVlvBVvLMREbMJ3H57+wrvQF7wke3yVztjHzBUFcjwmKYiVrma8=
+# NwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFH+ISnt70DYQIIrk
+# GMI1TfiqbfhjMA0GCSqGSIb3DQEBAQUABIIBAAddUe/r6rq7EkspazlD2Cx7s5rV
+# T0WSXxAmA9bH6dlOF6u0ekL+SMmJT040GtIt3HeGc8/htok7eyA6d7St9rxKHKpy
+# lhqRNvSIBPAAC3m6B9EayamBFEIgG2A967X7Mmn1HbWv34uLkEMUDxVPx6e9Gye/
+# rC4Bl/riHummTFKCq9x1FIvXoLUyqtEaV+dJHoYVZN8a4oxwD6RWXIxCw3Z0sgzd
+# +BGXjLDVW+i7Y+u9kQt7EnxIhDk9HdpkI//xYchXwBrmkosHNHFVDwlAQnUUB4lt
+# VnBR5wd1vqi69zXEExVq4U+KB6oJKM7sobGewj5HDnwCZ5wVJJWXZKXRRao=
 # SIG # End signature block

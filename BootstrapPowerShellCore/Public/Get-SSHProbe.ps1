@@ -442,9 +442,9 @@ function Get-SSHProbe {
                 [System.Collections.ArrayList]$CheckForExpectedResponses = @()
                 $null = $CheckForExpectedResponses.Add($SuccessOrAcceptHostKeyOrPwdPrompt)
                 $Counter = 0
-                while ($SuccessOrAcceptHostKeyOrPwdPrompt -notmatch [regex]::Escape("Are you sure you want to continue connecting (yes/no)?") -and
-                $SuccessOrAcceptHostKeyOrPwdPrompt -notmatch [regex]::Escape("password:") -and 
-                $SuccessOrAcceptHostKeyOrPwdPrompt -notmatch "^}" -and $Counter -le 30
+                while (![bool]$($SuccessOrAcceptHostKeyOrPwdPrompt -match [regex]::Escape("Are you sure you want to continue connecting (yes/no)?")) -and
+                ![bool]$($SuccessOrAcceptHostKeyOrPwdPrompt -match [regex]::Escape("password:")) -and 
+                ![bool]$($SuccessOrAcceptHostKeyOrPwdPrompt -match "^}") -and $Counter -le 30
                 ) {
                     $SuccessOrAcceptHostKeyOrPwdPrompt = Receive-AwaitResponse
                     $null = $CheckForExpectedResponses.Add($SuccessOrAcceptHostKeyOrPwdPrompt)
@@ -767,24 +767,23 @@ function Get-SSHProbe {
                 if ($SSHCheckAsJson.Platform -eq "Win32NT") {
                     $OSDetermination = "Windows"
                     $ShellDetermination = "pwsh"
-                    [System.Collections.ArrayList]$OSVersionInfo = @()
-                    if ($SSHCheckAsJson.DistroInfo) {
-                        $null = $OSVersionInfo.Add($SSHCheckAsJson.DistroInfo)
-                    }
-                    if ($SSHCheckAsJson.Hostnamectl) {
-                        $null = $OSVersionInfo.Add($SSHCheckAsJson.Hostnamectl)
-                    }
+                }
+                elseif ($SSHCheckAsJson.Platform -match "Darwin") {
+                    $OSDetermination = "MacOS"
+                    $ShellDetermination = "pwsh"
+                    
                 }
                 else {
                     $OSDetermination = "Linux"
                     $ShellDetermination = "pwsh"
-                    [System.Collections.ArrayList]$OSVersionInfo = @()
-                    if ($SSHCheckAsJson.DistroInfo) {
-                        $null = $OSVersionInfo.Add($SSHCheckAsJson.DistroInfo)
-                    }
-                    if ($SSHCheckAsJson.Hostnamectl) {
-                        $null = $OSVersionInfo.Add($SSHCheckAsJson.Hostnamectl)
-                    }
+                }
+
+                [System.Collections.ArrayList]$OSVersionInfo = @()
+                if ($SSHCheckAsJson.DistroInfo) {
+                    $null = $OSVersionInfo.Add($SSHCheckAsJson.DistroInfo)
+                }
+                if ($SSHCheckAsJson.Hostnamectl) {
+                    $null = $OSVersionInfo.Add($SSHCheckAsJson.Hostnamectl)
                 }
 
                 $FinalOutput = [pscustomobject]@{
@@ -960,9 +959,9 @@ function Get-SSHProbe {
                 [System.Collections.ArrayList]$CheckForExpectedResponses = @()
                 $null = $CheckForExpectedResponses.Add($SuccessOrAcceptHostKeyOrPwdPrompt)
                 $Counter = 0
-                while ($SuccessOrAcceptHostKeyOrPwdPrompt -notmatch [regex]::Escape("Are you sure you want to continue connecting (yes/no)?") -and
-                $SuccessOrAcceptHostKeyOrPwdPrompt -notmatch [regex]::Escape("password:") -and 
-                $SuccessOrAcceptHostKeyOrPwdPrompt -notmatch "^111HostnamectlOutput111" -and $Counter -le 30
+                while (![bool]$($SuccessOrAcceptHostKeyOrPwdPrompt -match [regex]::Escape("Are you sure you want to continue connecting (yes/no)?")) -and
+                ![bool]$($SuccessOrAcceptHostKeyOrPwdPrompt -match [regex]::Escape("password:")) -and 
+                ![bool]$($SuccessOrAcceptHostKeyOrPwdPrompt -match "^111HostnamectlOutput111") -and $Counter -le 30
                 ) {
                     $SuccessOrAcceptHostKeyOrPwdPrompt = Receive-AwaitResponse
                     $null = $CheckForExpectedResponses.Add($SuccessOrAcceptHostKeyOrPwdPrompt)
@@ -973,7 +972,7 @@ function Get-SSHProbe {
                     Write-Error "SSH via '$($SSHCmdStringArray -join " ")' timed out!"
                     $global:FunctionResult = "1"
 
-                    #$CheckForExpectedResponses
+                    $CheckForExpectedResponses
 
                     if ($PSAwaitProcess.Id) {
                         try {
@@ -1261,6 +1260,39 @@ function Get-SSHProbe {
                         $OSVersionInfo = $($($($SSHOutputPrep -split "`n") -match "Cim OS Info:") -replace "Cim OS Info: ","").Trim()
                     }
                 }
+                elseif ($SSHOutputPrep -match "Darwin") {
+                    $OSDetermination = "MacOS"
+                    if ($SSHOutputPrep -match "111ProcessInfo111" -and $SSHOutputPrep -match "Name[\s]+:[\s]+pwsh") {
+                        $ShellDetermination = "pwsh"
+                    }
+                    else {
+                        $ShellDetermination = "bash"
+                    }
+
+                    $UnameOutputHeader = $($SSHOutputPrep -split "`n") -match "111UnameOutput111"
+                    if ($UnameOutputHeader.Count -gt 1) {$UnameOutputHeader = $UnameOutputHeader[-1]}
+                    $UnameOutputHeaderIndex = $($SSHOutputPrep -split "`n").IndexOf($UnameOutputHeader)
+                    if ($UnameOutputHeaderIndex -eq "-1") {
+                        $UnameOutputHeaderIndex = $($SSHOutputPrep -split "`n").IndexOf($UnameOutputHeader[0])
+                    }
+                    $UnameOutput = $($SSHOutputPrep -split "`n")[$($UnameOutputHeaderIndex + 1)]
+
+                    $HostNamectlOutputHeader = $($SSHOutputPrep -split "`n") -match "111HostnamectlOutput111"
+                    if ($HostNamectlOutputHeader.Count -gt 1) {$HostNamectlOutputHeader = $HostNamectlOutputHeader[-1]}
+                    $HostNamectlOutputHeaderIndex = $($SSHOutputPrep -split "`n").IndexOf($HostNamectlOutputHeader)
+                    if ($HostNamectlOutputHeaderIndex -eq "-1") {
+                        $HostNamectlOutputHeaderIndex = $($SSHOutputPrep -split "`n").IndexOf($HostNamectlOutputHeader[0])
+                    }
+                    $HostNamectlOutput = $($SSHOutputPrep -split "`n")[$($HostNamectlOutputHeaderIndex+1)..$($($SSHOutputPrep -split "`n").Count-1)]
+
+                    [System.Collections.ArrayList]$OSVersionInfo = @()
+                    if ($UnameOutput) {
+                        $null = $OSVersionInfo.Add($UnameOutput)
+                    }
+                    if ($HostnamectlOutput) {
+                        $null = $OSVersionInfo.Add($HostnamectlOutput)
+                    }
+                }
                 elseif ($SSHOutputPrep -match $LinuxRegex -and
                 !$($SSHOutputPrep -match "111RootDirInfo111" -and $SSHOutputPrep -match "Directory:.*[a-zA-Z]:\\")
                 ) {
@@ -1421,24 +1453,23 @@ function Get-SSHProbe {
                 if ($SSHCheckAsJson.Platform -eq "Win32NT") {
                     $OSDetermination = "Windows"
                     $ShellDetermination = "pwsh"
-                    [System.Collections.ArrayList]$OSVersionInfo = @()
-                    if ($SSHCheckAsJson.DistroInfo) {
-                        $null = $OSVersionInfo.Add($SSHCheckAsJson.DistroInfo)
-                    }
-                    if ($SSHCheckAsJson.Hostnamectl) {
-                        $null = $OSVersionInfo.Add($SSHCheckAsJson.Hostnamectl)
-                    }
+                }
+                elseif ($SSHCheckAsJson.Platform -match "Darwin") {
+                    $OSDetermination = "MacOS"
+                    $ShellDetermination = "pwsh"
+                    
                 }
                 else {
                     $OSDetermination = "Linux"
                     $ShellDetermination = "pwsh"
-                    [System.Collections.ArrayList]$OSVersionInfo = @()
-                    if ($SSHCheckAsJson.DistroInfo) {
-                        $null = $OSVersionInfo.Add($SSHCheckAsJson.DistroInfo)
-                    }
-                    if ($SSHCheckAsJson.Hostnamectl) {
-                        $null = $OSVersionInfo.Add($SSHCheckAsJson.Hostnamectl)
-                    }
+                }
+
+                [System.Collections.ArrayList]$OSVersionInfo = @()
+                if ($SSHCheckAsJson.DistroInfo) {
+                    $null = $OSVersionInfo.Add($SSHCheckAsJson.DistroInfo)
+                }
+                if ($SSHCheckAsJson.Hostnamectl) {
+                    $null = $OSVersionInfo.Add($SSHCheckAsJson.Hostnamectl)
                 }
 
                 $FinalOutput = [pscustomobject]@{
@@ -1565,6 +1596,27 @@ function Get-SSHProbe {
                         $OSVersionInfo = $($($($SSHOutputPrep -split "`n") -match "Cim OS Info:") -replace "Cim OS Info: ","").Trim()
                     }
                 }
+                elseif ($SSHOutputPrep -match "Darwin") {
+                    $OSDetermination = "MacOS"
+                    if ($SSHOutputPrep -match "111ProcessInfo111" -and $SSHOutputPrep -match "Name[\s]+:[\s]+pwsh") {
+                        $ShellDetermination = "pwsh"
+                    }
+                    else {
+                        $ShellDetermination = "bash"
+                    }
+
+                    $UnameOutputHeaderIndex = $($SSHOutputPrep -split "`n").IndexOf($($($SSHOutputPrep -split "`n") -match "uname -a"))
+                    $UnameOutput = $($SSHOutputPrep -split "`n")[$($UnameOutputHeaderIndex + 1)]
+                    $HostnamectlOutput = $($SSHOutputPrep -split "`n")[$($UnameOutputHeaderIndex + 2)..$($($SSHOutputPrep -split "`n").Count-1)]
+
+                    [System.Collections.ArrayList]$OSVersionInfo = @()
+                    if ($UnameOutput) {
+                        $null = $OSVersionInfo.Add($UnameOutput)
+                    }
+                    if ($HostnamectlOutput) {
+                        $null = $OSVersionInfo.Add($HostnamectlOutput)
+                    }
+                }
                 elseif ($($($SSHOutputPrep -join "") -match "111RootDirInfo111.*etc.*111ProcessInfo111" -or $($SSHOutputPrep -join "") -match $LinuxRegex) -and 
                 !$($($SSHOutputPrep -join "") -match "111RootDirInfo111.*Windows.*111ProcessInfo111")
                 ) {
@@ -1657,8 +1709,8 @@ function Get-SSHProbe {
 # SIG # Begin signature block
 # MIIMiAYJKoZIhvcNAQcCoIIMeTCCDHUCAQExCzAJBgUrDgMCGgUAMGkGCisGAQQB
 # gjcCAQSgWzBZMDQGCisGAQQBgjcCAR4wJgIDAQAABBAfzDtgWUsITrck0sYpfvNR
-# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUn+AXsSHme3DeGGhpOxAkk8wZ
-# kv2gggn9MIIEJjCCAw6gAwIBAgITawAAAB/Nnq77QGja+wAAAAAAHzANBgkqhkiG
+# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQU+aHAQut81jGJi9GuusET8zAB
+# lGWgggn9MIIEJjCCAw6gAwIBAgITawAAAB/Nnq77QGja+wAAAAAAHzANBgkqhkiG
 # 9w0BAQsFADAwMQwwCgYDVQQGEwNMQUIxDTALBgNVBAoTBFpFUk8xETAPBgNVBAMT
 # CFplcm9EQzAxMB4XDTE3MDkyMDIxMDM1OFoXDTE5MDkyMDIxMTM1OFowPTETMBEG
 # CgmSJomT8ixkARkWA0xBQjEUMBIGCgmSJomT8ixkARkWBFpFUk8xEDAOBgNVBAMT
@@ -1715,11 +1767,11 @@ function Get-SSHProbe {
 # ARkWA0xBQjEUMBIGCgmSJomT8ixkARkWBFpFUk8xEDAOBgNVBAMTB1plcm9TQ0EC
 # E1gAAAH5oOvjAv3166MAAQAAAfkwCQYFKw4DAhoFAKB4MBgGCisGAQQBgjcCAQwx
 # CjAIoAKAAKECgAAwGQYJKoZIhvcNAQkDMQwGCisGAQQBgjcCAQQwHAYKKwYBBAGC
-# NwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFJThHpFlRP94o8WP
-# UagcqyWC1bRuMA0GCSqGSIb3DQEBAQUABIIBAJvu0dqWpT1sYe094wdiH8KG0Gyv
-# CK8G3/l05haCcSmxmSES2RMo27L/pJSKoq4r+xqiZYJ05NcZrnlElNfAnvkxZT/2
-# wTnUD6mYPYzL7F+lzXDppDzBH8qptujLMR4mYKcsLW9tuUp8ruOezl2I/sp3a7uK
-# vmru7ueqfr3IhfPI3cjy0DlaL9kLPUe+GHD7fD6aFf4IdYaD/jqWFfAABin9IEPu
-# 3T2yTMu7WWqJpL53V/Yne1Xt/XNweXaVCeJpwL+cdgmlzv+//5wmY0781ZS2pkiY
-# gILupof4e6Y5dZ62AC0uNht0wOMkOECoSGIPICIpGQuey43Wv2JsZTNzQuQ=
+# NwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFOBtJmCwLYvF4AOD
+# 4VX2oGbhUSOpMA0GCSqGSIb3DQEBAQUABIIBAGXNfeGRQb+GX/cJL8PI1eAgf3Bv
+# 1FR7xNhXyNRPmDxJWKihYPevx2WKQ77Hx/EQDmg78UAtLuHMNXHE3dPUYQoW6VU4
+# R8C+obuJEPOKzwbfL7AcHmyESsjNM0gVOJ89EV/hbKrkXormLoBpqKUVbG1SaJSB
+# rEYOFXm7ypqr551uoEcLwRQUfiI0r+ZVgDK+EJT1d9B0ALkSCN04pRPeq9nwQYUe
+# FtA+cCO2ZLasLwnSXYx/fA1jIbKSXDOQigjboRa+tysFtg91SXdE8ji7UHDCh6D4
+# aByWGnlCcbuDwuCLA+D16Ch6Mhsz532QbvdZEH4IZZK+Jg/CUN3DQshU63g=
 # SIG # End signature block
