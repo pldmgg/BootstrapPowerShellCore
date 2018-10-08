@@ -465,9 +465,9 @@ function Bootstrap-PowerShellCore {
         }
     }
 
-    # Universal Scripts
+    # Pwsh PSRemoting Scripts targeting every platform except MacOS
     $PwshRemotingScriptPrep = @(
-        "if echo `$(cat /etc/ssh/sshd_config | grep -c '^Subsystem powershell') > /dev/null -gt 0; then sed -i '/^Subsystem powershell/d' /etc/ssh/sshd_config; fi"    
+        "if echo `$(cat /etc/ssh/sshd_config | grep -c '^Subsystem powershell') > /dev/null -gt 0; then sed -i '/^Subsystem powershell/d' /etc/ssh/sshd_config; fi"
         'pscorepath=$(command -v pwsh)'
         'if test -z $pscorepath; then echo pwshNotFound && exit 1; fi'
         'subsystemline=$(echo \"\"Subsystem powershell $pscorepath -sshs -NoLogo -NoProfile\"\")'
@@ -497,6 +497,36 @@ function Bootstrap-PowerShellCore {
         'subsystemline=\\\$(echo \\\"Subsystem powershell \\\$pscorepath -sshs -NoLogo -NoProfile\\\")'
         'sed -i \\\"s|sftp-server|sftp-server\\\n\\\$subsystemline|\\\" /etc/ssh/sshd_config'
         'systemctl restart sshd'
+        'echo pwshConfigComplete'
+    )
+
+    # Pwsh PSRemoting Scripts for MacOS target
+    # sed -i '' -e 's/sftp-server/\'$'\nSubsystem powershell \/usr\/local\/bin\/pwsh -sshs -NoLogo -NoProfile/g' /etc/ssh/sshd_config
+    # sed -i '' -e 's/libexec\/$/libexec\/sftp-server/g' /etc/ssh/sshd_config
+    $PwshRemotingScriptPrepForMac = @(
+        "cat /etc/ssh/sshd_config | grep -Eic 'Subsystem.*powershell' > /dev/null && echo sed -i '' '/^Subsystem powershell/d' /etc/ssh/sshd_config || echo false"
+        'command -v pwsh > /dev/null && echo true || echo pwshNotFound && exit 1'
+        "sed -i '' -e 's/sftp-server/\'`$'\nSubsystem powershell \/usr\/local\/bin\/pwsh -sshs -NoLogo -NoProfile/g' /etc/ssh/sshd_config"
+        "sed -i '' -e 's/libexec\/`$/libexec\/sftp-server/g' /etc/ssh/sshd_config"
+        'launchctl stop com.openssh.sshd && launchctl start com.openssh.sshd'
+        'echo pwshConfigComplete'
+    )
+    $PwshRemotingScriptForMac = "sudo bash -c \```"$($PwshRemotingScriptPrepForMac -join '; ')\```""
+    $PwshRemotingScriptPrepForMacWindowsToMac = @(
+        "cat /etc/ssh/sshd_config | grep -Eic 'Subsystem.*powershell' > /dev/null && echo sed -i '' '/^Subsystem powershell/d' /etc/ssh/sshd_config || echo false"
+        'command -v pwsh > /dev/null && echo true || echo pwshNotFound && exit 1'
+        "sed -i '' -e 's/sftp-server/\'\```$'\nSubsystem powershell \/usr\/local\/bin\/pwsh -sshs -NoLogo -NoProfile/g' /etc/ssh/sshd_config"
+        "sed -i '' -e 's/libexec\/\```$/libexec\/sftp-server/g' /etc/ssh/sshd_config"
+        'launchctl stop com.openssh.sshd && launchctl start com.openssh.sshd'
+        'echo pwshConfigComplete'
+    )
+    $PwshRemotingScriptForMacWindowsToMac = "sudo bash -c \```"$($PwshRemotingScriptPrepForMacWindowsToMac -join '; ')\```""
+    $PwshRemotingScriptPrepForMacForExpect = @(
+        "cat /etc/ssh/sshd_config | grep -Eic 'Subsystem.*powershell' > /dev/null && echo sed -i '' '/^Subsystem powershell/d' /etc/ssh/sshd_config || echo false"
+        'command -v pwsh > /dev/null && echo true || echo pwshNotFound && exit 1'
+        "sed -i '' -e 's/sftp-server/\'\\\`$'\nSubsystem powershell \/usr\/local\/bin\/pwsh -sshs -NoLogo -NoProfile/g' /etc/ssh/sshd_config"
+        "sed -i '' -e 's/libexec\/\\\`$/libexec\/sftp-server/g' /etc/ssh/sshd_config"
+        'launchctl stop com.openssh.sshd && launchctl start com.openssh.sshd'
         'echo pwshConfigComplete'
     )
     
@@ -856,19 +886,25 @@ function Bootstrap-PowerShellCore {
     #>
     # Line that worked:
     #    ssh pdadmin@192.168.2.59 "bash -c \`"usrlocaldir=\`$(echo \`"\`"\`$HOME/usr/local\`"\`"); if [ ! -d \`"\`"\`$usrlocaldir/Cellar\`"\`" ]; then mkdir -p \`"\`"\`$usrlocaldir/Cellar\`"\`"; fi; chown -R \`$USER \`$usrlocaldir; curl -fsSL https://raw.githubusercontent.com/pldmgg/BootstrapPowerShellCore/master/BootstrapPowerShellCore/Private/brewinstall.rb > ./brewinstall.rb; chmod +x ./brewinstall.rb; yes '' | ./brewinstall.rb \`$HOME\`""
+    #    "bash -c \`"checkInPath=\`$(echo \`"\`"echo \\\`$PATH \| tr ':' '\\n' \| grep -xc \`"\`"); echo \`$checkInPath\`""
     #$BrewInstallNoSudoUrl = 'https://gist.githubusercontent.com/skyl/36563a5be809e54dc139/raw/ad509acb9a3accc6408e184ec5e577657bdae7b3/install.rb'
     $BrewInstallNoSudoUrl = 'https://raw.githubusercontent.com/pldmgg/BootstrapPowerShellCore/master/BootstrapPowerShellCore/Private/brewinstall.rb'
     $MacOSPMInstallScriptPrep = @(
         'usrlocaldir=$(echo \"\"$HOME/usr/local\"\")'
         'if [ ! -d \"\"$usrlocaldir/Cellar\"\" ]; then mkdir -p \"\"$usrlocaldir/Cellar\"\"; fi'
         'chown -R $USER $usrlocaldir'
-        "curl -fsSL $BrewInstallNoSudoUrl > ./brewinstall.rb"
-        'chmod +x ./brewinstall.rb'
         'checkbrew=$(command -v brew)'
-        "if test -z `$checkbrew; then yes '' | ./brewinstall.rb `$HOME && export HOMEBREW_PREFIX=`$usrlocaldir && PATH=`$PATH:`$HOMEBREW_PREFIX/bin; fi"
+        $('if test -z $checkbrew; then echo $PATH | tr {0} | grep -xc /usr/local/bin > /dev/null && echo true || PATH=$PATH:/usr/local/bin; fi' -f "':' '\n'")
+        'checkbrew=$(command -v brew)'
+        $('if test -z $checkbrew; then echo $PATH | tr {0} | grep -xc $usrlocaldir/bin > /dev/null && echo true || PATH=$PATH:$usrlocaldir/bin; fi' -f "':' '\n'")
+        'checkbrew=$(command -v brew)'
+        'if test -z $checkbrew; then brew cask uninstall powershell; fi'
+        $('if test -z $checkbrew; then curl -fsSL {0} > ./brewinstall.rb && chmod +x ./brewinstall.rb; fi' -f $BrewInstallNoSudoUrl)
+        "if test -z `$checkbrew; then yes '' | ./brewinstall.rb `$HOME && export HOMEBREW_PREFIX=`$usrlocaldir; fi"
         'brew update'
         'brew tap caskroom/cask'
         'brew install openssl'
+        'echo powershellInstallComplete'
         'brew cask reinstall powershell' # IMPORTANT NOTE: This will prompt for a password!
     )
     $MacOSPMInstallScript = "bash -c \```"$($MacOSPMInstallScriptPrep)\```""
@@ -877,13 +913,18 @@ function Bootstrap-PowerShellCore {
         'usrlocaldir=\`$(echo \`"\`"\`$HOME/usr/local\`"\`")'
         'if [ ! -d \`"\`"\`$usrlocaldir/Cellar\`"\`" ]; then mkdir -p \`"\`"\`$usrlocaldir/Cellar\`"\`"; fi'
         'chown -R \`$USER \`$usrlocaldir'
-        "curl -fsSL $BrewInstallNoSudoUrl > ./brewinstall.rb"
-        'chmod +x ./brewinstall.rb'
         'checkbrew=\`$(command -v brew)'
-        "if test -z \```$checkbrew; then yes '' | ./brewinstall.rb \```$HOME && export HOMEBREW_PREFIX=\```$usrlocaldir && PATH=\```$PATH:\```$HOMEBREW_PREFIX/bin; fi"
+        $('if test -z \`$checkbrew; then echo \`$PATH | tr {0} | grep -xc /usr/local/bin > /dev/null && echo true || PATH=\`$PATH:/usr/local/bin; fi' -f "':' '\\n'")
+        'checkbrew=\`$(command -v brew)'
+        $('if test -z \`$checkbrew; then echo \`$PATH | tr {0} | grep -xc \`$usrlocaldir/bin > /dev/null && echo true || PATH=\`$PATH:\`$usrlocaldir/bin; fi' -f "':' '\\n'")
+        'checkbrew=\`$(command -v brew)'
+        'if test -z \`$checkbrew; then brew cask uninstall powershell; fi'
+        $('if test -z \`$checkbrew; then curl -fsSL {0} > ./brewinstall.rb && chmod +x ./brewinstall.rb; fi' -f $BrewInstallNoSudoUrl)
+        "if test -z \```$checkbrew; then yes '' | ./brewinstall.rb \```$HOME && export HOMEBREW_PREFIX=\```$usrlocaldir; fi"
         'brew update'
         'brew tap caskroom/cask'
         'brew install openssl'
+        'echo powershellInstallComplete'
         'brew cask reinstall powershell' # IMPORTANT NOTE: This will prompt for a password!
     )
     $MacOSPMInstallScriptWindowsToLinux = "bash -c \```"$($MacOSPMInstallScriptPrepWindowsToLinux -join '; ')\```""
@@ -892,13 +933,18 @@ function Bootstrap-PowerShellCore {
         'usrlocaldir=\\\$(echo \\\"\\\$HOME/usr/local\\\")'
         'if \[ ! -d \\\"\\\$usrlocaldir/Cellar\\\" \]; then mkdir -p \\\"$usrlocaldir/Cellar\\\"; fi'
         'chown -R \\\$USER \\\$usrlocaldir'
-        "curl -fsSL $BrewInstallNoSudoUrl > ./brewinstall.rb"
-        'chmod +x ./brewinstall.rb'
         'checkbrew=\\\$(command -v brew)'
-        'if test -z \\\$checkbrew; then yes \\\"\\\" | ./brewinstall.rb \\\$HOME && export HOMEBREW_PREFIX=\\\$usrlocaldir && PATH=\\\$PATH:\\\$HOMEBREW_PREFIX/bin; fi'
+        $('if test -z \\\$checkbrew; then echo \\\$PATH | tr {0} | grep -xc /usr/local/bin > /dev/null && echo true || PATH=\\\$PATH:/usr/local/bin; fi' -f "':' '\\\n'")
+        'checkbrew=\\\$(command -v brew)'
+        $('if test -z \\\$checkbrew; then echo \\\$PATH | tr {0} | grep -xc \\\$usrlocaldir/bin > /dev/null && echo true || PATH=\\\$PATH:\\\$usrlocaldir/bin; fi' -f "':' '\\\n'")
+        'checkbrew=\\\$(command -v brew)'
+        'if test -z \\\$checkbrew; then brew cask uninstall powershell; fi'
+        $('if test -z \\\$checkbrew; then curl -fsSL {0} > ./brewinstall.rb && chmod +x ./brewinstall.rb; fi' -f $BrewInstallNoSudoUrl)
+        'if test -z \\\$checkbrew; then yes \\\"\\\" | ./brewinstall.rb \\\$HOME && export HOMEBREW_PREFIX=\\\$usrlocaldir; fi'
         'brew update'
         'brew tap caskroom/cask'
         'brew install openssl'
+        'echo powershellInstallComplete'
         'brew cask reinstall powershell' # IMPORTANT NOTE: This will prompt for a password!
     )
 
@@ -910,13 +956,13 @@ function Bootstrap-PowerShellCore {
         PackageManagerInstallScriptWindowsToLinux   = $MacOSPMInstallScriptWindowsToLinux
         ManualInstallScriptWindowsToLinux           = $MacOSPMInstallScriptWindowsToLinux
         UninstallScript                             = $MacOSUninstallScript
-        ConfigurePwshRemotingScript                 = $PwshRemotingScript
-        ConfigurePwshRemotingScriptWindowsToLinux   = $PwshRemotingScriptWindowsToLinux
+        ConfigurePwshRemotingScript                 = $PwshRemotingScriptPrepForMac
+        ConfigurePwshRemotingScriptWindowsToLinux   = $PwshRemotingScriptForMacWindowsToMac
         ExpectScripts               = [pscustomobject]@{
             PackageManagerInstallScript = $MacOSScriptPrepForExpect
             ManualInstallScript         = $MacOSScriptPrepForExpect
             UninstallScript             = $MacOSUninstallScript
-            ConfigurePwshRemotingScript = $PwshRemotingScriptPrepForExpect
+            ConfigurePwshRemotingScript = $PwshRemotingScriptPrepForMacForExpect
         }
     }
 
@@ -1673,21 +1719,21 @@ function Bootstrap-PowerShellCore {
                     if ($UsePackageManagement) {
                         if ($ConfigurePSRemoting) {
                             $SSHCmdString = $($SSHCmdStringArray -join " ") + ' "' +
-                            $($args[0].PackageManagerInstallScriptWindowsToLinux.Substring(0,$($args[0].PackageManagerInstallScriptWindowsToLinux.Length-3)) -replace [regex]::Escape('\"'),'\`"' -replace [regex]::Escape('$'),'\`$') + '; ' +
-                            $($args[0].ConfigurePwshRemotingScriptWindowsToLinux -replace [regex]::Escape('sudo bash -c \`"'),'') + '"'
+                            $args[0].PackageManagerInstallScriptWindowsToLinux + '; ' +
+                            $args[0].ConfigurePwshRemotingScriptWindowsToLinux + '"'
                         }
                         else {
-                            $SSHCmdString = $($SSHCmdStringArray -join " ") + ' "' + $($args[0].PackageManagerInstallScriptWindowsToLinux -replace [regex]::Escape('\"'),'\`"' -replace [regex]::Escape('$'),'\`$') + '"'
+                            $SSHCmdString = $($SSHCmdStringArray -join " ") + ' "' + $args[0].PackageManagerInstallScriptWindowsToLinux + '"'
                         }
                     }
                     else {
                         if ($ConfigurePSRemoting) {
                             $SSHCmdString = $($SSHCmdStringArray -join " ") + ' "' +
-                            $($args[0].ManualInstallScriptWindowsToLinux.Substring(0,$($args[0].ManualInstallScriptWindowsToLinux.Length-3)) -replace [regex]::Escape('\"'),'\`"' -replace [regex]::Escape('$'),'\`$') + '; ' +
-                            $($args[0].ConfigurePwshRemotingScriptWindowsToLinux -replace [regex]::Escape('sudo bash -c \`"'),'') + '"'
+                            $args[0].ManualInstallScriptWindowsToLinux + '; ' +
+                            $args[0].ConfigurePwshRemotingScriptWindowsToLinux + '"'
                         }
                         else {
-                            $SSHCmdString = $($SSHCmdStringArray -join " ") + ' "' + $($args[0].ManualInstallScriptWindowsToLinux -replace [regex]::Escape('\"'),'\`"' -replace [regex]::Escape('$'),'\`$') + '"'
+                            $SSHCmdString = $($SSHCmdStringArray -join " ") + ' "' + $args[0].ManualInstallScriptWindowsToLinux + '"'
                         }
                     }
                 }
@@ -1993,11 +2039,11 @@ function Bootstrap-PowerShellCore {
                             $Counter++
                         }
                         if ($Counter -eq 91) {
-                            Write-Error "Sending the user's password timed out!"
+                            Write-Error "Sending the user's password (MacOS) timed out!"
                             $global:FunctionResult = "1"
-
+    
                             $SSHOutputPrep
-
+    
                             if ($PSAwaitProcess.Id) {
                                 try {
                                     $null = Stop-AwaitSession
@@ -2021,8 +2067,73 @@ function Bootstrap-PowerShellCore {
                                     }
                                 }
                             }
-
+    
                             return
+                        }
+    
+                        if ($LocalPassword) {
+                            $null = Send-AwaitCommand $LocalPassword
+                        }
+                        if ($DomainPassword) {
+                            $null = Send-AwaitCommand $DomainPassword
+                        }
+                        Start-Sleep -Seconds 3
+    
+                        $SuccessOrAcceptHostKeyOrPwdPrompt = Receive-AwaitResponse
+    
+                        # If we're also configuring /etc/ssh/sshd_config on MacOS, we can expect another Password prompt for 'sudo', but we may not
+                        # actually receive a prompt if the user doesn't require a sudo password, so we shouldn't outright fail here
+                        if ($ConfigurePSRemoting) {
+                            $Counter = 0
+                            while (![bool]$($($SSHOutputPrep -split "`n") -match "password.*:") -and $Counter -le 15) {
+                                $SuccessOrAcceptHostKeyOrPwdPrompt = Receive-AwaitResponse
+                                if (![System.String]::IsNullOrWhiteSpace($SuccessOrAcceptHostKeyOrPwdPrompt)) {
+                                    $null = $SSHOutputPrep.Add($SuccessOrAcceptHostKeyOrPwdPrompt)
+                                }
+                                Start-Sleep -Seconds 2
+                                $Counter++
+                            }
+                            if ($Counter -eq 16) {
+                                Write-Warning "Sending the user's password (MacOS PSRemoting) timed out!"
+                                $DontSendPassword = $True
+    
+                                if ($PSAwaitProcess.Id) {
+                                    try {
+                                        $null = Stop-AwaitSession
+                                    }
+                                    catch {
+                                        if ($PSAwaitProcess.Id -eq $PID) {
+                                            Write-Error "The PSAwaitSession never spawned! Halting!"
+                                            $global:FunctionResult = "1"
+                                            return
+                                        }
+                                        else {
+                                            if ([bool]$(Get-Process -Id $PSAwaitProcess.Id -ErrorAction SilentlyContinue)) {
+                                                Stop-Process -Id $PSAwaitProcess.Id -ErrorAction SilentlyContinue
+                                            }
+                                            $Counter = 0
+                                            while ([bool]$(Get-Process -Id $PSAwaitProcess.Id -ErrorAction SilentlyContinue) -and $Counter -le 15) {
+                                                Write-Verbose "Waiting for Await Module Process Id $($PSAwaitProcess.Id) to end..."
+                                                Start-Sleep -Seconds 1
+                                                $Counter++
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+    
+                            if (!$DontSendPassword) {
+                                if ($LocalPassword) {
+                                    $null = Send-AwaitCommand $LocalPassword
+                                }
+                                if ($DomainPassword) {
+                                    $null = Send-AwaitCommand $DomainPassword
+                                }
+                                Start-Sleep -Seconds 3
+            
+                                $SuccessOrAcceptHostKeyOrPwdPrompt = Receive-AwaitResponse
+                                $null = $SSHOutputPrep.Add($SuccessOrAcceptHostKeyOrPwdPrompt)
+                            }
                         }
                     }
 
@@ -2114,7 +2225,7 @@ function Bootstrap-PowerShellCore {
                         $Counter++
                     }
                     if ($Counter -eq 91) {
-                        Write-Error "Sending the user's password timed out!"
+                        Write-Error "Sending the user's password (MacOS) timed out!"
                         $global:FunctionResult = "1"
 
                         $SSHOutputPrep
@@ -2144,6 +2255,71 @@ function Bootstrap-PowerShellCore {
                         }
 
                         return
+                    }
+
+                    if ($LocalPassword) {
+                        $null = Send-AwaitCommand $LocalPassword
+                    }
+                    if ($DomainPassword) {
+                        $null = Send-AwaitCommand $DomainPassword
+                    }
+                    Start-Sleep -Seconds 3
+
+                    $SuccessOrAcceptHostKeyOrPwdPrompt = Receive-AwaitResponse
+
+                    # If we're also configuring /etc/ssh/sshd_config on MacOS, we can expect another Password prompt for 'sudo', but we may not
+                    # actually receive a prompt if the user doesn't require a sudo password, so we shouldn't outright fail here
+                    if ($ConfigurePSRemoting) {
+                        $Counter = 0
+                        while (![bool]$($($SSHOutputPrep -split "`n") -match "password.*:") -and $Counter -le 15) {
+                            $SuccessOrAcceptHostKeyOrPwdPrompt = Receive-AwaitResponse
+                            if (![System.String]::IsNullOrWhiteSpace($SuccessOrAcceptHostKeyOrPwdPrompt)) {
+                                $null = $SSHOutputPrep.Add($SuccessOrAcceptHostKeyOrPwdPrompt)
+                            }
+                            Start-Sleep -Seconds 2
+                            $Counter++
+                        }
+                        if ($Counter -eq 16) {
+                            Write-Warning "Sending the user's password (MacOS PSRemoting) timed out!"
+                            $DontSendPassword = $True
+
+                            if ($PSAwaitProcess.Id) {
+                                try {
+                                    $null = Stop-AwaitSession
+                                }
+                                catch {
+                                    if ($PSAwaitProcess.Id -eq $PID) {
+                                        Write-Error "The PSAwaitSession never spawned! Halting!"
+                                        $global:FunctionResult = "1"
+                                        return
+                                    }
+                                    else {
+                                        if ([bool]$(Get-Process -Id $PSAwaitProcess.Id -ErrorAction SilentlyContinue)) {
+                                            Stop-Process -Id $PSAwaitProcess.Id -ErrorAction SilentlyContinue
+                                        }
+                                        $Counter = 0
+                                        while ([bool]$(Get-Process -Id $PSAwaitProcess.Id -ErrorAction SilentlyContinue) -and $Counter -le 15) {
+                                            Write-Verbose "Waiting for Await Module Process Id $($PSAwaitProcess.Id) to end..."
+                                            Start-Sleep -Seconds 1
+                                            $Counter++
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        if (!$DontSendPassword) {
+                            if ($LocalPassword) {
+                                $null = Send-AwaitCommand $LocalPassword
+                            }
+                            if ($DomainPassword) {
+                                $null = Send-AwaitCommand $DomainPassword
+                            }
+                            Start-Sleep -Seconds 3
+        
+                            $SuccessOrAcceptHostKeyOrPwdPrompt = Receive-AwaitResponse
+                            $null = $SSHOutputPrep.Add($SuccessOrAcceptHostKeyOrPwdPrompt)
+                        }
                     }
                 }
 
@@ -4322,8 +4498,8 @@ puts "Run `brew help` to get started"
 # SIG # Begin signature block
 # MIIMiAYJKoZIhvcNAQcCoIIMeTCCDHUCAQExCzAJBgUrDgMCGgUAMGkGCisGAQQB
 # gjcCAQSgWzBZMDQGCisGAQQBgjcCAR4wJgIDAQAABBAfzDtgWUsITrck0sYpfvNR
-# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUnlVWi+bsSgxHF5Y23TCx5C5M
-# ZPWgggn9MIIEJjCCAw6gAwIBAgITawAAAB/Nnq77QGja+wAAAAAAHzANBgkqhkiG
+# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQU5luIv2568x7eZq21AYhQY6+p
+# ccegggn9MIIEJjCCAw6gAwIBAgITawAAAB/Nnq77QGja+wAAAAAAHzANBgkqhkiG
 # 9w0BAQsFADAwMQwwCgYDVQQGEwNMQUIxDTALBgNVBAoTBFpFUk8xETAPBgNVBAMT
 # CFplcm9EQzAxMB4XDTE3MDkyMDIxMDM1OFoXDTE5MDkyMDIxMTM1OFowPTETMBEG
 # CgmSJomT8ixkARkWA0xBQjEUMBIGCgmSJomT8ixkARkWBFpFUk8xEDAOBgNVBAMT
@@ -4380,11 +4556,11 @@ puts "Run `brew help` to get started"
 # ARkWA0xBQjEUMBIGCgmSJomT8ixkARkWBFpFUk8xEDAOBgNVBAMTB1plcm9TQ0EC
 # E1gAAAH5oOvjAv3166MAAQAAAfkwCQYFKw4DAhoFAKB4MBgGCisGAQQBgjcCAQwx
 # CjAIoAKAAKECgAAwGQYJKoZIhvcNAQkDMQwGCisGAQQBgjcCAQQwHAYKKwYBBAGC
-# NwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFIAWTxBDW9mPPcjP
-# UO+oBM3bh9NzMA0GCSqGSIb3DQEBAQUABIIBAFozCzc+t1r+KarF0h88KltpAaI7
-# 5jY5vPgnkLBix697SHCQk55AUuqBtfk+tRcQ8yNyMrHfSh9aa/ku66bHSGrdXP6U
-# SYyq53PoHU1VSaKYAzxcdILLIUDml8tOz7k9QIgSUG65CsrVZlFbayKXEJszNP0L
-# I1TPjfNUgLwA9wDvFoeFutqaQNkAqIkyu6bgQ1XZs3GHlHg7AwXLz+RzXUwaPiHP
-# Zw2L4+m2wsvLUamW9X+7uvtkcR0DjMfCiisQnSY9TW4qeJ7ugF8ThjxvtCELCG43
-# vhV1Ghpn6kEUbW9VuuQ69eVWtPTvMt3oazY2aH0rpXSS6oZpjbinoukd234=
+# NwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFKWeBqkLR+s+//xW
+# DsUu9M6tczWQMA0GCSqGSIb3DQEBAQUABIIBAFaPrvuHFe3wuCf4TW4JQxfnQ+fn
+# VW5dHR6dYe5ybvQkLw4xZNQKSFmfpj4RtIXj3EgU6vjULQexjGVooxr+8jF2fQ3L
+# Rai8ikCbV5lbRKkBktfH6bAXhjc0Cc3cadxOZKu0FX+4sKfDcdYUNDQfGFO1dO5N
+# 35btyMQ4Mv4v99aZ27m3m5BDumq+Cn3KRblq/Lt09TpDt7nntjH3EZdmBRkyr5SX
+# Kzoqyy8Bg2hysL6RJwAcNfoKhCfbY/wZuN81Bde8MQ551pEhJpO8enTu3d385mEV
+# CsDtYrCveHfrMPsjEZn1F+5m9syCqXQPe2ovH7RqFmIdLlJw6Sfvf9ykRgg=
 # SIG # End signature block
