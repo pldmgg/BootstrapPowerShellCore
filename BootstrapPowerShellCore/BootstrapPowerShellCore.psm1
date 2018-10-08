@@ -854,14 +854,18 @@ function Bootstrap-PowerShellCore {
         brew cask reinstall powershell
     '@
     #>
-    $BrewInstallNoSudoUrl = 'https://gist.githubusercontent.com/skyl/36563a5be809e54dc139/raw/ad509acb9a3accc6408e184ec5e577657bdae7b3/install.rb'
+    # Line that worked:
+    #    ssh pdadmin@192.168.2.59 "bash -c \`"usrlocaldir=\`$(echo \`"\`"\`$HOME/usr/local\`"\`"); if [ ! -d \`"\`"\`$usrlocaldir/Cellar\`"\`" ]; then mkdir -p \`"\`"\`$usrlocaldir/Cellar\`"\`"; fi; chown -R \`$USER \`$usrlocaldir; curl -fsSL https://raw.githubusercontent.com/pldmgg/BootstrapPowerShellCore/master/BootstrapPowerShellCore/Private/brewinstall.rb > ./brewinstall.rb; chmod +x ./brewinstall.rb; yes '' | ./brewinstall.rb \`$HOME\`""
+    #$BrewInstallNoSudoUrl = 'https://gist.githubusercontent.com/skyl/36563a5be809e54dc139/raw/ad509acb9a3accc6408e184ec5e577657bdae7b3/install.rb'
+    $BrewInstallNoSudoUrl = 'https://raw.githubusercontent.com/pldmgg/BootstrapPowerShellCore/master/BootstrapPowerShellCore/Private/brewinstall.rb'
     $MacOSPMInstallScriptPrep = @(
         'usrlocaldir=$(echo \"\"$HOME/usr/local\"\")'
         'if [ ! -d \"\"$usrlocaldir/Cellar\"\" ]; then mkdir -p \"\"$usrlocaldir/Cellar\"\"; fi'
-        'chmod -R $USER $usrlocaldir'
-        "brewscript=`$(echo \`"\`"`$(curl -fsSL $BrewInstallNoSudoUrl)\`"\`" | sed \`"\`"s|YOUR_HOME = ''|YOUR_HOME = '`$HOME'|g\`"\`")"
+        'chown -R $USER $usrlocaldir'
+        "curl -fsSL $BrewInstallNoSudoUrl > ./brewinstall.rb"
+        'chmod +x ./brewinstall.rb'
         'checkbrew=$(command -v brew)'
-        'if test -z $checkbrew; then yes "" | /usr/bin/ruby -e \"\"$brewscript\"\" && export HOMEBREW_PREFIX=$usrlocaldir && PATH=$PATH:$HOMEBREW_PREFIX/bin; fi'
+        "if test -z `$checkbrew; then yes '' | ./brewinstall.rb `$HOME && export HOMEBREW_PREFIX=`$usrlocaldir && PATH=`$PATH:`$HOMEBREW_PREFIX/bin; fi"
         'brew update'
         'brew tap caskroom/cask'
         'brew install openssl'
@@ -870,12 +874,13 @@ function Bootstrap-PowerShellCore {
     $MacOSPMInstallScript = "bash -c \```"$($MacOSPMInstallScriptPrep)\```""
 
     $MacOSPMInstallScriptPrepWindowsToLinux = @(
-        'usrlocaldir=\`$(echo \\\`"\`$HOME/usr/local\\\`")'
-        'if [ ! -d \\\`"\`$usrlocaldir/Cellar\\\`" ]; then mkdir -p \\\`"\`$usrlocaldir/Cellar\\\`"; fi'
-        'chmod -R $USER $usrlocaldir'
-        "brewscript=\```$(echo \\\```"\```$(curl -fsSL $BrewInstallNoSudoUrl)\\\`" | sed \\\`"s|YOUR_HOME = ''|YOUR_HOME = '\```$HOME'|g\\\`")"
+        'usrlocaldir=\`$(echo \`"\`"\`$HOME/usr/local\`"\`")'
+        'if [ ! -d \`"\`"\`$usrlocaldir/Cellar\`"\`" ]; then mkdir -p \`"\`"\`$usrlocaldir/Cellar\`"\`"; fi'
+        'chown -R \`$USER \`$usrlocaldir'
+        "curl -fsSL $BrewInstallNoSudoUrl > ./brewinstall.rb"
+        'chmod +x ./brewinstall.rb'
         'checkbrew=\`$(command -v brew)'
-        'if test -z \`$checkbrew; then yes \\\`"\\\`" | /usr/bin/ruby -e \\\`"\`$brewscript\\\`" && export HOMEBREW_PREFIX=\`$usrlocaldir && PATH=\`$PATH:\`$HOMEBREW_PREFIX/bin; fi'
+        "if test -z \```$checkbrew; then yes '' | ./brewinstall.rb \```$HOME && export HOMEBREW_PREFIX=\```$usrlocaldir && PATH=\```$PATH:\```$HOMEBREW_PREFIX/bin; fi"
         'brew update'
         'brew tap caskroom/cask'
         'brew install openssl'
@@ -885,11 +890,12 @@ function Bootstrap-PowerShellCore {
 
     $MacOSScriptPrepForExpect = @(
         'usrlocaldir=\\\$(echo \\\"\\\$HOME/usr/local\\\")'
-        'if [ ! -d \\\"\\\$usrlocaldir/Cellar\\\" ]; then mkdir -p \\\"$usrlocaldir/Cellar\\\"; fi'
-        'chmod -R \\\$USER \\\$usrlocaldir'
-        "brewscript=\\\`$(echo \\\`"\\\`$(curl -fsSL $BrewInstallNoSudoUrl)\\\`" | sed \\\`"s|YOUR_HOME = ''|YOUR_HOME = '\\\`$HOME'|g\\\`")"
+        'if \[ ! -d \\\"\\\$usrlocaldir/Cellar\\\" \]; then mkdir -p \\\"$usrlocaldir/Cellar\\\"; fi'
+        'chown -R \\\$USER \\\$usrlocaldir'
+        "curl -fsSL $BrewInstallNoSudoUrl > ./brewinstall.rb"
+        'chmod +x ./brewinstall.rb'
         'checkbrew=\\\$(command -v brew)'
-        'if test -z \\\$checkbrew; then yes \\\"\\\" | /usr/bin/ruby -e \\\"\\\$brewscript\\\" && export HOMEBREW_PREFIX=\\\$usrlocaldir && PATH=\\\$PATH:\\\$HOMEBREW_PREFIX/bin; fi'
+        'if test -z \\\$checkbrew; then yes \\\"\\\" | ./brewinstall.rb \\\$HOME && export HOMEBREW_PREFIX=\\\$usrlocaldir && PATH=\\\$PATH:\\\$HOMEBREW_PREFIX/bin; fi'
         'brew update'
         'brew tap caskroom/cask'
         'brew install openssl'
@@ -4084,10 +4090,12 @@ if ($PSVersionTable.Platform -eq "Win32NT" -and $PSVersionTable.PSEdition -eq "C
 $MacBrewInstallNoSudo = @'
 #!/System/Library/Frameworks/Ruby.framework/Versions/Current/usr/bin/ruby
 
+argsarray = ARGV
+
 # SET YOUR_HOME TO THE ABSOLUTE PATH OF YOUR HOME DIRECTORY
 # chmod +x install.rb
 # ./install.rb
-YOUR_HOME = ''
+YOUR_HOME = "#{ARGV[0]}"
 
 HOMEBREW_PREFIX = "#{YOUR_HOME}/usr/local"
 HOMEBREW_CACHE = '/Library/Caches/Homebrew'
@@ -4314,8 +4322,8 @@ puts "Run `brew help` to get started"
 # SIG # Begin signature block
 # MIIMiAYJKoZIhvcNAQcCoIIMeTCCDHUCAQExCzAJBgUrDgMCGgUAMGkGCisGAQQB
 # gjcCAQSgWzBZMDQGCisGAQQBgjcCAR4wJgIDAQAABBAfzDtgWUsITrck0sYpfvNR
-# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUOJ1Hi8VScZERPqglbLrxS3nG
-# 34agggn9MIIEJjCCAw6gAwIBAgITawAAAB/Nnq77QGja+wAAAAAAHzANBgkqhkiG
+# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUnlVWi+bsSgxHF5Y23TCx5C5M
+# ZPWgggn9MIIEJjCCAw6gAwIBAgITawAAAB/Nnq77QGja+wAAAAAAHzANBgkqhkiG
 # 9w0BAQsFADAwMQwwCgYDVQQGEwNMQUIxDTALBgNVBAoTBFpFUk8xETAPBgNVBAMT
 # CFplcm9EQzAxMB4XDTE3MDkyMDIxMDM1OFoXDTE5MDkyMDIxMTM1OFowPTETMBEG
 # CgmSJomT8ixkARkWA0xBQjEUMBIGCgmSJomT8ixkARkWBFpFUk8xEDAOBgNVBAMT
@@ -4372,11 +4380,11 @@ puts "Run `brew help` to get started"
 # ARkWA0xBQjEUMBIGCgmSJomT8ixkARkWBFpFUk8xEDAOBgNVBAMTB1plcm9TQ0EC
 # E1gAAAH5oOvjAv3166MAAQAAAfkwCQYFKw4DAhoFAKB4MBgGCisGAQQBgjcCAQwx
 # CjAIoAKAAKECgAAwGQYJKoZIhvcNAQkDMQwGCisGAQQBgjcCAQQwHAYKKwYBBAGC
-# NwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFH+ISnt70DYQIIrk
-# GMI1TfiqbfhjMA0GCSqGSIb3DQEBAQUABIIBAAddUe/r6rq7EkspazlD2Cx7s5rV
-# T0WSXxAmA9bH6dlOF6u0ekL+SMmJT040GtIt3HeGc8/htok7eyA6d7St9rxKHKpy
-# lhqRNvSIBPAAC3m6B9EayamBFEIgG2A967X7Mmn1HbWv34uLkEMUDxVPx6e9Gye/
-# rC4Bl/riHummTFKCq9x1FIvXoLUyqtEaV+dJHoYVZN8a4oxwD6RWXIxCw3Z0sgzd
-# +BGXjLDVW+i7Y+u9kQt7EnxIhDk9HdpkI//xYchXwBrmkosHNHFVDwlAQnUUB4lt
-# VnBR5wd1vqi69zXEExVq4U+KB6oJKM7sobGewj5HDnwCZ5wVJJWXZKXRRao=
+# NwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFIAWTxBDW9mPPcjP
+# UO+oBM3bh9NzMA0GCSqGSIb3DQEBAQUABIIBAFozCzc+t1r+KarF0h88KltpAaI7
+# 5jY5vPgnkLBix697SHCQk55AUuqBtfk+tRcQ8yNyMrHfSh9aa/ku66bHSGrdXP6U
+# SYyq53PoHU1VSaKYAzxcdILLIUDml8tOz7k9QIgSUG65CsrVZlFbayKXEJszNP0L
+# I1TPjfNUgLwA9wDvFoeFutqaQNkAqIkyu6bgQ1XZs3GHlHg7AwXLz+RzXUwaPiHP
+# Zw2L4+m2wsvLUamW9X+7uvtkcR0DjMfCiisQnSY9TW4qeJ7ugF8ThjxvtCELCG43
+# vhV1Ghpn6kEUbW9VuuQ69eVWtPTvMt3oazY2aH0rpXSS6oZpjbinoukd234=
 # SIG # End signature block

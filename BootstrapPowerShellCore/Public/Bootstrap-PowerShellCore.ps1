@@ -785,15 +785,18 @@ function Bootstrap-PowerShellCore {
         brew cask reinstall powershell
     '@
     #>
+    # Line that worked:
+    #    ssh pdadmin@192.168.2.59 "bash -c \`"usrlocaldir=\`$(echo \`"\`"\`$HOME/usr/local\`"\`"); if [ ! -d \`"\`"\`$usrlocaldir/Cellar\`"\`" ]; then mkdir -p \`"\`"\`$usrlocaldir/Cellar\`"\`"; fi; chown -R \`$USER \`$usrlocaldir; curl -fsSL https://raw.githubusercontent.com/pldmgg/BootstrapPowerShellCore/master/BootstrapPowerShellCore/Private/brewinstall.rb > ./brewinstall.rb; chmod +x ./brewinstall.rb; yes '' | ./brewinstall.rb \`$HOME\`""
     #$BrewInstallNoSudoUrl = 'https://gist.githubusercontent.com/skyl/36563a5be809e54dc139/raw/ad509acb9a3accc6408e184ec5e577657bdae7b3/install.rb'
     $BrewInstallNoSudoUrl = 'https://raw.githubusercontent.com/pldmgg/BootstrapPowerShellCore/master/BootstrapPowerShellCore/Private/brewinstall.rb'
     $MacOSPMInstallScriptPrep = @(
         'usrlocaldir=$(echo \"\"$HOME/usr/local\"\")'
         'if [ ! -d \"\"$usrlocaldir/Cellar\"\" ]; then mkdir -p \"\"$usrlocaldir/Cellar\"\"; fi'
-        'chmod -R $USER $usrlocaldir'
-        "brewscript=`$(echo \`"\`"`$(curl -fsSL $BrewInstallNoSudoUrl)\`"\`" | sed \`"\`"s|YOUR_HOME = ''|YOUR_HOME = '`$HOME'|g\`"\`")"
+        'chown -R $USER $usrlocaldir'
+        "curl -fsSL $BrewInstallNoSudoUrl > ./brewinstall.rb"
+        'chmod +x ./brewinstall.rb'
         'checkbrew=$(command -v brew)'
-        'if test -z $checkbrew; then yes "" | /usr/bin/ruby -e \"\"$brewscript\"\" && export HOMEBREW_PREFIX=$usrlocaldir && PATH=$PATH:$HOMEBREW_PREFIX/bin; fi'
+        "if test -z `$checkbrew; then yes '' | ./brewinstall.rb `$HOME && export HOMEBREW_PREFIX=`$usrlocaldir && PATH=`$PATH:`$HOMEBREW_PREFIX/bin; fi"
         'brew update'
         'brew tap caskroom/cask'
         'brew install openssl'
@@ -805,9 +808,10 @@ function Bootstrap-PowerShellCore {
         'usrlocaldir=\`$(echo \`"\`"\`$HOME/usr/local\`"\`")'
         'if [ ! -d \`"\`"\`$usrlocaldir/Cellar\`"\`" ]; then mkdir -p \`"\`"\`$usrlocaldir/Cellar\`"\`"; fi'
         'chown -R \`$USER \`$usrlocaldir'
-        "brewscript=\```$(echo \```"\```"\```$(curl -fsSL $BrewInstallNoSudoUrl)\```"\```" | sed \```"\```"s|YOUR_HOME = ''|YOUR_HOME = '\```$HOME'|g\```"\```")"
+        "curl -fsSL $BrewInstallNoSudoUrl > ./brewinstall.rb"
+        'chmod +x ./brewinstall.rb'
         'checkbrew=\`$(command -v brew)'
-        'if test -z \`$checkbrew; then yes \`"\`"\`"\`" | /usr/bin/ruby -e \`"\`"\`$brewscript\`"\`" && export HOMEBREW_PREFIX=\`$usrlocaldir && PATH=\`$PATH:\`$HOMEBREW_PREFIX/bin; fi'
+        "if test -z \```$checkbrew; then yes '' | ./brewinstall.rb \```$HOME && export HOMEBREW_PREFIX=\```$usrlocaldir && PATH=\```$PATH:\```$HOMEBREW_PREFIX/bin; fi"
         'brew update'
         'brew tap caskroom/cask'
         'brew install openssl'
@@ -817,11 +821,12 @@ function Bootstrap-PowerShellCore {
 
     $MacOSScriptPrepForExpect = @(
         'usrlocaldir=\\\$(echo \\\"\\\$HOME/usr/local\\\")'
-        'if [ ! -d \\\"\\\$usrlocaldir/Cellar\\\" ]; then mkdir -p \\\"$usrlocaldir/Cellar\\\"; fi'
-        'chmod -R \\\$USER \\\$usrlocaldir'
-        "brewscript=\\\`$(echo \\\`"\\\`$(curl -fsSL $BrewInstallNoSudoUrl)\\\`" | sed \\\`"s|YOUR_HOME = ''|YOUR_HOME = '\\\`$HOME'|g\\\`")"
+        'if \[ ! -d \\\"\\\$usrlocaldir/Cellar\\\" \]; then mkdir -p \\\"$usrlocaldir/Cellar\\\"; fi'
+        'chown -R \\\$USER \\\$usrlocaldir'
+        "curl -fsSL $BrewInstallNoSudoUrl > ./brewinstall.rb"
+        'chmod +x ./brewinstall.rb'
         'checkbrew=\\\$(command -v brew)'
-        'if test -z \\\$checkbrew; then yes \\\"\\\" | /usr/bin/ruby -e \\\"\\\$brewscript\\\" && export HOMEBREW_PREFIX=\\\$usrlocaldir && PATH=\\\$PATH:\\\$HOMEBREW_PREFIX/bin; fi'
+        'if test -z \\\$checkbrew; then yes \\\"\\\" | ./brewinstall.rb \\\$HOME && export HOMEBREW_PREFIX=\\\$usrlocaldir && PATH=\\\$PATH:\\\$HOMEBREW_PREFIX/bin; fi'
         'brew update'
         'brew tap caskroom/cask'
         'brew install openssl'
@@ -2264,8 +2269,8 @@ function Bootstrap-PowerShellCore {
 # SIG # Begin signature block
 # MIIMiAYJKoZIhvcNAQcCoIIMeTCCDHUCAQExCzAJBgUrDgMCGgUAMGkGCisGAQQB
 # gjcCAQSgWzBZMDQGCisGAQQBgjcCAR4wJgIDAQAABBAfzDtgWUsITrck0sYpfvNR
-# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQU/gQ1sLdw72xy34ghvM0zZKiP
-# oVigggn9MIIEJjCCAw6gAwIBAgITawAAAB/Nnq77QGja+wAAAAAAHzANBgkqhkiG
+# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUBYCiCsVOT/C4bhAy3Q/h7oNR
+# tPCgggn9MIIEJjCCAw6gAwIBAgITawAAAB/Nnq77QGja+wAAAAAAHzANBgkqhkiG
 # 9w0BAQsFADAwMQwwCgYDVQQGEwNMQUIxDTALBgNVBAoTBFpFUk8xETAPBgNVBAMT
 # CFplcm9EQzAxMB4XDTE3MDkyMDIxMDM1OFoXDTE5MDkyMDIxMTM1OFowPTETMBEG
 # CgmSJomT8ixkARkWA0xBQjEUMBIGCgmSJomT8ixkARkWBFpFUk8xEDAOBgNVBAMT
@@ -2322,11 +2327,11 @@ function Bootstrap-PowerShellCore {
 # ARkWA0xBQjEUMBIGCgmSJomT8ixkARkWBFpFUk8xEDAOBgNVBAMTB1plcm9TQ0EC
 # E1gAAAH5oOvjAv3166MAAQAAAfkwCQYFKw4DAhoFAKB4MBgGCisGAQQBgjcCAQwx
 # CjAIoAKAAKECgAAwGQYJKoZIhvcNAQkDMQwGCisGAQQBgjcCAQQwHAYKKwYBBAGC
-# NwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFGLhUElN9odPX/DG
-# Y/B9xE1P/hlWMA0GCSqGSIb3DQEBAQUABIIBACxAkH41jc3Crmim0p6GcuW4Uecv
-# /Sc4TMlDGtF0zr5GLYAhaPWHp4VwWI2Hqqq9gongo+unDlvm90bvGF+if8JgxSrS
-# rWhHmRO/rNPY2JUcertR7h9Zw2QjNEKPsz6RCRBb98L9TrqHWoClvuDF894Iex9o
-# C8SSpIuctYYaofYnGnFh2bKvx/TMad+eCz77ckdNxN52C0bSsExmwfyrB+mAmGKk
-# CWjLadh2URKa2VQMpamv7YI/RKRDQWDUqCPDiVtu+9vBJfeXlE/rlRJt3p+nh8QT
-# MV2pPR1oCLHdyhorlNHcMRLWaAs/JeihAXrVStafuuW0d4bBokEEEv+5Ui0=
+# NwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFPirsu5O+Ljk/bau
+# al70m417LLSUMA0GCSqGSIb3DQEBAQUABIIBACi0c13DuQwqjc37Rqx8E95U7RA3
+# mSbV/vtBf0/HMZWHx/sgXSpVGdtJmCCFC8JpjWUWr9UlOuHfaT8H7Q6ggshr3anr
+# Z4zoZ87M27jb0XEup9zfso2E01y3CTO7NgeMxeTvfNdCCr+q/YCxhb0qtsgDUYvy
+# HxJchBJV0lIDg9UrvHETRjsF2/0IBEnIx4fpNF4eM04C5tE5LfAReaZtw1yHDnP6
+# E03RAxWm/JianIedpLXOgGr1Y/j4fKWWvyPIFD0cpyF7obBBNBGEvlpKrytBOvE7
+# VDlGyCG6326pvlDHgv9wRIkYAB7o943IsBQujBymV4zYTJPHscuK00ooeks=
 # SIG # End signature block
