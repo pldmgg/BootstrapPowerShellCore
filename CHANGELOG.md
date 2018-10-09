@@ -1,5 +1,9 @@
 # Change log
 
+## 0.8.9 (October 09, 2018)
+
+- Updated README.md
+
 ## 0.8.8 (October 09, 2018)
 
 - Removed unnecessary 'Write-Host'
