@@ -300,8 +300,7 @@ function Bootstrap-PowerShellCore {
         "    if (`$(Get-Module -ListAvailable).Name -notcontains 'ProgramManagement') {`$null = Install-Module ProgramManagement -ErrorAction Stop}"
         "    if (`$(Get-Module).Name -notcontains 'ProgramManagement') {`$null = Import-Module ProgramManagement -ErrorAction Stop}"
         '    Install-Program -ProgramName powershell-core -CommandName pwsh.exe -ExpectedInstallLocation "$env:ProgramFiles\PowerShell"'
-        '}'
-        'catch {'
+        '} catch {'
         '    Write-Error $_'
         "    `$global:FunctionResult = '1'"
         '    return'
@@ -345,16 +344,14 @@ function Bootstrap-PowerShellCore {
         '    if ($(Get-Module -ListAvailable).Name -notcontains "ProgramManagement") {$null = Install-Module ProgramManagement -ErrorAction Stop}'
         '    if ($(Get-Module).Name -notcontains "ProgramManagement") {$null = Import-Module ProgramManagement -ErrorAction Stop}'
         '    Install-Program -ProgramName powershell-core -CommandName pwsh.exe'
-        '}'
-        'catch {'
+        '} catch {'
         '    Write-Error $_'
         '    $global:FunctionResult = "1"'
         '    return'
         '}'
         'try {'
         '    Uninstall-Program -ProgramName powershell-core -ErrorAction Stop'
-        '}'
-        'catch {'
+        '} catch {'
         '    Write-Error $_'
         '    $global:FunctionResult = "1"'
         '    return'
@@ -370,8 +367,7 @@ function Bootstrap-PowerShellCore {
         "    if (`$(Get-Module -ListAvailable).Name -notcontains 'WinSSH') {`$null = Install-Module WinSSH -ErrorAction Stop}"
         "    if (`$(Get-Module).Name -notcontains 'WinSSH') {`$null = Import-Module WinSSH -ErrorAction Stop}"
         '    Install-WinSSH -GiveWinSSHBinariesPathPriority -ConfigureSSHDOnLocalHost -DefaultShell pwsh'
-        '}'
-        'catch {'
+        '} catch {'
         '    Write-Error $_'
         "    `$global:FunctionResult = '1'"
         '    return'
@@ -469,16 +465,16 @@ function Bootstrap-PowerShellCore {
         'wget -q https://packages.microsoft.com/config/ubuntu/14.04/packages-microsoft-prod.deb'
         'dpkg -i packages-microsoft-prod.deb'
         'apt-get update'
-        'echo powershellInstallComplete'
-        'apt-get install -y powershell'
+        #'echo powershellInstallComplete'
+        'apt-get install -y powershell && echo powershellInstallComplete'
     )
     $Ubuntu1404PMInstallScript = "sudo bash -c \```"$($Ubuntu1404PMInstallScriptPrep -join '; ')\```""
 
     $Ubuntu1404ManualInstallScriptPrep = @(
         "wget -q $Ubuntu1404PackageUrl"
         "dpkg -i $Ubuntu1404PackageName"
-        'echo powershellInstallComplete'
-        'apt-get install -f'
+        #'echo powershellInstallComplete'
+        'apt-get install -f && echo powershellInstallComplete'
     )
     $Ubuntu1404ManualInstallScript = "sudo bash -c \```"$($Ubuntu1404ManualInstallScriptPrep -join '; ')\```""
 
@@ -506,16 +502,16 @@ function Bootstrap-PowerShellCore {
         'wget -q https://packages.microsoft.com/config/ubuntu/16.04/packages-microsoft-prod.deb'
         'dpkg -i packages-microsoft-prod.deb'
         'apt-get update'
-        'echo powershellInstallComplete'
-        'apt-get install -y powershell'
+        #'echo powershellInstallComplete'
+        'apt-get install -y powershell && echo powershellInstallComplete'
     )
     $Ubuntu1604PMInstallScript = "sudo bash -c \```"$($Ubuntu1604PMInstallScriptPrep -join '; ')\```""
 
     $Ubuntu1604ManualInstallScriptPrep = @(
         "wget -q $Ubuntu1604PackageUrl"
         "dpkg -i $Ubuntu1604PackageName"
-        'echo powershellInstallComplete'
-        'apt-get install -f'
+        #'echo powershellInstallComplete'
+        'apt-get install -f && echo powershellInstallComplete'
     )
     $Ubuntu1604ManualInstallScript = "sudo bash -c \```"$($Ubuntu1604ManualInstallScriptPrep -join '; ')\```""
 
@@ -543,16 +539,16 @@ function Bootstrap-PowerShellCore {
         'wget -q https://packages.microsoft.com/config/ubuntu/18.04/packages-microsoft-prod.deb'
         'dpkg -i packages-microsoft-prod.deb'
         'apt-get update'
-        'echo powershellInstallComplete'
-        'apt-get install -y powershell'
+        #'echo powershellInstallComplete'
+        'apt-get install -y powershell && echo powershellInstallComplete'
     )
     $Ubuntu1804PMInstallScript = "sudo bash -c \```"$($Ubuntu1804PMInstallScriptPrep -join '; ')\```""
 
     $Ubuntu1804ManualInstallScriptPrep = @(
         "wget -q $Ubuntu1804PackageUrl"
         "dpkg -i $Ubuntu1804PackageName"
-        'echo powershellInstallComplete'
-        'apt-get install -f'
+        #'echo powershellInstallComplete'
+        'apt-get install -f && echo powershellInstallComplete'
     )
     $Ubuntu1804ManualInstallScript = "sudo bash -c \```"$($Ubuntu1804ManualInstallScriptPrep -join '; ')\```""
 
@@ -579,8 +575,8 @@ function Bootstrap-PowerShellCore {
         'curl https://packages.microsoft.com/keys/microsoft.asc | sudo apt-key add -'
         "sh -c 'echo \`"\`"deb [arch=amd64] https://packages.microsoft.com/repos/microsoft-debian-jessie-prod jessie main\`"\`" > /etc/apt/sources.list.d/microsoft.list'"
         'apt-get update'
-        'echo powershellInstallComplete'
-        'apt-get install -y powershell'
+        #'echo powershellInstallComplete'
+        'apt-get install -y powershell && echo powershellInstallComplete'
     )
     $Debian8PMInstallScript = "sudo bash -c \```"$($Debian8PMInstallScriptPrep -join '; ')\```""
 
@@ -590,16 +586,16 @@ function Bootstrap-PowerShellCore {
         'curl https://packages.microsoft.com/keys/microsoft.asc | sudo apt-key add -'
         "sh -c 'echo \\\`"deb \[arch=amd64\] https://packages.microsoft.com/repos/microsoft-debian-jessie-prod jessie main\\\`" > /etc/apt/sources.list.d/microsoft.list'"
         'apt-get update'
-        'echo powershellInstallComplete'
-        'apt-get install -y powershell'
+        #'echo powershellInstallComplete'
+        'apt-get install -y powershell && echo powershellInstallComplete'
     )
 
     $Debian8ManualInstallScriptPrep = @(
         "ls $Debian8PackageName && rm -f $Debian8PackageName"
         "wget -q $Debian8PackageUrl"
         "dpkg -i $Debian8PackageName"
-        'echo powershellInstallComplete'
-        'apt install -f'
+        #'echo powershellInstallComplete'
+        'apt install -f && echo powershellInstallComplete'
     )
     $Debian8ManualInstallScript = "sudo bash -c \```"$($Debian8ManualInstallScriptPrep -join '; ')\```""
 
@@ -626,8 +622,8 @@ function Bootstrap-PowerShellCore {
         'curl https://packages.microsoft.com/keys/microsoft.asc | sudo apt-key add -'
         "sh -c 'echo \`"\`"deb [arch=amd64] https://packages.microsoft.com/repos/microsoft-debian-stretch-prod stretch main\`"\`" > /etc/apt/sources.list.d/microsoft.list'"
         'apt-get update'
-        'echo powershellInstallComplete'
-        'apt-get install -y powershell'
+        #'echo powershellInstallComplete'
+        'apt-get install -y powershell && echo powershellInstallComplete'
     )
     $Debian9PMInstallScript = "sudo bash -c \```"$($Debian9PMInstallScriptPrep -join '; ')\```""
 
@@ -637,16 +633,16 @@ function Bootstrap-PowerShellCore {
         'curl https://packages.microsoft.com/keys/microsoft.asc | sudo apt-key add -'
         "sh -c 'echo \\\`"deb \[arch=amd64\] https://packages.microsoft.com/repos/microsoft-debian-stretch-prod stretch main\\\`" > /etc/apt/sources.list.d/microsoft.list'"
         'apt-get update'
-        'echo powershellInstallComplete'
-        'apt install -y powershell'
+        #'echo powershellInstallComplete'
+        'apt install -y powershell && echo powershellInstallComplete'
     )
 
     $Debian9ManualInstallScriptPrep = @(
         "ls $Debian9PackageName && rm -f $Debian9PackageName"
         "wget -q $Debian9PackageUrl"
         "dpkg -i $Debian9PackageName"
-        'echo powershellInstallComplete'
-        'apt install -f'
+        #'echo powershellInstallComplete'
+        'apt install -f && echo powershellInstallComplete'
     )
     $Debian9ManualInstallScript = "sudo bash -c \```"$($Debian9ManualInstallScriptPrep -join '; ')\```""
 
@@ -670,14 +666,14 @@ function Bootstrap-PowerShellCore {
     # 'curl -s https://packages.microsoft.com/config/rhel/7/prod.repo > /etc/yum.repos.d/microsoft.repo'
     $CentOS7PMInstallScriptPrep = $RHELPMInstallScriptPrep = @(
         'curl https://packages.microsoft.com/config/rhel/7/prod.repo | sudo tee /etc/yum.repos.d/microsoft.repo'
-        'echo powershellInstallComplete'
-        'yum install -y powershell'
+        #'echo powershellInstallComplete'
+        'yum install -y powershell && echo powershellInstallComplete'
     )
     $CentOS7PMInstallScript = $RHEL7PMInstallScript = "sudo bash -c \```"$($CentOS7PMInstallScriptPrep -join '; ')\```""
 
     $CentOS7ManualInstallScriptPrep = $RHEL7ManualInstallScriptPrep = @(
-        'echo powershellInstallComplete'
-        "yum install $CentOS7PackageUrl"
+        #'echo powershellInstallComplete'
+        "yum install $CentOS7PackageUrl && echo powershellInstallComplete"
     )
     $CentOS7ManualInstallScript = $RHEL7ManualInstallScript = "sudo bash -c \```"$($CentOS7ManualInstallScriptPrep -join '; ')\```""
 
@@ -704,8 +700,8 @@ function Bootstrap-PowerShellCore {
         'rpm --import https://packages.microsoft.com/keys/microsoft.asc'
         'zypper --non-interactive ar --gpgcheck-allow-unsigned-repo https://packages.microsoft.com/rhel/7/prod/ microsoft'
         'zypper --non-interactive update'
-        'echo powershellInstallComplete'
-        "rpm -ivh --nodeps $OpenSUSE423PackageUrl"
+        #'echo powershellInstallComplete'
+        "rpm -ivh --nodeps $OpenSUSE423PackageUrl && echo powershellInstallComplete"
         #"zypper -n install --force powershell"
     )
     $OpenSUSE423PMInstallScript = "sudo bash -c \```"$($OpenSUSE423PMInstallScriptPrep -join '; ')\```""
@@ -715,8 +711,8 @@ function Bootstrap-PowerShellCore {
         'zypper --non-interactive rr microsoft'
         'rpm --import https://packages.microsoft.com/keys/microsoft.asc'
         'zypper --non-interactive ar --gpgcheck-allow-unsigned-repo https://packages.microsoft.com/rhel/7/prod/ microsoft'
-        'echo powershellInstallComplete'
-        "rpm -ivh --nodeps $OpenSUSE423PackageUrl"
+        #'echo powershellInstallComplete'
+        "rpm -ivh --nodeps $OpenSUSE423PackageUrl && echo powershellInstallComplete"
         #"zypper -n install --force $OpenSUSE423PackageUrl"
     )
     $OpenSUSE423ManualInstallScript = "sudo bash -c \```"$($OpenSUSE423ManualInstallScriptPrep -join '; ')\```""
@@ -744,16 +740,16 @@ function Bootstrap-PowerShellCore {
         'curl https://packages.microsoft.com/config/rhel/7/prod.repo | sudo tee /etc/yum.repos.d/microsoft.repo'
         'dnf update -y'
         'dnf install -y compat-openssl10'
-        'echo powershellInstallComplete'
-        'dnf install -y powershell'
+        #'echo powershellInstallComplete'
+        'dnf install -y powershell && echo powershellInstallComplete'
     )
     $FedoraPMInstallScript = "sudo bash -c \```"$($FedoraPMInstallScriptPrep -join '; ')\```""
 
     $FedoraManualInstallScriptPrep = @(
         'dnf remove powershell -y'
         'dnf install -y compat-openssl10'
-        'echo powershellInstallComplete'
-        "dnf install -y $FedoraPackageUrl"
+        #'echo powershellInstallComplete'
+        "dnf install -y $FedoraPackageUrl && echo powershellInstallComplete"
     )
     $FedoraManualInstallScript = "sudo bash -c \```"$($FedoraManualInstallScriptPrep -join '; ')\```""
 
@@ -778,8 +774,8 @@ function Bootstrap-PowerShellCore {
         'apt install libunwind8'
         "wget -q $LinuxGenericArmPackageUrl"
         'mkdir ~/powershell'
-        'echo powershellInstallComplete'
-        "tar -xvf ./$LinuxGenericArmPackageName -C ~/powershell"
+        #'echo powershellInstallComplete'
+        "tar -xvf ./$LinuxGenericArmPackageName -C ~/powershell && echo powershellInstallComplete"
     )
     $RaspbianManualInstallScript = "sudo bash -c \```"$($RaspbianManualInstallScriptPrep -join '; ')\```""
 
@@ -835,8 +831,8 @@ function Bootstrap-PowerShellCore {
         'brew update'
         'brew tap caskroom/cask'
         'brew install openssl'
-        'echo powershellInstallComplete'
-        'brew cask reinstall powershell' # IMPORTANT NOTE: This will prompt for a password!
+        #'echo powershellInstallComplete'
+        'brew cask reinstall powershell && echo powershellInstallComplete' # IMPORTANT NOTE: This will prompt for a password!
     )
     $MacOSPMInstallScript = "bash -c \```"$($MacOSPMInstallScriptPrep)\```""
 
@@ -855,8 +851,8 @@ function Bootstrap-PowerShellCore {
         'brew update'
         'brew tap caskroom/cask'
         'brew install openssl'
-        'echo powershellInstallComplete'
-        'brew cask reinstall powershell' # IMPORTANT NOTE: This will prompt for a password!
+        #'echo powershellInstallComplete'
+        'brew cask reinstall powershell && echo powershellInstallComplete' # IMPORTANT NOTE: This will prompt for a password!
     )
     $MacOSPMInstallScriptWindowsToLinux = "bash -c \```"$($MacOSPMInstallScriptPrepWindowsToLinux -join '; ')\```""
 
@@ -875,8 +871,8 @@ function Bootstrap-PowerShellCore {
         'brew update'
         'brew tap caskroom/cask'
         'brew install openssl'
-        'echo powershellInstallComplete'
-        'brew cask reinstall powershell' # IMPORTANT NOTE: This will prompt for a password!
+        #'echo powershellInstallComplete'
+        'brew cask reinstall powershell && echo powershellInstallComplete' # IMPORTANT NOTE: This will prompt for a password!
     )
 
     $MacOSUninstallScript = 'brew cask uninstall powershell'
@@ -1545,7 +1541,7 @@ function Bootstrap-PowerShellCore {
 
         if ($PSVersionTable.Platform -eq "Unix") {
             $FinalPassword = if ($DomainPassword) {$DomainPassword} else {$LocalPassword}
-            $FinalPassword = $FinalPassowrd -replace [regex]::Escape('$'),'\\\$' -replace [regex]::Escape('"'),'\\\"'
+            #$FinalPassword = $FinalPassword -replace [regex]::Escape('$'),'\\\$' -replace [regex]::Escape('"'),'\\\"'
             $ExpectScripts = $(Get-Variable -Name $OS -ValueOnly).ExpectScripts
 
             if ($UsePackageManagement) {
@@ -1565,11 +1561,27 @@ function Bootstrap-PowerShellCore {
                 }
             }
 
-            Write-Host "`$SSHScript is:`n    $SSHScript"
+            #Write-Host "`$SSHScript is:`n$SSHScript"
+
+            # NOTE: To diagnose expect, add the following at the top of the expect script (right below EOF): exp_internal 1
+
+            $SSHScript = $SSHScript | foreach {
+                if ($_ -match "powershellInstallComplete") {
+                    'send -- \"' + $_ + '\r\"' + "`n" + 'expect \"*powershellInstallComplete*\"'
+                }
+                elseif ($_ -match "pwshConfigComplete") {
+                    'send -- \"' + $_ + '\r\"' + "`n" + 'expect \"*pwshConfigComplete*\"'
+                }
+                else {
+                    'send -- \"' + $_ + '\r\"' + "`n" + 'expect -re \"$prompt\"'
+                }
+            }
 
             $ExpectScriptPrep = @(
                 'expect - << EOF'
                 'set timeout 120'
+                "set password $FinalPassword"
+                'set prompt \"(>|:|#|\\\\\\$)\\\\s+\\$\"'
                 "spawn $($SSHCmdStringArray -join " ")"
                 'match_max 100000'
                 'expect {'
@@ -1577,20 +1589,24 @@ function Bootstrap-PowerShellCore {
                 '        send -- \"yes\r\"'
                 '        exp_continue'
                 '    }'
-                '    \"*password:*\" {'
-                "        send -- \`"$FinalPassword\r\`""
-                '        expect \"*\"'
+                '    -re \".*assword.*:\" {'
+                '        send -- \"\$password\r\"'
                 '        exp_continue'
                 '    }'
+                '    -re \"\$prompt\" {'
+                '        send -- \"echo LoggedIn\r\"'
+                '        expect \"*\"'
+                '    }'
                 '}'
-                'expect \"*\"'
-                "send -- \`"$SSHScript\recho powershellInstallComplete\r\`""
-                'expect \"powershellInstallComplete\"'
-                'send -- \"echo Done\r\"'
+                $SSHScript
+                'send -- \"exit\r\"'
                 'expect eof'
                 'EOF'
             )
             $ExpectScript = $ExpectScriptPrep -join "`n"
+
+            Write-Host "`$ExpectScript is:`n$ExpectScript"
+            $ExpectScript | Export-CliXml "$HOME/ExpectScript1.xml"
             
             # The below $ExpectOutput is an array of strings
             $ExpectOutput = bash -c "$ExpectScript"
@@ -2351,7 +2367,7 @@ function Bootstrap-PowerShellCore {
 
         if ($PSVersionTable.Platform -eq "Unix") {
             $FinalPassword = if ($DomainPassword) {$DomainPassword} else {$LocalPassword}
-            $FinalPassword = $FinalPassowrd -replace [regex]::Escape('$'),'\\\$' -replace [regex]::Escape('"'),'\\\"'
+            #$FinalPassword = $FinalPassword -replace [regex]::Escape('$'),'\\\$' -replace [regex]::Escape('"'),'\\\"'
             $ExpectScripts = $(Get-Variable -Name $OS -ValueOnly).ExpectScripts
 
             if ($UsePackageManagement) {
@@ -2375,16 +2391,21 @@ function Bootstrap-PowerShellCore {
                 if ($_ -match "powershellInstallComplete") {
                     'send -- \"' + $_ + '\r\"' + "`n" + 'expect \"*powershellInstallComplete*\"'
                 }
+                elseif ($_ -match "pwshConfigComplete") {
+                    'send -- \"' + $_ + '\r\"' + "`n" + 'expect \"*pwshConfigComplete*\"'
+                }
                 else {
-                    'send -- \"' + $_ + '\r\"' + "`n" + 'expect \"*\"'
+                    'send -- \"' + $_ + '\r\"' + "`n" + 'expect -re \"$prompt\"'
                 }
             }
 
-            Write-Host "`$SSHScript is:`n$SSHScript"
+            #Write-Host "`$SSHScript is:`n$SSHScript"
 
             $ExpectScriptPrep = @(
                 'expect - << EOF'
                 'set timeout 120'
+                "set password $FinalPassword"
+                'set prompt \"(>|:|#|\\\\\\$)\\\\s+\\$\"'
                 "spawn $($SSHCmdStringArray -join " ")"
                 'match_max 100000'
                 'expect {'
@@ -2392,26 +2413,37 @@ function Bootstrap-PowerShellCore {
                 '        send -- \"yes\r\"'
                 '        exp_continue'
                 '    }'
-                '    \"*password:*\" {'
-                "        send -- \`"$FinalPassword\r\`""
-                '        expect \"*\"'
+                '    -re \".*assword.*:\" {'
+                '        send -- \"\$password\r\"'
                 '        exp_continue'
+                '    }'
+                '    -re \"\$prompt\" {'
+                '        send -- \"echo LoggedIn\r\"'
+                '        expect \"*\"'
                 '    }'
                 '}'
                 'send -- \"sudo su\r\"'
                 'expect {'
-                '    \"*password:*\" {'
-                "        send -- \`"$FinalPassword\r\`""
-                '        expect \"*\"'
+                '    -re \".*assword.*:\" {'
+                '        send -- \"\$password\r\"'
                 '        exp_continue'
                 '    }'
+                '    -re \"\$prompt\" {'
+                '        send -- \"echo StartInstall\r\"'
+                '        expect \"StartInstall\"'
+                '    }'
                 '}'
-                'expect \"*\"'
                 $SSHScript
+                'send -- \"exit\r\"'
+                'expect -re \"\$prompt\"'
+                'send -- \"exit\r\"'
                 'expect eof'
                 'EOF'
             )
             $ExpectScript = $ExpectScriptPrep -join "`n"
+
+            Write-Host "`$ExpectScript is:`n$ExpectScript"
+            $ExpectScript | Export-CliXml "$HOME/ExpectScript2.xml"
             
             # The below $ExpectOutput is an array of strings
             $ExpectOutput = bash -c "$ExpectScript"
@@ -2445,8 +2477,8 @@ function Bootstrap-PowerShellCore {
 # SIG # Begin signature block
 # MIIMiAYJKoZIhvcNAQcCoIIMeTCCDHUCAQExCzAJBgUrDgMCGgUAMGkGCisGAQQB
 # gjcCAQSgWzBZMDQGCisGAQQBgjcCAR4wJgIDAQAABBAfzDtgWUsITrck0sYpfvNR
-# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUngEfwb4c/KZ010IQ5a61mryC
-# tIugggn9MIIEJjCCAw6gAwIBAgITawAAAB/Nnq77QGja+wAAAAAAHzANBgkqhkiG
+# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQU3VsT2agBzZHg+YeTiAqfMITD
+# Wfygggn9MIIEJjCCAw6gAwIBAgITawAAAB/Nnq77QGja+wAAAAAAHzANBgkqhkiG
 # 9w0BAQsFADAwMQwwCgYDVQQGEwNMQUIxDTALBgNVBAoTBFpFUk8xETAPBgNVBAMT
 # CFplcm9EQzAxMB4XDTE3MDkyMDIxMDM1OFoXDTE5MDkyMDIxMTM1OFowPTETMBEG
 # CgmSJomT8ixkARkWA0xBQjEUMBIGCgmSJomT8ixkARkWBFpFUk8xEDAOBgNVBAMT
@@ -2503,11 +2535,11 @@ function Bootstrap-PowerShellCore {
 # ARkWA0xBQjEUMBIGCgmSJomT8ixkARkWBFpFUk8xEDAOBgNVBAMTB1plcm9TQ0EC
 # E1gAAAH5oOvjAv3166MAAQAAAfkwCQYFKw4DAhoFAKB4MBgGCisGAQQBgjcCAQwx
 # CjAIoAKAAKECgAAwGQYJKoZIhvcNAQkDMQwGCisGAQQBgjcCAQQwHAYKKwYBBAGC
-# NwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFIWrOA4cbiCBN9Sh
-# B473SOx7k5sdMA0GCSqGSIb3DQEBAQUABIIBABdyfe0GUIniAgvUfdOFid/CsGAh
-# X8TWd7DleZA2aqLz8Fw6ApdfVRlewIepsxQn0pNzk5ZeXbzwQNGGXj/uiR9gWHw1
-# L2hr+Oz7Xd1n4iLoPk2wLuv0BxqkO0bJM2Q8H5Bid8gKUixYroHjMuwRPmdkywHZ
-# qPu4DXLp80FGl4iUHW94jQZjT0DWQIh9QcZYoKxSfdDcTqay3gTroROsslNXJgds
-# 6mCJ+XuaRlUbtiaLjfOInUVSTuCDBotuUd4jWTDORMfvahVk3uHZbuExhuYEOEeq
-# 7zTH3qPaxsLaVke9Vyd2UgVJvUVGNUQtRXVPaU1LlBQ1u/R3FPhKXGn44X8=
+# NwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFHA6CINT/2egNzp0
+# NwtrfUcb1LtVMA0GCSqGSIb3DQEBAQUABIIBAAP52ym4qPz9uiAmtjU/8nvZyUgG
+# zVNDZXRLuDsREcoTEJFwKHsXzQUXYsbmrT55iQ/FtpZ062Q8PSL6JOZ0yJUKVLa4
+# WkGuooQPPMACKQgSR+lrQhaFWXcgvwXJQt9HExE3cbRznGBkk7QGODzXcdoY1Lh7
+# TZ6emb3C7ecp9lytduqv/zyZh2T1Kd/ZkKpmf2Lrc0kocfbDNZ7nwDt/5BCOMWI+
+# q4nj1neOAURMPyIXOveTYxr+NQ6vVpTzTD97E0OFFDFLFMqlMccZ6IH8LXBEiHYn
+# 5Yc/GKgH3ZYDJxMOT+AL+FDJZ3BQ6uTJDp+01ok5MuyGv/eXBMIi+/9Rar4=
 # SIG # End signature block

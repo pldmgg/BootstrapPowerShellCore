@@ -1394,9 +1394,12 @@ function Get-SSHProbe {
             $FinalPassword = if ($DomainPassword) {$DomainPassword} else {$LocalPassword}
 
             # NOTE: 'timeout' is in seconds
+            
             $ExpectScriptPrep = @(
                 'expect - << EOF'
                 'set timeout 10'
+                "set password $FinalPassword"
+                'set prompt \"(>|:|#|\\\\\\$)\\\\s+\\$\"'
                 "spawn $PwshCmdString"
                 'match_max 100000'
                 'expect {'
@@ -1404,10 +1407,13 @@ function Get-SSHProbe {
                 '        send -- \"yes\r\"'
                 '        exp_continue'
                 '    }'
-                '    \"*password:*\" {'
-                "        send -- \`"$FinalPassword\r\`""
+                '    -re \".*assword.*:\" {'
+                '        send -- \"\$password\r\"'
+                '        exp_continue'
+                '    }'
+                '    -re \"\$prompt\" {'
+                '        send -- \"echo LoggedIn\r\"'
                 '        expect \"*\"'
-                '        expect eof'
                 '    }'
                 '}'
                 'EOF'
@@ -1416,6 +1422,7 @@ function Get-SSHProbe {
 
             # The below $ExpectOutput is an array of strings
             $ExpectOutput = bash -c "$ExpectScript"
+            $ExpectOutput | Export-CliXml -Path "$HOME/ExpectOutput1.xml"
 
             $SSHOutputPrep = $ExpectOutput -replace "\e\[(\d+;)*(\d+)?[ABCDHJKfmsu]",""
 
@@ -1547,6 +1554,8 @@ function Get-SSHProbe {
             $ExpectScriptPrep = @(
                 'expect - << EOF'
                 'set timeout 10'
+                "set password $FinalPassword"
+                'set prompt \"(>|:|#|\\\\\\$)\\\\s+\\$\"'
                 "spawn $SSHCmdString"
                 'match_max 100000'
                 'expect {'
@@ -1554,14 +1563,17 @@ function Get-SSHProbe {
                 '        send -- \"yes\r\"'
                 '        exp_continue'
                 '    }'
-                '    \"*password:*\" {'
-                "        send -- \`"$FinalPassword\r\`""
-                '        expect \"*\"'
+                '    -re \".*assword.*:\" {'
+                '        send -- \"\$password\r\"'
                 '        exp_continue'
                 '    }'
+                '    -re \"\$prompt\" {'
+                '        send -- \"echo LoggedIn\r\"'
+                '        expect \"*\"'
+                '    }'
                 '}'
-                'expect \"*\"'
                 $SSHScript
+                'send -- \"exit\r\"'
                 'expect eof'
                 'EOF'
             )
@@ -1569,6 +1581,7 @@ function Get-SSHProbe {
             
             # The below $ExpectOutput is an array of strings
             $ExpectOutput = bash -c "$ExpectScript"
+            $ExpectOutput | Export-CliXml -Path "$HOME/ExpectOutput2.xml"
 
             # NOTE: The below -replace regex string removes garbage escape sequences like: [116;1H
             $SSHOutputPrep = $ExpectOutput -replace "\e\[(\d+;)*(\d+)?[ABCDHJKfmsu]",""
@@ -1709,8 +1722,8 @@ function Get-SSHProbe {
 # SIG # Begin signature block
 # MIIMiAYJKoZIhvcNAQcCoIIMeTCCDHUCAQExCzAJBgUrDgMCGgUAMGkGCisGAQQB
 # gjcCAQSgWzBZMDQGCisGAQQBgjcCAR4wJgIDAQAABBAfzDtgWUsITrck0sYpfvNR
-# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQU+aHAQut81jGJi9GuusET8zAB
-# lGWgggn9MIIEJjCCAw6gAwIBAgITawAAAB/Nnq77QGja+wAAAAAAHzANBgkqhkiG
+# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUL4r2Gb+xtXbtZc7OMHSGds76
+# eXKgggn9MIIEJjCCAw6gAwIBAgITawAAAB/Nnq77QGja+wAAAAAAHzANBgkqhkiG
 # 9w0BAQsFADAwMQwwCgYDVQQGEwNMQUIxDTALBgNVBAoTBFpFUk8xETAPBgNVBAMT
 # CFplcm9EQzAxMB4XDTE3MDkyMDIxMDM1OFoXDTE5MDkyMDIxMTM1OFowPTETMBEG
 # CgmSJomT8ixkARkWA0xBQjEUMBIGCgmSJomT8ixkARkWBFpFUk8xEDAOBgNVBAMT
@@ -1767,11 +1780,11 @@ function Get-SSHProbe {
 # ARkWA0xBQjEUMBIGCgmSJomT8ixkARkWBFpFUk8xEDAOBgNVBAMTB1plcm9TQ0EC
 # E1gAAAH5oOvjAv3166MAAQAAAfkwCQYFKw4DAhoFAKB4MBgGCisGAQQBgjcCAQwx
 # CjAIoAKAAKECgAAwGQYJKoZIhvcNAQkDMQwGCisGAQQBgjcCAQQwHAYKKwYBBAGC
-# NwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFOBtJmCwLYvF4AOD
-# 4VX2oGbhUSOpMA0GCSqGSIb3DQEBAQUABIIBAGXNfeGRQb+GX/cJL8PI1eAgf3Bv
-# 1FR7xNhXyNRPmDxJWKihYPevx2WKQ77Hx/EQDmg78UAtLuHMNXHE3dPUYQoW6VU4
-# R8C+obuJEPOKzwbfL7AcHmyESsjNM0gVOJ89EV/hbKrkXormLoBpqKUVbG1SaJSB
-# rEYOFXm7ypqr551uoEcLwRQUfiI0r+ZVgDK+EJT1d9B0ALkSCN04pRPeq9nwQYUe
-# FtA+cCO2ZLasLwnSXYx/fA1jIbKSXDOQigjboRa+tysFtg91SXdE8ji7UHDCh6D4
-# aByWGnlCcbuDwuCLA+D16Ch6Mhsz532QbvdZEH4IZZK+Jg/CUN3DQshU63g=
+# NwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFGfDIEip3xa0yQ5Y
+# KmNyK30WLO2UMA0GCSqGSIb3DQEBAQUABIIBAAMD2MqnepIXVM6rmxilCzXLu2Hn
+# 5D5puxNlSvEhBAjUSG3g1v2IDnaCUFDV4xYnKZB+smDEcU66BciRfgqZ+GLPDhvc
+# MfdvkdHj2X0PEylbtVf2S0IdfNEMy/Uj4wsX9r/mqYJ+ATQBP/iJ9VoqV/f8iozA
+# l/nlTVFaEcXok5f//73HwcdjwmYQ/lTgNue+oxTXwfQwDjhpUWPYnkCvrzo3UwGL
+# lcMWPTRYO3Z7ptsfyPXjGbcEU0x2Kviy38doMzPzhrcPRVJkPZKKU7XcOKtJ19nB
+# NsRItfK7oAdtmHCyXVr9MmhfVmULmVNe5XqElzfr3NrN2JYD0IxqcYx/3Uo=
 # SIG # End signature block
