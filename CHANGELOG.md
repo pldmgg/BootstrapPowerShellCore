@@ -1,5 +1,9 @@
 # Change log
 
+## 0.8.7 (October 09, 2018)
+
+- Improvements to Linux Expect scripts.
+
 ## 0.8.6 (October 08, 2018)
 
 - Now able to target Mac OS.
