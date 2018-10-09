@@ -91,14 +91,31 @@ if (Test-Path "$PSScriptRoot\module.requirements.psd1") {
                 Name    = $_.Key
                 Version = $_.Value.Version
             }
-            $null = $ModulesToinstallAndImport.Add($PSObj)
+            $null = $ModulesToInstallAndImport.Add($PSObj)
         }
     }
 }
 
 if ($ModulesToInstallAndImport.Count -gt 0) {
     foreach ($ModuleItem in $ModulesToInstallAndImport) {
+        if ($($PSVersionTable.Platform -eq "Unix" -or $PSVersionTable.OS -match "Darwin") -and $ModuleItem.Name -eq "WinSSH") {
+            continue
+        }
+
         if (!$(Get-Module -ListAvailable $ModuleItem.Name -ErrorAction SilentlyContinue)) {Install-Module $ModuleItem.Name}
+
+        if ($PSVersionTable.Platform -eq "Unix" -or $PSVersionTable.OS -match "Darwin") {
+            # Make sure the Module Manifest file name and the Module Folder name are exactly the same case
+            $env:PSModulePath -split ':' | foreach {
+                Get-ChildItem -Path $_ -Directory | Where-Object {$_ -match $ModuleItem.Name}
+            } | foreach {
+                $ManifestFileName = $(Get-ChildItem -Path $_ -Recurse -File | Where-Object {$_.Name -match "$($ModuleItem.Name)\.psd1"}).BaseName
+                if (![bool]$($_.Name -cmatch $ManifestFileName)) {
+                    Rename-Item $_ $ManifestFileName
+                }
+            }
+        }
+
         if (!$(Get-Module $ModuleItem.Name -ErrorAction SilentlyContinue)) {Import-Module $ModuleItem.Name}
     }
 }
@@ -277,8 +294,8 @@ Task Deploy -Depends Build {
 # SIG # Begin signature block
 # MIIMiAYJKoZIhvcNAQcCoIIMeTCCDHUCAQExCzAJBgUrDgMCGgUAMGkGCisGAQQB
 # gjcCAQSgWzBZMDQGCisGAQQBgjcCAR4wJgIDAQAABBAfzDtgWUsITrck0sYpfvNR
-# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQU3sJUfxI32bmY8eKetT9gtRET
-# dAegggn9MIIEJjCCAw6gAwIBAgITawAAAB/Nnq77QGja+wAAAAAAHzANBgkqhkiG
+# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUvSeVKSU/TElhVBqz6os3Ho4r
+# Re2gggn9MIIEJjCCAw6gAwIBAgITawAAAB/Nnq77QGja+wAAAAAAHzANBgkqhkiG
 # 9w0BAQsFADAwMQwwCgYDVQQGEwNMQUIxDTALBgNVBAoTBFpFUk8xETAPBgNVBAMT
 # CFplcm9EQzAxMB4XDTE3MDkyMDIxMDM1OFoXDTE5MDkyMDIxMTM1OFowPTETMBEG
 # CgmSJomT8ixkARkWA0xBQjEUMBIGCgmSJomT8ixkARkWBFpFUk8xEDAOBgNVBAMT
@@ -335,11 +352,11 @@ Task Deploy -Depends Build {
 # ARkWA0xBQjEUMBIGCgmSJomT8ixkARkWBFpFUk8xEDAOBgNVBAMTB1plcm9TQ0EC
 # E1gAAAH5oOvjAv3166MAAQAAAfkwCQYFKw4DAhoFAKB4MBgGCisGAQQBgjcCAQwx
 # CjAIoAKAAKECgAAwGQYJKoZIhvcNAQkDMQwGCisGAQQBgjcCAQQwHAYKKwYBBAGC
-# NwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFH9QHdUlPVlJDFzH
-# IeIleILJjk6dMA0GCSqGSIb3DQEBAQUABIIBAFg4F43kemtj7Wi6yGpa2Q0cDhUF
-# yIe5giNi/u3uCygTUeQgYPmoLxuV1JNu2qq2OFqwHfrPQhEdlnfOgy7KDtcVtC63
-# AvJr+tN+2wZrMdiK0c29NRmM9ffSmPeVyUux8+1qtKF4YFQQ4w4Rsd5FLqEsXXg5
-# BSDLRbXLQQgyU0YfAnMBXWDJmQCLrEGffG7Zpaq3DetvkG2Br5GMRaMiSmk7mr7f
-# 8v1/HSOeUSLsJmrN326j8oyvGdKyKnEVFGh70bmpSytyooTOid7lFV9BKlqB6+uS
-# RrApFW6GFgQMb1zLqx6fNFTx2/ldWJ5UUZYf8aWHnWt+ioHTk7AeCpvy/SE=
+# NwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFB1bAt60CzLF/R+2
+# gZoKhSrukP91MA0GCSqGSIb3DQEBAQUABIIBAHiv402VrG3GrcGCfQ7MG3+h4aY1
+# BQjlBuCy93OEcEK0nVbrJhbDr7Ala6yXh9DctgZKWRXwd/M0fxPYTMGkHvOG9z5G
+# DNVjTZ68nNzDOKLwILtvMbj6mLxNnkM+AwBXbDQXGOhfQgEweZZxiGNmAeEXnSwv
+# LrRdHv9ALFgGYHvLIAN8waBV18cwd6+vRCw4S56J9uFwpp0XarNrtWyIkpc+LPcF
+# ZvfPB7za+wMKmvWPJcM09dE4xfTquXLsB8E5vksxtCzdZAno8piybq/Tj2yWvl8Y
+# wlbNPb6xU2xvsc1URQEj2CS8I1vefMUUOJ3uum5BT97t7N2uQyyESV54WQw=
 # SIG # End signature block

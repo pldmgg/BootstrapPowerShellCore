@@ -1116,7 +1116,7 @@ function Bootstrap-PowerShellCore {
                 }
             }
 
-            Write-Host "`$SSHScript is:`n    $SSHScript"
+            #Write-Host "`$SSHScript is:`n    $SSHScript"
 
             try {
                 if ($(Get-Module -ListAvailable).Name -notcontains 'WinSSH') {$null = Install-Module WinSSH -ErrorAction Stop}
@@ -1605,8 +1605,8 @@ function Bootstrap-PowerShellCore {
             )
             $ExpectScript = $ExpectScriptPrep -join "`n"
 
-            Write-Host "`$ExpectScript is:`n$ExpectScript"
-            $ExpectScript | Export-CliXml "$HOME/ExpectScript1.xml"
+            #Write-Host "`$ExpectScript is:`n$ExpectScript"
+            #$ExpectScript | Export-CliXml "$HOME/ExpectScript1.xml"
             
             # The below $ExpectOutput is an array of strings
             $ExpectOutput = bash -c "$ExpectScript"
@@ -1690,7 +1690,7 @@ function Bootstrap-PowerShellCore {
             
             $SSHCmdString = Invoke-Command -ScriptBlock $BootstrapSB -ArgumentList $(Get-Variable -Name $OS -ValueOnly)
             
-            Write-Host "`$SSHCmdString is:`n    $SSHCmdString"
+            #Write-Host "`$SSHCmdString is:`n    $SSHCmdString"
 
             try {
                 if ($(Get-Module -ListAvailable).Name -notcontains 'WinSSH') {$null = Install-Module WinSSH -ErrorAction Stop}
@@ -2442,8 +2442,8 @@ function Bootstrap-PowerShellCore {
             )
             $ExpectScript = $ExpectScriptPrep -join "`n"
 
-            Write-Host "`$ExpectScript is:`n$ExpectScript"
-            $ExpectScript | Export-CliXml "$HOME/ExpectScript2.xml"
+            #Write-Host "`$ExpectScript is:`n$ExpectScript"
+            #$ExpectScript | Export-CliXml "$HOME/ExpectScript2.xml"
             
             # The below $ExpectOutput is an array of strings
             $ExpectOutput = bash -c "$ExpectScript"
@@ -2477,8 +2477,8 @@ function Bootstrap-PowerShellCore {
 # SIG # Begin signature block
 # MIIMiAYJKoZIhvcNAQcCoIIMeTCCDHUCAQExCzAJBgUrDgMCGgUAMGkGCisGAQQB
 # gjcCAQSgWzBZMDQGCisGAQQBgjcCAR4wJgIDAQAABBAfzDtgWUsITrck0sYpfvNR
-# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQU3VsT2agBzZHg+YeTiAqfMITD
-# Wfygggn9MIIEJjCCAw6gAwIBAgITawAAAB/Nnq77QGja+wAAAAAAHzANBgkqhkiG
+# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUdYNGFGyJee5gmORThOInHyTY
+# Pdagggn9MIIEJjCCAw6gAwIBAgITawAAAB/Nnq77QGja+wAAAAAAHzANBgkqhkiG
 # 9w0BAQsFADAwMQwwCgYDVQQGEwNMQUIxDTALBgNVBAoTBFpFUk8xETAPBgNVBAMT
 # CFplcm9EQzAxMB4XDTE3MDkyMDIxMDM1OFoXDTE5MDkyMDIxMTM1OFowPTETMBEG
 # CgmSJomT8ixkARkWA0xBQjEUMBIGCgmSJomT8ixkARkWBFpFUk8xEDAOBgNVBAMT
@@ -2535,11 +2535,11 @@ function Bootstrap-PowerShellCore {
 # ARkWA0xBQjEUMBIGCgmSJomT8ixkARkWBFpFUk8xEDAOBgNVBAMTB1plcm9TQ0EC
 # E1gAAAH5oOvjAv3166MAAQAAAfkwCQYFKw4DAhoFAKB4MBgGCisGAQQBgjcCAQwx
 # CjAIoAKAAKECgAAwGQYJKoZIhvcNAQkDMQwGCisGAQQBgjcCAQQwHAYKKwYBBAGC
-# NwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFHA6CINT/2egNzp0
-# NwtrfUcb1LtVMA0GCSqGSIb3DQEBAQUABIIBAAP52ym4qPz9uiAmtjU/8nvZyUgG
-# zVNDZXRLuDsREcoTEJFwKHsXzQUXYsbmrT55iQ/FtpZ062Q8PSL6JOZ0yJUKVLa4
-# WkGuooQPPMACKQgSR+lrQhaFWXcgvwXJQt9HExE3cbRznGBkk7QGODzXcdoY1Lh7
-# TZ6emb3C7ecp9lytduqv/zyZh2T1Kd/ZkKpmf2Lrc0kocfbDNZ7nwDt/5BCOMWI+
-# q4nj1neOAURMPyIXOveTYxr+NQ6vVpTzTD97E0OFFDFLFMqlMccZ6IH8LXBEiHYn
-# 5Yc/GKgH3ZYDJxMOT+AL+FDJZ3BQ6uTJDp+01ok5MuyGv/eXBMIi+/9Rar4=
+# NwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFKK/48QwjERMUjAS
+# +fcsvN2ImLn3MA0GCSqGSIb3DQEBAQUABIIBABKqsENu0NwJhSXaDIp0Z7h6i4a2
+# XQQg0qk0xODxV2SdAiYcF/XZISTgMpQCK8EhVXqipHsZ2Xg+fOcdXVGFXYD75nUQ
+# PLHNGONg49gKr17ax0/RpzboiEf0ggt9TWpb3xk+e3mNVgAmFOVU9gVGVn6BDrj1
+# SKeRBcSIESoj8i4dYmqVwBcq/QytHR1INBESaQp6pdkvZbFYwYRjiPqHevoDPoRH
+# RwpvjDqw8/Fk9DDFTIheLyxKQr4DwSmFDKb6yZ/k022vHcWpLfgpgRMjlSESPsek
+# cIRtKvktzfNkIWM3odMgChngUHaMw2GNs9veNuZ9UUG7PMkoYWR3nr5VAL8=
 # SIG # End signature block

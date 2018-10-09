@@ -208,6 +208,19 @@ function InvokePSCompatibility {
                         else {
                             Install-Module $ModuleName -AllowClobber -Force -ErrorAction Stop -WarningAction SilentlyContinue
                         }
+
+                        if ($PSVersionTable.Platform -eq "Unix" -or $PSVersionTable.OS -match "Darwin") {
+                            # Make sure the Module Manifest file name and the Module Folder name are exactly the same case
+                            $env:PSModulePath -split ':' | foreach {
+                                Get-ChildItem -Path $_ -Directory | Where-Object {$_ -match $ModuleName}
+                            } | foreach {
+                                $ManifestFileName = $(Get-ChildItem -Path $_ -Recurse -File | Where-Object {$_.Name -match "$ModuleName\.psd1"}).BaseName
+                                if (![bool]$($_.Name -cmatch $ManifestFileName)) {
+                                    Rename-Item $_ $ManifestFileName
+                                }
+                            }
+                        }
+
                         $null = $ModulesSuccessfullyInstalled.Add($ModuleName)
                     }
 
@@ -255,6 +268,18 @@ function InvokePSCompatibility {
                             }
                             else {
                                 Install-Module $args[0] -AllowClobber -Force
+                            }
+
+                            if ($PSVersionTable.Platform -eq "Unix" -or $PSVersionTable.OS -match "Darwin") {
+                                # Make sure the Module Manifest file name and the Module Folder name are exactly the same case
+                                $env:PSModulePath -split ':' | foreach {
+                                    Get-ChildItem -Path $_ -Directory | Where-Object {$_ -match $args[0]}
+                                } | foreach {
+                                    $ManifestFileName = $(Get-ChildItem -Path $_ -Recurse -File | Where-Object {$_.Name -match "$($args[0])\.psd1"}).BaseName
+                                    if (![bool]$($_.Name -cmatch $ManifestFileName)) {
+                                        Rename-Item $_ $ManifestFileName
+                                    }
+                                }
                             }
                         }
                         $(Get-Item $(Get-Module -ListAvailable $args[0]).Path)
@@ -644,8 +669,8 @@ function InvokePSCompatibility {
 # SIG # Begin signature block
 # MIIMiAYJKoZIhvcNAQcCoIIMeTCCDHUCAQExCzAJBgUrDgMCGgUAMGkGCisGAQQB
 # gjcCAQSgWzBZMDQGCisGAQQBgjcCAR4wJgIDAQAABBAfzDtgWUsITrck0sYpfvNR
-# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUfQBMrlM9AY/1axKGvkwqwCAL
-# Vd2gggn9MIIEJjCCAw6gAwIBAgITawAAAB/Nnq77QGja+wAAAAAAHzANBgkqhkiG
+# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUg/784MR5hcXq92rWG7/bfIOg
+# Paygggn9MIIEJjCCAw6gAwIBAgITawAAAB/Nnq77QGja+wAAAAAAHzANBgkqhkiG
 # 9w0BAQsFADAwMQwwCgYDVQQGEwNMQUIxDTALBgNVBAoTBFpFUk8xETAPBgNVBAMT
 # CFplcm9EQzAxMB4XDTE3MDkyMDIxMDM1OFoXDTE5MDkyMDIxMTM1OFowPTETMBEG
 # CgmSJomT8ixkARkWA0xBQjEUMBIGCgmSJomT8ixkARkWBFpFUk8xEDAOBgNVBAMT
@@ -702,11 +727,11 @@ function InvokePSCompatibility {
 # ARkWA0xBQjEUMBIGCgmSJomT8ixkARkWBFpFUk8xEDAOBgNVBAMTB1plcm9TQ0EC
 # E1gAAAH5oOvjAv3166MAAQAAAfkwCQYFKw4DAhoFAKB4MBgGCisGAQQBgjcCAQwx
 # CjAIoAKAAKECgAAwGQYJKoZIhvcNAQkDMQwGCisGAQQBgjcCAQQwHAYKKwYBBAGC
-# NwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFBrAinzloWS+wNvV
-# LzaDVkDO87WmMA0GCSqGSIb3DQEBAQUABIIBAFPttvG9ZUyHkrzzyBE3txI8yIIh
-# 0loyKSzDTYeZKKQEZKtxAtE0QQy4ClUmWFxGSN3CUrZw0Bjha+A66MRq6ISuj54n
-# 7w6CubT16ydpoXWa0CbzSq6qGJ8nuinIMmAMY1VEpBhPqUjNVAWi3eijwJxcvgxJ
-# GNpot/3/8F6sWYlFNiJn2Zi7qRcCPP7GblQvT2LygLJyqRTi4PUa13eMnUK3Urda
-# d0LwGbxO7MkrI9BDBDQmBiAEum8RQHwWGHSFVjXHMHSX49uErngyHuTP2m68odc3
-# I6IbIxmLjDVqecEwEcTUDrHyJqjiTVEFDeePlK/3GrAsX4t7mxbG3eHJZvY=
+# NwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFEgrl5KZkWF4+0N4
+# mdrGtXgdzLJGMA0GCSqGSIb3DQEBAQUABIIBACWbRB5WOEpvoSGQmTxz4vLsiSn4
+# m9WjpbwRWFHyYJFkM2RBGx6sU6BTmOYc9qfK+gqgtLR+JmayHdO7QXnq61YMOF1j
+# Xwg0MyvG8uW3iX8eHZ4PExEsVndRGzC9XzQp4gKZk5dJPMZqDDwWh+Ua2j6NM6Of
+# 2Mf5qwyz2jGMavRSj8Wn9ptH76G9KYmK9+DAACpABt3EENOc7b9r3RR6iyOma9vf
+# dTsWoE75+TQt7ScgvYbO3nNqLjn5wZV0n+iP4hFm7IGRkDUJ9wV77daCAKjWNl39
+# g6ssYHs9oU57s/argR3JcaGlhUre2msPaVwtl6hv6vvxW12+ao8wyAQsJeM=
 # SIG # End signature block

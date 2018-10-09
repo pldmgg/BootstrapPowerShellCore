@@ -1,5 +1,10 @@
 # Change log
 
+## 0.8.8 (October 09, 2018)
+
+- Removed unnecessary 'Write-Host'
+- Fixed erroneous Module dependency imports on Linux.
+
 ## 0.8.7 (October 09, 2018)
 
 - Improvements to Linux Expect scripts.

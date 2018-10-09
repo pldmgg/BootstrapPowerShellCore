@@ -25,14 +25,31 @@ if (Test-Path "$PSScriptRoot\module.requirements.psd1") {
                 Name    = $_.Key
                 Version = $_.Value.Version
             }
-            $null = $ModulesToinstallAndImport.Add($PSObj)
+            $null = $ModulesToInstallAndImport.Add($PSObj)
         }
     }
 }
 
 if ($ModulesToInstallAndImport.Count -gt 0) {
     foreach ($ModuleItem in $ModulesToInstallAndImport) {
+        if ($($PSVersionTable.Platform -eq "Unix" -or $PSVersionTable.OS -match "Darwin") -and $ModuleItem.Name -eq "WinSSH") {
+            continue
+        }
+
         if (!$(Get-Module -ListAvailable $ModuleItem.Name -ErrorAction SilentlyContinue)) {Install-Module $ModuleItem.Name}
+
+        if ($PSVersionTable.Platform -eq "Unix" -or $PSVersionTable.OS -match "Darwin") {
+            # Make sure the Module Manifest file name and the Module Folder name are exactly the same case
+            $env:PSModulePath -split ':' | foreach {
+                Get-ChildItem -Path $_ -Directory | Where-Object {$_ -match $ModuleItem.Name}
+            } | foreach {
+                $ManifestFileName = $(Get-ChildItem -Path $_ -Recurse -File | Where-Object {$_.Name -match "$($ModuleItem.Name)\.psd1"}).BaseName
+                if (![bool]$($_.Name -cmatch $ManifestFileName)) {
+                    Rename-Item $_ $ManifestFileName
+                }
+            }
+        }
+
         if (!$(Get-Module $ModuleItem.Name -ErrorAction SilentlyContinue)) {Import-Module $ModuleItem.Name}
     }
 }
@@ -1185,7 +1202,7 @@ function Bootstrap-PowerShellCore {
                 }
             }
 
-            Write-Host "`$SSHScript is:`n    $SSHScript"
+            #Write-Host "`$SSHScript is:`n    $SSHScript"
 
             try {
                 if ($(Get-Module -ListAvailable).Name -notcontains 'WinSSH') {$null = Install-Module WinSSH -ErrorAction Stop}
@@ -1674,8 +1691,8 @@ function Bootstrap-PowerShellCore {
             )
             $ExpectScript = $ExpectScriptPrep -join "`n"
 
-            Write-Host "`$ExpectScript is:`n$ExpectScript"
-            $ExpectScript | Export-CliXml "$HOME/ExpectScript1.xml"
+            #Write-Host "`$ExpectScript is:`n$ExpectScript"
+            #$ExpectScript | Export-CliXml "$HOME/ExpectScript1.xml"
             
             # The below $ExpectOutput is an array of strings
             $ExpectOutput = bash -c "$ExpectScript"
@@ -1759,7 +1776,7 @@ function Bootstrap-PowerShellCore {
             
             $SSHCmdString = Invoke-Command -ScriptBlock $BootstrapSB -ArgumentList $(Get-Variable -Name $OS -ValueOnly)
             
-            Write-Host "`$SSHCmdString is:`n    $SSHCmdString"
+            #Write-Host "`$SSHCmdString is:`n    $SSHCmdString"
 
             try {
                 if ($(Get-Module -ListAvailable).Name -notcontains 'WinSSH') {$null = Install-Module WinSSH -ErrorAction Stop}
@@ -2511,8 +2528,8 @@ function Bootstrap-PowerShellCore {
             )
             $ExpectScript = $ExpectScriptPrep -join "`n"
 
-            Write-Host "`$ExpectScript is:`n$ExpectScript"
-            $ExpectScript | Export-CliXml "$HOME/ExpectScript2.xml"
+            #Write-Host "`$ExpectScript is:`n$ExpectScript"
+            #$ExpectScript | Export-CliXml "$HOME/ExpectScript2.xml"
             
             # The below $ExpectOutput is an array of strings
             $ExpectOutput = bash -c "$ExpectScript"
@@ -3314,7 +3331,7 @@ function Get-SSHProbe {
                     $OSDetermination = "Windows"
                     $ShellDetermination = "pwsh"
                 }
-                elseif ($SSHCheckAsJson.Platform -match "Darwin") {
+                elseif ($SSHCheckAsJson.DistroInfo -match "Darwin") {
                     $OSDetermination = "MacOS"
                     $ShellDetermination = "pwsh"
                     
@@ -3394,7 +3411,7 @@ function Get-SSHProbe {
             # NOTE: The below -replace regex string removes garbage escape sequences like: [116;1H
             $SSHCmdString = $script:SSHCmdString = '@($(' + $($SSHCmdStringArray -join " ") + ') -replace "\e\[(\d+;)*(\d+)?[ABCDHJKfmsu]","") 2>$null'
 
-            Write-Host "`$SSHCmdString is:`n    $SSHCmdString"
+            #Write-Host "`$SSHCmdString is:`n    $SSHCmdString"
 
             #region >> Await Attempt Number 1 of 2
             
@@ -3558,7 +3575,7 @@ function Get-SSHProbe {
                 Write-Error "Something went wrong with the PowerShell Await Module! Halting!"
                 $global:FunctionResult = "1"
 
-                Write-Host "Await ScriptBlock (`$SSHCmdString) was:`n    $SSHCmdString"
+                #Write-Host "Await ScriptBlock (`$SSHCmdString) was:`n    $SSHCmdString"
 
                 if ($PSAwaitProcess.Id) {
                     try {
@@ -3968,7 +3985,7 @@ function Get-SSHProbe {
 
             # The below $ExpectOutput is an array of strings
             $ExpectOutput = bash -c "$ExpectScript"
-            $ExpectOutput | Export-CliXml -Path "$HOME/ExpectOutput1.xml"
+            #$ExpectOutput | Export-CliXml -Path "$HOME/ExpectOutput1.xml"
 
             $SSHOutputPrep = $ExpectOutput -replace "\e\[(\d+;)*(\d+)?[ABCDHJKfmsu]",""
 
@@ -4007,7 +4024,7 @@ function Get-SSHProbe {
                     $OSDetermination = "Windows"
                     $ShellDetermination = "pwsh"
                 }
-                elseif ($SSHCheckAsJson.Platform -match "Darwin") {
+                elseif ($SSHCheckAsJson.DistroInfo -match "Darwin") {
                     $OSDetermination = "MacOS"
                     $ShellDetermination = "pwsh"
                     
@@ -4095,7 +4112,7 @@ function Get-SSHProbe {
                 'send -- \"' + $_ + '\r\"' + "`n" + 'expect \"*\"'
             }
 
-            Write-Host "`$SSHScript is:`n    $SSHScript"
+            #Write-Host "`$SSHScript is:`n    $SSHScript"
 
             $ExpectScriptPrep = @(
                 'expect - << EOF'
@@ -4127,7 +4144,7 @@ function Get-SSHProbe {
             
             # The below $ExpectOutput is an array of strings
             $ExpectOutput = bash -c "$ExpectScript"
-            $ExpectOutput | Export-CliXml -Path "$HOME/ExpectOutput2.xml"
+            #$ExpectOutput | Export-CliXml -Path "$HOME/ExpectOutput2.xml"
 
             # NOTE: The below -replace regex string removes garbage escape sequences like: [116;1H
             $SSHOutputPrep = $ExpectOutput -replace "\e\[(\d+;)*(\d+)?[ABCDHJKfmsu]",""
@@ -4543,8 +4560,8 @@ puts "Run `brew help` to get started"
 # SIG # Begin signature block
 # MIIMiAYJKoZIhvcNAQcCoIIMeTCCDHUCAQExCzAJBgUrDgMCGgUAMGkGCisGAQQB
 # gjcCAQSgWzBZMDQGCisGAQQBgjcCAR4wJgIDAQAABBAfzDtgWUsITrck0sYpfvNR
-# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUw/akn1QQ6yCRvGgKz3WULiJ5
-# 1UKgggn9MIIEJjCCAw6gAwIBAgITawAAAB/Nnq77QGja+wAAAAAAHzANBgkqhkiG
+# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUFB6+kBY2JDNCsy7OpxhpH1R+
+# +I2gggn9MIIEJjCCAw6gAwIBAgITawAAAB/Nnq77QGja+wAAAAAAHzANBgkqhkiG
 # 9w0BAQsFADAwMQwwCgYDVQQGEwNMQUIxDTALBgNVBAoTBFpFUk8xETAPBgNVBAMT
 # CFplcm9EQzAxMB4XDTE3MDkyMDIxMDM1OFoXDTE5MDkyMDIxMTM1OFowPTETMBEG
 # CgmSJomT8ixkARkWA0xBQjEUMBIGCgmSJomT8ixkARkWBFpFUk8xEDAOBgNVBAMT
@@ -4601,11 +4618,11 @@ puts "Run `brew help` to get started"
 # ARkWA0xBQjEUMBIGCgmSJomT8ixkARkWBFpFUk8xEDAOBgNVBAMTB1plcm9TQ0EC
 # E1gAAAH5oOvjAv3166MAAQAAAfkwCQYFKw4DAhoFAKB4MBgGCisGAQQBgjcCAQwx
 # CjAIoAKAAKECgAAwGQYJKoZIhvcNAQkDMQwGCisGAQQBgjcCAQQwHAYKKwYBBAGC
-# NwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFCkITB1T7zZ+vRY6
-# ywjXYyEn7nPaMA0GCSqGSIb3DQEBAQUABIIBAHKMh8WwJWdxD83Uf4yGvnMATHMJ
-# 6MFeZpz1mg5tf9qjBhJpki23uTgSODLIkTBLLYHo4Kmc2oWvp0yT/VBD34Eg5aow
-# +rTFtZa3IancRgiPE0x5khFzaAJJlcb75LyVp106tYFWw2KnGVBqoGFNUDNO7wsu
-# hxpNn+1cpm/NyIYu3SW906Jh+RTXmqT/Og3x7lEM3rQwvzVCJDGKAcjml1rdvmh1
-# sJVwQ8+lcPeLsASITMLtocWI0SABJJQA/APFs8RhXbX0vJpyz1a71uZHNFli7rql
-# RinHoR4NaoRlqiDqd1SUwoky2lFb7ivnjq1WMi/z7JB7ZuIN0KyC4iMMcXc=
+# NwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFLAngQhzNAbp02Dd
+# yzCZHBqr3sWrMA0GCSqGSIb3DQEBAQUABIIBAMDO+aznvNgo72yDeBZcIY2UU6Ki
+# Mp4agLw3qzs6+UUcwdoxoLvSBA7PfKAOyALXTP9H8r13bqF35i/Fs7fpMBSDc2Dn
+# wap7xCDmrDewAFlxFG1C+OzVo3+XTQOqHomfp7SjbSLuFPOLEbF8Fj7XtlKNhIkU
+# f8IGCYKeJI19NcTPvUH/Xxe1lhHUgcAblmdMMbMNWyttg4QcR6LoTNJkqLU+fgOF
+# c+Us1XymJCW4un/f+49wgGyvJHmbZwii3cJux8mnUJmRuI9uJ7HWP7Unr15xvtcn
+# WzczKTH01eXM2rd0eYG/W6SMexRsQqsaJgk2i/0rGBXXlPT1y/r8r4ur8gA=
 # SIG # End signature block

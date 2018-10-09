@@ -82,6 +82,18 @@ function InvokeModuleDependencies {
                     else {
                         Install-Module $ModuleObj.Name -AllowClobber -Force -ErrorAction Stop -WarningAction SilentlyContinue
                     }
+
+                    if ($PSVersionTable.Platform -eq "Unix" -or $PSVersionTable.OS -match "Darwin") {
+                        # Make sure the Module Manifest file name and the Module Folder name are exactly the same case
+                        $env:PSModulePath -split ':' | foreach {
+                            Get-ChildItem -Path $_ -Directory | Where-Object {$_ -match $ModuleObj.Name}
+                        } | foreach {
+                            $ManifestFileName = $(Get-ChildItem -Path $_ -Recurse -File | Where-Object {$_.Name -match "$($ModuleObj.Name)\.psd1"}).BaseName
+                            if (![bool]$($_.Name -cmatch $ManifestFileName)) {
+                                Rename-Item $_ $ManifestFileName
+                            }
+                        }
+                    }
                 }
                 catch {
                     Write-Error $_
@@ -126,8 +138,8 @@ function InvokeModuleDependencies {
 # SIG # Begin signature block
 # MIIMiAYJKoZIhvcNAQcCoIIMeTCCDHUCAQExCzAJBgUrDgMCGgUAMGkGCisGAQQB
 # gjcCAQSgWzBZMDQGCisGAQQBgjcCAR4wJgIDAQAABBAfzDtgWUsITrck0sYpfvNR
-# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUfH6OjLIVpCdunV/1Nz5eSOyv
-# MHygggn9MIIEJjCCAw6gAwIBAgITawAAAB/Nnq77QGja+wAAAAAAHzANBgkqhkiG
+# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUO74R7uWcHL5Wub2fJxi85qo+
+# 1i+gggn9MIIEJjCCAw6gAwIBAgITawAAAB/Nnq77QGja+wAAAAAAHzANBgkqhkiG
 # 9w0BAQsFADAwMQwwCgYDVQQGEwNMQUIxDTALBgNVBAoTBFpFUk8xETAPBgNVBAMT
 # CFplcm9EQzAxMB4XDTE3MDkyMDIxMDM1OFoXDTE5MDkyMDIxMTM1OFowPTETMBEG
 # CgmSJomT8ixkARkWA0xBQjEUMBIGCgmSJomT8ixkARkWBFpFUk8xEDAOBgNVBAMT
@@ -184,11 +196,11 @@ function InvokeModuleDependencies {
 # ARkWA0xBQjEUMBIGCgmSJomT8ixkARkWBFpFUk8xEDAOBgNVBAMTB1plcm9TQ0EC
 # E1gAAAH5oOvjAv3166MAAQAAAfkwCQYFKw4DAhoFAKB4MBgGCisGAQQBgjcCAQwx
 # CjAIoAKAAKECgAAwGQYJKoZIhvcNAQkDMQwGCisGAQQBgjcCAQQwHAYKKwYBBAGC
-# NwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFN8QIE3dG5zxFDX3
-# 4onv77ZyZTj8MA0GCSqGSIb3DQEBAQUABIIBAB4BIabWDkvgg1Rg43oEpy6zUJVx
-# vDaxvUTkSlAFg3lBeK8YUMTQCORDT17vR5d+hHAaALKwoFERtltqI0dmf+TF6/L3
-# 4vdqoeDF0YF4aX4ZnPmUbUwmq1RkdT/TP04lyEiQ9OfQEoJjMkdLYx/RYtnKoOS3
-# zH3QApFGtaw/81sKFy5vuoi4UALR87e2pTJla5VR4KDgAnBJgZWjkz23DQGXDMMM
-# E/Xqbk2a17RXF0CSyKPxjZSMLWC6vkPH1ngHtIhoH6aj7nxFR/FMQqDs+qG0QMHU
-# gXuBRnmlK7vqxDz294ttavRKJb7wdHGuIx8PxJQx0Fr+WNM4S2H6c4GLVKM=
+# NwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFHd3J+bMBflG7P0h
+# oY9BCzNfvxaTMA0GCSqGSIb3DQEBAQUABIIBADnoFtmMLlrdVgZIT2PJZcDJryqZ
+# R4DNNKS5PCalXmZ4emht/R6S/joEjlaZ4QwWhnbQebCbrhvNbs2U5HUEOQQIghOY
+# 5nGEe9H56Q2YrpHmDk/T7wWtfz+7zd9OowvjEcU6O/PvmMaMDHaUXZav83m9WBJa
+# N7Sva+9d8//Qs4sY/oFi/XohjaX5/EWmD4CfgK6zOQmkb639YsDfo9AvPGtCzZnc
+# k38iS32cgCFPA6Ef/I9FE6ZBfTZoGdxH0bzxTh5yI0l7Kr2f95jlQjHbxz7HYMnc
+# 9sFJuNr/ptY6JMAO2IvJE4Zgoyp/SW4jK9aC81WHkjmgXm21KauNJaWnDac=
 # SIG # End signature block

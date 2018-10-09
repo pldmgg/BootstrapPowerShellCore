@@ -768,7 +768,7 @@ function Get-SSHProbe {
                     $OSDetermination = "Windows"
                     $ShellDetermination = "pwsh"
                 }
-                elseif ($SSHCheckAsJson.Platform -match "Darwin") {
+                elseif ($SSHCheckAsJson.DistroInfo -match "Darwin") {
                     $OSDetermination = "MacOS"
                     $ShellDetermination = "pwsh"
                     
@@ -848,7 +848,7 @@ function Get-SSHProbe {
             # NOTE: The below -replace regex string removes garbage escape sequences like: [116;1H
             $SSHCmdString = $script:SSHCmdString = '@($(' + $($SSHCmdStringArray -join " ") + ') -replace "\e\[(\d+;)*(\d+)?[ABCDHJKfmsu]","") 2>$null'
 
-            Write-Host "`$SSHCmdString is:`n    $SSHCmdString"
+            #Write-Host "`$SSHCmdString is:`n    $SSHCmdString"
 
             #region >> Await Attempt Number 1 of 2
             
@@ -1012,7 +1012,7 @@ function Get-SSHProbe {
                 Write-Error "Something went wrong with the PowerShell Await Module! Halting!"
                 $global:FunctionResult = "1"
 
-                Write-Host "Await ScriptBlock (`$SSHCmdString) was:`n    $SSHCmdString"
+                #Write-Host "Await ScriptBlock (`$SSHCmdString) was:`n    $SSHCmdString"
 
                 if ($PSAwaitProcess.Id) {
                     try {
@@ -1422,7 +1422,7 @@ function Get-SSHProbe {
 
             # The below $ExpectOutput is an array of strings
             $ExpectOutput = bash -c "$ExpectScript"
-            $ExpectOutput | Export-CliXml -Path "$HOME/ExpectOutput1.xml"
+            #$ExpectOutput | Export-CliXml -Path "$HOME/ExpectOutput1.xml"
 
             $SSHOutputPrep = $ExpectOutput -replace "\e\[(\d+;)*(\d+)?[ABCDHJKfmsu]",""
 
@@ -1461,7 +1461,7 @@ function Get-SSHProbe {
                     $OSDetermination = "Windows"
                     $ShellDetermination = "pwsh"
                 }
-                elseif ($SSHCheckAsJson.Platform -match "Darwin") {
+                elseif ($SSHCheckAsJson.DistroInfo -match "Darwin") {
                     $OSDetermination = "MacOS"
                     $ShellDetermination = "pwsh"
                     
@@ -1549,7 +1549,7 @@ function Get-SSHProbe {
                 'send -- \"' + $_ + '\r\"' + "`n" + 'expect \"*\"'
             }
 
-            Write-Host "`$SSHScript is:`n    $SSHScript"
+            #Write-Host "`$SSHScript is:`n    $SSHScript"
 
             $ExpectScriptPrep = @(
                 'expect - << EOF'
@@ -1581,7 +1581,7 @@ function Get-SSHProbe {
             
             # The below $ExpectOutput is an array of strings
             $ExpectOutput = bash -c "$ExpectScript"
-            $ExpectOutput | Export-CliXml -Path "$HOME/ExpectOutput2.xml"
+            #$ExpectOutput | Export-CliXml -Path "$HOME/ExpectOutput2.xml"
 
             # NOTE: The below -replace regex string removes garbage escape sequences like: [116;1H
             $SSHOutputPrep = $ExpectOutput -replace "\e\[(\d+;)*(\d+)?[ABCDHJKfmsu]",""
@@ -1722,8 +1722,8 @@ function Get-SSHProbe {
 # SIG # Begin signature block
 # MIIMiAYJKoZIhvcNAQcCoIIMeTCCDHUCAQExCzAJBgUrDgMCGgUAMGkGCisGAQQB
 # gjcCAQSgWzBZMDQGCisGAQQBgjcCAR4wJgIDAQAABBAfzDtgWUsITrck0sYpfvNR
-# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUL4r2Gb+xtXbtZc7OMHSGds76
-# eXKgggn9MIIEJjCCAw6gAwIBAgITawAAAB/Nnq77QGja+wAAAAAAHzANBgkqhkiG
+# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUl8aKK3LSTq6zuVKjJTeTGe1J
+# E52gggn9MIIEJjCCAw6gAwIBAgITawAAAB/Nnq77QGja+wAAAAAAHzANBgkqhkiG
 # 9w0BAQsFADAwMQwwCgYDVQQGEwNMQUIxDTALBgNVBAoTBFpFUk8xETAPBgNVBAMT
 # CFplcm9EQzAxMB4XDTE3MDkyMDIxMDM1OFoXDTE5MDkyMDIxMTM1OFowPTETMBEG
 # CgmSJomT8ixkARkWA0xBQjEUMBIGCgmSJomT8ixkARkWBFpFUk8xEDAOBgNVBAMT
@@ -1780,11 +1780,11 @@ function Get-SSHProbe {
 # ARkWA0xBQjEUMBIGCgmSJomT8ixkARkWBFpFUk8xEDAOBgNVBAMTB1plcm9TQ0EC
 # E1gAAAH5oOvjAv3166MAAQAAAfkwCQYFKw4DAhoFAKB4MBgGCisGAQQBgjcCAQwx
 # CjAIoAKAAKECgAAwGQYJKoZIhvcNAQkDMQwGCisGAQQBgjcCAQQwHAYKKwYBBAGC
-# NwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFGfDIEip3xa0yQ5Y
-# KmNyK30WLO2UMA0GCSqGSIb3DQEBAQUABIIBAAMD2MqnepIXVM6rmxilCzXLu2Hn
-# 5D5puxNlSvEhBAjUSG3g1v2IDnaCUFDV4xYnKZB+smDEcU66BciRfgqZ+GLPDhvc
-# MfdvkdHj2X0PEylbtVf2S0IdfNEMy/Uj4wsX9r/mqYJ+ATQBP/iJ9VoqV/f8iozA
-# l/nlTVFaEcXok5f//73HwcdjwmYQ/lTgNue+oxTXwfQwDjhpUWPYnkCvrzo3UwGL
-# lcMWPTRYO3Z7ptsfyPXjGbcEU0x2Kviy38doMzPzhrcPRVJkPZKKU7XcOKtJ19nB
-# NsRItfK7oAdtmHCyXVr9MmhfVmULmVNe5XqElzfr3NrN2JYD0IxqcYx/3Uo=
+# NwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFHF7yk/K9tO7zxYn
+# SKTqzXsk7JXOMA0GCSqGSIb3DQEBAQUABIIBAHU9T54HBP+brQsLNeJiypLyW6ki
+# sp0VizrSq/4PdQJlkxKdBYVDF2nT7PPJ0ip/+5CHEvi9w7hN/+SguuK7pFUZLU65
+# xPL9yvBXlLHTupdfuWGatPDUd179TCGFhMrWe/LG0TDO+2nboFsIjz3qKQ6f+E3m
+# 21ly8HDqx6HTlGe4Ba5b/MRUoqt7mn1ubh7vBYO1IxcxRUfwrnUZV2n1QQRFHTXj
+# wYySAIOYaphNw1OOgirklIEcPpQ6gBScNu20oUWSnIku4Bpx2GpMht+51mVAsFDZ
+# 4yl05pVwonOOONAQNQnTuk3nLVreJzGj+lrIjkt5i5ZfYsk+oqyzEx+y5Y4=
 # SIG # End signature block
