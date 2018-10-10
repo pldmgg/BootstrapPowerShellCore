@@ -432,7 +432,7 @@ function Bootstrap-PowerShellCore {
     # sed -i '' -e 's/libexec\/$/libexec\/sftp-server/g' /etc/ssh/sshd_config
     $PwshRemotingScriptPrepForMac = @(
         "cat /etc/ssh/sshd_config | grep -Eic 'Subsystem.*powershell' > /dev/null && echo sed -i '' '/^Subsystem powershell/d' /etc/ssh/sshd_config || echo false"
-        'command -v pwsh > /dev/null && echo true || echo pwshNotFound && exit 1'
+        'command -v pwsh > /dev/null && echo true || echo pwshNotFound'
         "sed -i '' -e 's/sftp-server/\'`$'\nSubsystem powershell \/usr\/local\/bin\/pwsh -sshs -NoLogo -NoProfile/g' /etc/ssh/sshd_config"
         "sed -i '' -e 's/libexec\/`$/libexec\/sftp-server/g' /etc/ssh/sshd_config"
         'launchctl stop com.openssh.sshd && launchctl start com.openssh.sshd'
@@ -441,7 +441,7 @@ function Bootstrap-PowerShellCore {
     $PwshRemotingScriptForMac = "sudo bash -c \```"$($PwshRemotingScriptPrepForMac -join '; ')\```""
     $PwshRemotingScriptPrepForMacWindowsToMac = @(
         "cat /etc/ssh/sshd_config | grep -Eic 'Subsystem.*powershell' > /dev/null && echo sed -i '' '/^Subsystem powershell/d' /etc/ssh/sshd_config || echo false"
-        'command -v pwsh > /dev/null && echo true || echo pwshNotFound && exit 1'
+        'command -v pwsh > /dev/null && echo true || echo pwshNotFound'
         "sed -i '' -e 's/sftp-server/\'\```$'\nSubsystem powershell \/usr\/local\/bin\/pwsh -sshs -NoLogo -NoProfile/g' /etc/ssh/sshd_config"
         "sed -i '' -e 's/libexec\/\```$/libexec\/sftp-server/g' /etc/ssh/sshd_config"
         'launchctl stop com.openssh.sshd && launchctl start com.openssh.sshd'
@@ -450,9 +450,9 @@ function Bootstrap-PowerShellCore {
     $PwshRemotingScriptForMacWindowsToMac = "sudo bash -c \```"$($PwshRemotingScriptPrepForMacWindowsToMac -join '; ')\```""
     $PwshRemotingScriptPrepForMacForExpect = @(
         "cat /etc/ssh/sshd_config | grep -Eic 'Subsystem.*powershell' > /dev/null && echo sed -i '' '/^Subsystem powershell/d' /etc/ssh/sshd_config || echo false"
-        'command -v pwsh > /dev/null && echo true || echo pwshNotFound && exit 1'
-        "sed -i '' -e 's/sftp-server/\'\\\`$'\nSubsystem powershell \/usr\/local\/bin\/pwsh -sshs -NoLogo -NoProfile/g' /etc/ssh/sshd_config"
-        "sed -i '' -e 's/libexec\/\\\`$/libexec\/sftp-server/g' /etc/ssh/sshd_config"
+        'command -v pwsh > /dev/null && echo true || echo pwshNotFound'
+        "sed -i '' -e 's/sftp-server/\\\'\\\`$'\\\nSubsystem powershell \\\/usr\\\/local\\\/bin\\\/pwsh -sshs -NoLogo -NoProfile/g' /etc/ssh/sshd_config"
+        "sed -i '' -e 's/libexec\\\/\\\`$/libexec\\\/sftp-server/g' /etc/ssh/sshd_config"
         'launchctl stop com.openssh.sshd && launchctl start com.openssh.sshd'
         'echo pwshConfigComplete'
     )
@@ -891,7 +891,7 @@ function Bootstrap-PowerShellCore {
 
     $MacOSScriptPrepForExpect = @(
         'usrlocaldir=\\\$(echo \\\"\\\$HOME/usr/local\\\")'
-        'if \[ ! -d \\\"\\\$usrlocaldir/Cellar\\\" \]; then mkdir -p \\\"$usrlocaldir/Cellar\\\"; fi'
+        'if \[ ! -d \\\"\\\$usrlocaldir/Cellar\\\" \]; then mkdir -p \\\"\\\$usrlocaldir/Cellar\\\"; fi'
         'chown -R \\\$USER \\\$usrlocaldir'
         'checkbrew=\\\$(command -v brew)'
         $('if test -z \\\$checkbrew; then echo \\\$PATH | tr {0} | grep -xc /usr/local/bin > /dev/null && echo true || PATH=\\\$PATH:/usr/local/bin; fi' -f "':' '\\\n'")
@@ -1758,7 +1758,7 @@ function Bootstrap-PowerShellCore {
             
             $SSHCmdString = Invoke-Command -ScriptBlock $BootstrapSB -ArgumentList $(Get-Variable -Name $OS -ValueOnly)
             
-            Write-Host "`$SSHCmdString is:`n    $SSHCmdString"
+            #Write-Host "`$SSHCmdString is:`n    $SSHCmdString"
 
             try {
                 if ($(Get-Module -ListAvailable).Name -notcontains 'WinSSH') {$null = Install-Module WinSSH -ErrorAction Stop}
@@ -2515,29 +2515,70 @@ function Bootstrap-PowerShellCore {
                 }
 
                 if ($UsePackageManagement) {
-                    $SSHScriptA = $ExpectScripts.PackageManagerInstallScript | foreach {
-                        if ($_ -match "powershellInstallComplete") {
-                            'send -- \"' + $_ + '\r\"' + "`n" + 'expect \"*powershellInstallComplete*\"'
-                        }
-                        elseif ($_ -match "pwshConfigComplete") {
-                            'send -- \"' + $_ + '\r\"' + "`n" + 'expect \"*pwshConfigComplete*\"'
-                        }
-                        else {
-                            'send -- \"' + $_ + '\r\"' + "`n" + 'expect -re \"$prompt\"'
-                        }
-                    }
+                    $MainScript = $ExpectScripts.PackageManagerInstallScript
                 }
                 else {
-                    $SSHScriptA = $ExpectScripts.ManualInstallScript | foreach {
-                        if ($_ -match "powershellInstallComplete") {
-                            'send -- \"' + $_ + '\r\"' + "`n" + 'expect \"*powershellInstallComplete*\"'
-                        }
-                        elseif ($_ -match "pwshConfigComplete") {
-                            'send -- \"' + $_ + '\r\"' + "`n" + 'expect \"*pwshConfigComplete*\"'
-                        }
-                        else {
-                            'send -- \"' + $_ + '\r\"' + "`n" + 'expect -re \"$prompt\"'
-                        }
+                    $MainScript = $ExpectScripts.ManualInstallScript
+                }
+
+                $SSHScriptA = $MainScript | foreach {
+                    if ($_ -match "powershellInstallComplete") {
+                        'send -- \"' + $_ + '\r\"' + "`n" + 'expect \"*powershellInstallComplete*\"'
+                    }
+                    elseif ($_ -match "pwshConfigComplete") {
+                        'send -- \"' + $_ + '\r\"' + "`n" + 'expect \"*pwshConfigComplete*\"'
+                    }
+                    else {
+                        'send -- \"' + $_ + '\r\"' + "`n" + 'expect -re \"$prompt\"'
+                    }
+                }
+            }
+            elseif ($OS -eq "MacOS") {
+                $SSHScriptB = $ExpectScripts.ConfigurePwshRemotingScript | foreach {
+                    if ($_ -match "powershellInstallComplete") {
+                        'send -- \"' + $_ + '\r\"' + "`n" + 'expect \"*powershellInstallComplete*\"'
+                    }
+                    elseif ($_ -match "pwshConfigComplete") {
+                        'send -- \"' + $_ + '\r\"' + "`n" + 'expect \"*pwshConfigComplete*\"'
+                    }
+                    else {
+                        'send -- \"' + $_ + '\r\"' + "`n" + 'expect -re \"$prompt\"'
+                    }
+                }
+
+                if ($UsePackageManagement) {
+                    $MainScript = $ExpectScripts.PackageManagerInstallScript
+                }
+                else {
+                    $MainScript = $ExpectScripts.ManualInstallScript
+                }
+
+                $SSHScriptA = $MainScript | foreach {
+                    if ($_ -match "brew cask reinstall powershell") {
+                        $SendLine = $_ -replace ' && echo powershellInstallComplete',''
+                        $ExpectPwdPrompt = @(
+                            "send -- \`"$SendLine\r\`""
+                            'expect {'
+                            '    -re \".*assword.*:\" {'
+                            '        send -- \"\$password\r\"'
+                            '        exp_continue'
+                            '    }'
+                            '    -re \"was successfully installed!\" {'
+                            '        send -- \"echo powershellInstallComplete\r\"'
+                            '        expect \"*\"'
+                            '    }'
+                            '}'
+                        )
+                        $ExpectPwdPrompt -join "`n"
+                    }
+                    elseif ($_ -match "powershellInstallComplete") {
+                        'send -- \"' + $_ + '\r\"' + "`n" + 'expect \"*powershellInstallComplete*\"'
+                    }
+                    elseif ($_ -match "pwshConfigComplete") {
+                        'send -- \"' + $_ + '\r\"' + "`n" + 'expect \"*pwshConfigComplete*\"'
+                    }
+                    else {
+                        'send -- \"' + $_ + '\r\"' + "`n" + 'expect -re \"$prompt\"'
                     }
                 }
             }
@@ -2558,7 +2599,7 @@ function Bootstrap-PowerShellCore {
                         $SSHScript = $ExpectScripts.ManualInstallScript
                     }
                 }
-
+                
                 $SSHScript = $SSHScript | foreach {
                     if ($_ -match "powershellInstallComplete") {
                         'send -- \"' + $_ + '\r\"' + "`n" + 'expect \"*powershellInstallComplete*\"'
@@ -2572,11 +2613,9 @@ function Bootstrap-PowerShellCore {
                 }
             }
 
-            
-
             #Write-Host "`$SSHScript is:`n$SSHScript"
             
-            if ($OS -eq "Arch") {
+            if ($OS -eq "Arch" -or $OS -eq "MacOS") {
                 [System.Collections.ArrayList]$ExpectScriptPrep = @(
                     'expect - << EOF'
                     'set timeout 120'
@@ -2608,8 +2647,8 @@ function Bootstrap-PowerShellCore {
                     $null = $ExpectScriptPrep.Add('        exp_continue')
                     $null = $ExpectScriptPrep.Add('    }')
                     $null = $ExpectScriptPrep.Add('    -re \"\$prompt\" {')
-                    $null = $ExpectScriptPrep.Add('        send -- \"echo StartInstall\r\"')
-                    $null = $ExpectScriptPrep.Add('        expect \"StartInstall\"')
+                    $null = $ExpectScriptPrep.Add('        send -- \"echo DoingPSRemotingConfig\r\"')
+                    $null = $ExpectScriptPrep.Add('        expect \"DoingPSRemotingConfig\"')
                     $null = $ExpectScriptPrep.Add('    }')
                     $null = $ExpectScriptPrep.Add('}')
                     $SSHScriptB | foreach {
@@ -2705,8 +2744,8 @@ function Bootstrap-PowerShellCore {
 # SIG # Begin signature block
 # MIIMiAYJKoZIhvcNAQcCoIIMeTCCDHUCAQExCzAJBgUrDgMCGgUAMGkGCisGAQQB
 # gjcCAQSgWzBZMDQGCisGAQQBgjcCAR4wJgIDAQAABBAfzDtgWUsITrck0sYpfvNR
-# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQULtJGguCWDsOFlsJI+OvINUSK
-# NOmgggn9MIIEJjCCAw6gAwIBAgITawAAAB/Nnq77QGja+wAAAAAAHzANBgkqhkiG
+# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUNBTw1w4r6RHIFli1zi4KlknU
+# fGigggn9MIIEJjCCAw6gAwIBAgITawAAAB/Nnq77QGja+wAAAAAAHzANBgkqhkiG
 # 9w0BAQsFADAwMQwwCgYDVQQGEwNMQUIxDTALBgNVBAoTBFpFUk8xETAPBgNVBAMT
 # CFplcm9EQzAxMB4XDTE3MDkyMDIxMDM1OFoXDTE5MDkyMDIxMTM1OFowPTETMBEG
 # CgmSJomT8ixkARkWA0xBQjEUMBIGCgmSJomT8ixkARkWBFpFUk8xEDAOBgNVBAMT
@@ -2763,11 +2802,11 @@ function Bootstrap-PowerShellCore {
 # ARkWA0xBQjEUMBIGCgmSJomT8ixkARkWBFpFUk8xEDAOBgNVBAMTB1plcm9TQ0EC
 # E1gAAAH5oOvjAv3166MAAQAAAfkwCQYFKw4DAhoFAKB4MBgGCisGAQQBgjcCAQwx
 # CjAIoAKAAKECgAAwGQYJKoZIhvcNAQkDMQwGCisGAQQBgjcCAQQwHAYKKwYBBAGC
-# NwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFCSs+DjrOD++A1MV
-# 7r21owkZDQNIMA0GCSqGSIb3DQEBAQUABIIBAJaY6GaI45kpATorLVd5MkBLL5c3
-# zs2lp2xI5S+OVUDOtfJ85/4AgwUANlKjgfCF25vROM8kdKZcm3Vf22IYG9ie0MPg
-# iM0+/qLtnfWUUjuAWRM3ksrc5Z3vn6a30PbPzw1RAFH8BcWvQLvCoCdNoFeyQTji
-# 0K/LL/WNKy1DiUPQWrUNw/gUazDxAFnCBZzjte0EXFAKj5Ieyrl/P6uXLwRjhGIm
-# RVUsAcHtLSGuh8g5Jp48sVBkqgUy70DQpdxE6VUfb47p5I/gtBPnAKt0Dx6ZInYB
-# aeCJoWWMBOnPe4fLenNwY9ch4TdJel5K9x25m6/FD+vliUVs8JGYMN2QyLI=
+# NwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFEuZ5k+UynigY7KF
+# CS6P2jIV1qlwMA0GCSqGSIb3DQEBAQUABIIBADXZhM7tNnZDSUbFyYIqSKAKqqyz
+# /uggkbz3mVL8xxfQzItIATsFLyzzK8Mcw78RH1g1iDgB8JwSunvnq6RBW2PNMY6U
+# MZ3fLsnKVCgU1CkruorHYKhy7lKd6hela0KQSIVtkHhNleQ63giT1/ioj9HuLYHP
+# ZBHKFQHA0TdipXzHRb3gtO2f476hQUzMXpnV8aDDS7CwzuiIEap76Dk0YiwguMuF
+# ckMnbAfqBWxRibW2xhPkZmbVsmq99V53dMJG5ajNeiTHUvHAq861+JjpZBx/DG9Z
+# QVd7dt6zxnw938/Uhgg1RQFe2miS9hMKuxjMitTEVZY/iYXawEUrp12uO5c=
 # SIG # End signature block
