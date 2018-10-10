@@ -234,7 +234,7 @@ function Bootstrap-PowerShellCore {
         [string]$KeyFilePath,
 
         [Parameter(Mandatory=$False)]
-        [ValidateSet("Windows","MacOS","Ubuntu1404","Ubuntu1604","Ubuntu1804","Ubuntu1810","Debian8","Debian9","CentOS7","RHEL7","OpenSUSE423","Fedora","Raspbian")]
+        [ValidateSet("Windows","MacOS","Ubuntu1404","Ubuntu1604","Ubuntu1804","Ubuntu1810","Debian8","Debian9","CentOS7","RHEL7","OpenSUSE423","Fedora","Arch","Raspbian")]
         [string]$OS,
 
         [Parameter(Mandatory=$False)]
@@ -331,8 +331,8 @@ function Bootstrap-PowerShellCore {
             $Ubuntu1404PackageName = $($_ -split '/')[-1]
         }
         {$_ -match "ubuntu" -and $_ -match "16\.04" -and $_ -match "\.deb"} {
-            $Ubuntu1604PackageUrl = $_
-            $Ubuntu1604PackageName = $($_ -split '/')[-1]
+            $Ubuntu1604PackageUrl = $ArchPackageUrl = $_
+            $Ubuntu1604PackageName = $ArchPackageName = $($_ -split '/')[-1]
         }
         {$_ -match "ubuntu" -and $_ -match "18\.04" -and $_ -match "\.deb"} {
             $Ubuntu1804PackageUrl = $_
@@ -542,6 +542,8 @@ function Bootstrap-PowerShellCore {
         'launchctl stop com.openssh.sshd && launchctl start com.openssh.sshd'
         'echo pwshConfigComplete'
     )
+
+    $OnWindows = !$PSVersionTable.Platform -or $PSVersionTable.Platform -eq "Win32NT"
     
     # Ubuntu 14.04 Install Info
     $Ubuntu1404PMInstallScriptPrep = @(
@@ -551,7 +553,7 @@ function Bootstrap-PowerShellCore {
         'wget -q https://packages.microsoft.com/config/ubuntu/14.04/packages-microsoft-prod.deb'
         'dpkg -i packages-microsoft-prod.deb'
         'apt-get update'
-        #'echo powershellInstallComplete'
+        if ($OnWindows) {'echo powershellInstallComplete'}
         'apt-get install -y powershell && echo powershellInstallComplete'
     )
     $Ubuntu1404PMInstallScript = "sudo bash -c \```"$($Ubuntu1404PMInstallScriptPrep -join '; ')\```""
@@ -559,7 +561,7 @@ function Bootstrap-PowerShellCore {
     $Ubuntu1404ManualInstallScriptPrep = @(
         "wget -q $Ubuntu1404PackageUrl"
         "dpkg -i $Ubuntu1404PackageName"
-        #'echo powershellInstallComplete'
+        if ($OnWindows) {'echo powershellInstallComplete'}
         'apt-get install -f && echo powershellInstallComplete'
     )
     $Ubuntu1404ManualInstallScript = "sudo bash -c \```"$($Ubuntu1404ManualInstallScriptPrep -join '; ')\```""
@@ -588,7 +590,7 @@ function Bootstrap-PowerShellCore {
         'wget -q https://packages.microsoft.com/config/ubuntu/16.04/packages-microsoft-prod.deb'
         'dpkg -i packages-microsoft-prod.deb'
         'apt-get update'
-        #'echo powershellInstallComplete'
+        if ($OnWindows) {'echo powershellInstallComplete'}
         'apt-get install -y powershell && echo powershellInstallComplete'
     )
     $Ubuntu1604PMInstallScript = "sudo bash -c \```"$($Ubuntu1604PMInstallScriptPrep -join '; ')\```""
@@ -596,7 +598,7 @@ function Bootstrap-PowerShellCore {
     $Ubuntu1604ManualInstallScriptPrep = @(
         "wget -q $Ubuntu1604PackageUrl"
         "dpkg -i $Ubuntu1604PackageName"
-        #'echo powershellInstallComplete'
+        if ($OnWindows) {'echo powershellInstallComplete'}
         'apt-get install -f && echo powershellInstallComplete'
     )
     $Ubuntu1604ManualInstallScript = "sudo bash -c \```"$($Ubuntu1604ManualInstallScriptPrep -join '; ')\```""
@@ -625,7 +627,7 @@ function Bootstrap-PowerShellCore {
         'wget -q https://packages.microsoft.com/config/ubuntu/18.04/packages-microsoft-prod.deb'
         'dpkg -i packages-microsoft-prod.deb'
         'apt-get update'
-        #'echo powershellInstallComplete'
+        if ($OnWindows) {'echo powershellInstallComplete'}
         'apt-get install -y powershell && echo powershellInstallComplete'
     )
     $Ubuntu1804PMInstallScript = "sudo bash -c \```"$($Ubuntu1804PMInstallScriptPrep -join '; ')\```""
@@ -633,7 +635,7 @@ function Bootstrap-PowerShellCore {
     $Ubuntu1804ManualInstallScriptPrep = @(
         "wget -q $Ubuntu1804PackageUrl"
         "dpkg -i $Ubuntu1804PackageName"
-        #'echo powershellInstallComplete'
+        if ($OnWindows) {'echo powershellInstallComplete'}
         'apt-get install -f && echo powershellInstallComplete'
     )
     $Ubuntu1804ManualInstallScript = "sudo bash -c \```"$($Ubuntu1804ManualInstallScriptPrep -join '; ')\```""
@@ -661,7 +663,7 @@ function Bootstrap-PowerShellCore {
         'curl https://packages.microsoft.com/keys/microsoft.asc | sudo apt-key add -'
         "sh -c 'echo \`"\`"deb [arch=amd64] https://packages.microsoft.com/repos/microsoft-debian-jessie-prod jessie main\`"\`" > /etc/apt/sources.list.d/microsoft.list'"
         'apt-get update'
-        #'echo powershellInstallComplete'
+        if ($OnWindows) {'echo powershellInstallComplete'}
         'apt-get install -y powershell && echo powershellInstallComplete'
     )
     $Debian8PMInstallScript = "sudo bash -c \```"$($Debian8PMInstallScriptPrep -join '; ')\```""
@@ -672,7 +674,7 @@ function Bootstrap-PowerShellCore {
         'curl https://packages.microsoft.com/keys/microsoft.asc | sudo apt-key add -'
         "sh -c 'echo \\\`"deb \[arch=amd64\] https://packages.microsoft.com/repos/microsoft-debian-jessie-prod jessie main\\\`" > /etc/apt/sources.list.d/microsoft.list'"
         'apt-get update'
-        #'echo powershellInstallComplete'
+        if ($OnWindows) {'echo powershellInstallComplete'}
         'apt-get install -y powershell && echo powershellInstallComplete'
     )
 
@@ -680,7 +682,7 @@ function Bootstrap-PowerShellCore {
         "ls $Debian8PackageName && rm -f $Debian8PackageName"
         "wget -q $Debian8PackageUrl"
         "dpkg -i $Debian8PackageName"
-        #'echo powershellInstallComplete'
+        if ($OnWindows) {'echo powershellInstallComplete'}
         'apt install -f && echo powershellInstallComplete'
     )
     $Debian8ManualInstallScript = "sudo bash -c \```"$($Debian8ManualInstallScriptPrep -join '; ')\```""
@@ -708,7 +710,7 @@ function Bootstrap-PowerShellCore {
         'curl https://packages.microsoft.com/keys/microsoft.asc | sudo apt-key add -'
         "sh -c 'echo \`"\`"deb [arch=amd64] https://packages.microsoft.com/repos/microsoft-debian-stretch-prod stretch main\`"\`" > /etc/apt/sources.list.d/microsoft.list'"
         'apt-get update'
-        #'echo powershellInstallComplete'
+        if ($OnWindows) {'echo powershellInstallComplete'}
         'apt-get install -y powershell && echo powershellInstallComplete'
     )
     $Debian9PMInstallScript = "sudo bash -c \```"$($Debian9PMInstallScriptPrep -join '; ')\```""
@@ -719,7 +721,7 @@ function Bootstrap-PowerShellCore {
         'curl https://packages.microsoft.com/keys/microsoft.asc | sudo apt-key add -'
         "sh -c 'echo \\\`"deb \[arch=amd64\] https://packages.microsoft.com/repos/microsoft-debian-stretch-prod stretch main\\\`" > /etc/apt/sources.list.d/microsoft.list'"
         'apt-get update'
-        #'echo powershellInstallComplete'
+        if ($OnWindows) {'echo powershellInstallComplete'}
         'apt install -y powershell && echo powershellInstallComplete'
     )
 
@@ -727,7 +729,7 @@ function Bootstrap-PowerShellCore {
         "ls $Debian9PackageName && rm -f $Debian9PackageName"
         "wget -q $Debian9PackageUrl"
         "dpkg -i $Debian9PackageName"
-        #'echo powershellInstallComplete'
+        if ($OnWindows) {'echo powershellInstallComplete'}
         'apt install -f && echo powershellInstallComplete'
     )
     $Debian9ManualInstallScript = "sudo bash -c \```"$($Debian9ManualInstallScriptPrep -join '; ')\```""
@@ -752,13 +754,13 @@ function Bootstrap-PowerShellCore {
     # 'curl -s https://packages.microsoft.com/config/rhel/7/prod.repo > /etc/yum.repos.d/microsoft.repo'
     $CentOS7PMInstallScriptPrep = $RHELPMInstallScriptPrep = @(
         'curl https://packages.microsoft.com/config/rhel/7/prod.repo | sudo tee /etc/yum.repos.d/microsoft.repo'
-        #'echo powershellInstallComplete'
+        if ($OnWindows) {'echo powershellInstallComplete'}
         'yum install -y powershell && echo powershellInstallComplete'
     )
     $CentOS7PMInstallScript = $RHEL7PMInstallScript = "sudo bash -c \```"$($CentOS7PMInstallScriptPrep -join '; ')\```""
 
     $CentOS7ManualInstallScriptPrep = $RHEL7ManualInstallScriptPrep = @(
-        #'echo powershellInstallComplete'
+        if ($OnWindows) {'echo powershellInstallComplete'}
         "yum install $CentOS7PackageUrl && echo powershellInstallComplete"
     )
     $CentOS7ManualInstallScript = $RHEL7ManualInstallScript = "sudo bash -c \```"$($CentOS7ManualInstallScriptPrep -join '; ')\```""
@@ -786,7 +788,7 @@ function Bootstrap-PowerShellCore {
         'rpm --import https://packages.microsoft.com/keys/microsoft.asc'
         'zypper --non-interactive ar --gpgcheck-allow-unsigned-repo https://packages.microsoft.com/rhel/7/prod/ microsoft'
         'zypper --non-interactive update'
-        #'echo powershellInstallComplete'
+        if ($OnWindows) {'echo powershellInstallComplete'}
         "rpm -ivh --nodeps $OpenSUSE423PackageUrl && echo powershellInstallComplete"
         #"zypper -n install --force powershell"
     )
@@ -797,7 +799,7 @@ function Bootstrap-PowerShellCore {
         'zypper --non-interactive rr microsoft'
         'rpm --import https://packages.microsoft.com/keys/microsoft.asc'
         'zypper --non-interactive ar --gpgcheck-allow-unsigned-repo https://packages.microsoft.com/rhel/7/prod/ microsoft'
-        #'echo powershellInstallComplete'
+        if ($OnWindows) {'echo powershellInstallComplete'}
         "rpm -ivh --nodeps $OpenSUSE423PackageUrl && echo powershellInstallComplete"
         #"zypper -n install --force $OpenSUSE423PackageUrl"
     )
@@ -826,7 +828,7 @@ function Bootstrap-PowerShellCore {
         'curl https://packages.microsoft.com/config/rhel/7/prod.repo | sudo tee /etc/yum.repos.d/microsoft.repo'
         'dnf update -y'
         'dnf install -y compat-openssl10'
-        #'echo powershellInstallComplete'
+        if ($OnWindows) {'echo powershellInstallComplete'}
         'dnf install -y powershell && echo powershellInstallComplete'
     )
     $FedoraPMInstallScript = "sudo bash -c \```"$($FedoraPMInstallScriptPrep -join '; ')\```""
@@ -834,7 +836,7 @@ function Bootstrap-PowerShellCore {
     $FedoraManualInstallScriptPrep = @(
         'dnf remove powershell -y'
         'dnf install -y compat-openssl10'
-        #'echo powershellInstallComplete'
+        if ($OnWindows) {'echo powershellInstallComplete'}
         "dnf install -y $FedoraPackageUrl && echo powershellInstallComplete"
     )
     $FedoraManualInstallScript = "sudo bash -c \```"$($FedoraManualInstallScriptPrep -join '; ')\```""
@@ -860,7 +862,7 @@ function Bootstrap-PowerShellCore {
         'apt install libunwind8'
         "wget -q $LinuxGenericArmPackageUrl"
         'mkdir ~/powershell'
-        #'echo powershellInstallComplete'
+        if ($OnWindows) {'echo powershellInstallComplete'}
         "tar -xvf ./$LinuxGenericArmPackageName -C ~/powershell && echo powershellInstallComplete"
     )
     $RaspbianManualInstallScript = "sudo bash -c \```"$($RaspbianManualInstallScriptPrep -join '; ')\```""
@@ -877,6 +879,37 @@ function Bootstrap-PowerShellCore {
             PackageManagerInstallScript = $RaspbianPMInstallScriptPrep
             ManualInstallScript         = $RaspbianManualInstallScriptPrep
             UninstallScript             = $RaspbianUninstallScript
+            ConfigurePwshRemotingScript = $PwshRemotingScriptPrepForExpect
+        }
+    }
+
+    # The below Operating Systems (Arch and MacOS) are situations where some operations MUST NOT be performed
+    # using sudo and others MUST be performed using sudo. This is why some coding patterns may seem counterintuitive...
+
+    # Arch Install Info
+    $ArchPMInstallScriptPrep = @(
+        'ls powershell-bin && rm -rf powershell-bin'
+        'git clone https://aur.archlinux.org/powershell-bin.git'
+        'cd powershell-bin'
+        if ($OnWindows) {'echo powershellInstallComplete'}
+        'makepkg -si --noconfirm && powershellInstallComplete'
+    )
+    $ArchPMInstallScript = "bash -c \```"$($ArchPMInstallScriptPrep -join '; ')\```""
+
+    $ArchUninstallScript = 'sudo pacman -Rcn powershell-bin --noconfirm'
+
+    $Arch = [pscustomobject]@{
+        PackageManagerInstallScript                 = $ArchPMInstallScript
+        ManualInstallScript                         = $ArchPMInstallScript
+        PackageManagerInstallScriptWindowsToLinux   = $ArchPMInstallScript
+        ManualInstallScriptWindowsToLinux           = $ArchPMInstallScript
+        UninstallScript                             = $ArchUninstallScript
+        ConfigurePwshRemotingScript                 = $PwshRemotingScript
+        ConfigurePwshRemotingScriptWindowsToLinux   = $PwshRemotingScriptWindowsToLinux
+        ExpectScripts               = [pscustomobject]@{
+            PackageManagerInstallScript = $ArchPMInstallScriptPrep
+            ManualInstallScript         = $ArchPMInstallScriptPrep
+            UninstallScript             = $ArchUninstallScript
             ConfigurePwshRemotingScript = $PwshRemotingScriptPrepForExpect
         }
     }
@@ -917,7 +950,7 @@ function Bootstrap-PowerShellCore {
         'brew update'
         'brew tap caskroom/cask'
         'brew install openssl'
-        #'echo powershellInstallComplete'
+        if ($OnWindows) {'echo powershellInstallComplete'}
         'brew cask reinstall powershell && echo powershellInstallComplete' # IMPORTANT NOTE: This will prompt for a password!
     )
     $MacOSPMInstallScript = "bash -c \```"$($MacOSPMInstallScriptPrep)\```""
@@ -937,7 +970,7 @@ function Bootstrap-PowerShellCore {
         'brew update'
         'brew tap caskroom/cask'
         'brew install openssl'
-        #'echo powershellInstallComplete'
+        if ($OnWindows) {'echo powershellInstallComplete'}
         'brew cask reinstall powershell && echo powershellInstallComplete' # IMPORTANT NOTE: This will prompt for a password!
     )
     $MacOSPMInstallScriptWindowsToLinux = "bash -c \```"$($MacOSPMInstallScriptPrepWindowsToLinux -join '; ')\```""
@@ -957,7 +990,7 @@ function Bootstrap-PowerShellCore {
         'brew update'
         'brew tap caskroom/cask'
         'brew install openssl'
-        #'echo powershellInstallComplete'
+        if ($OnWindows) {'echo powershellInstallComplete'}
         'brew cask reinstall powershell && echo powershellInstallComplete' # IMPORTANT NOTE: This will prompt for a password!
     )
 
@@ -1069,7 +1102,10 @@ function Bootstrap-PowerShellCore {
     Write-Host "Get-SSHProbe identified OS: $($OSCheck.OS); Shell: $($OSCheck.Shell)"
 
     if (!$OS) {
-        switch ($OSCheck.OSVersionInfo) {
+        # It's possible that the OSVersionInfo property is an array of strings, but we don't want the below switch to loop through each one,
+        # so we have to make sure we only give the switch one string object (i.e. $SanitizedOSVersionInfo)
+        $SanitizedOSVersionInfo = $($OSCheck.OSVersionInfo | foreach {$_ -split "`n"}) -join "`n"
+        switch ($SanitizedOSVersionInfo) {
             {$($_ -match 'Microsoft|Windows' -and ![bool]$($_ -match "Linux")) -or $OSCheck.OS -eq "Windows"} {
                 $OS = "Windows"
                 $WindowsVersion = $OSCheck.OSVersionInfo
@@ -1118,6 +1154,24 @@ function Bootstrap-PowerShellCore {
             {$_ -match 'openSUSE|leap.*42\.3|Leap 42\.3|openSUSE Leap'} {
                 $OS = "OpenSUSE423"
                 $OpenSUSEVersion = "42.3"
+            }
+
+            {$_ -match 'Arch Linux|arch[0-9]|-ARCH'} {
+                $OS = "Arch"
+                $OSVersionInfoLines = $_ -split "`n"
+                $KernelVersion = $($OSVersionInfoLines -match "Kernel: ") -split " " -split "-" -match "[0-9]+\.[0-9]+\.[0-9]+"
+                $ArchReleaseInfo = Invoke-RestMethod -Uri "https://www.archlinux.org/releng/releases/json"
+                $ArchVersionPrep = $($ArchReleaseInfo.releases | Where-Object {$_.kernel_version -eq $KernelVersion}).version
+                if ($ArchVersionPrep) {
+                    $ArchVersion = @($ArchVersionPrep)[0]
+                }
+                else {
+                    $ArchVersion = @(
+                        $ArchReleaseInfo.releases | Where-Object {
+                            $_.kernel_version -match $('^' + $($($KernelVersion -split "\.")[0..1] -join '\.'))
+                        }
+                    )[0]
+                }
             }
 
             {$_ -match 'Fedora 28|fedora:28'} {
@@ -1578,6 +1632,12 @@ function Bootstrap-PowerShellCore {
             # Give Await session a little more time to finish just in case
             Start-Sleep -Seconds 15
 
+            # We need to give the Remote Host a little more time to finish installation and configuration...
+            if ($SSHOutputPrep) {
+                Write-Host "Waiting 5 minutes for install/config to finish..."
+                Start-Sleep -Seconds 300
+            }
+
             if ($PSAwaitProcess.Id) {
                 try {
                     $null = Stop-AwaitSession
@@ -1600,12 +1660,6 @@ function Bootstrap-PowerShellCore {
                         }
                     }
                 }
-            }
-
-            # We need to give the Remote Host a little more time to finish installation and configuration...
-            if ($SSHOutputPrep) {
-                Write-Host "Waiting 5 minutes for install/config to finish..."
-                Start-Sleep -Seconds 300
             }
 
             if (!$SSHOutputPrep) {
@@ -1701,10 +1755,16 @@ function Bootstrap-PowerShellCore {
             $SSHOutputPrep = $ExpectOutput -replace "\e\[(\d+;)*(\d+)?[ABCDHJKfmsu]",""
 
             # We need to give the Remote Host a little more time to finish installation and configuration...
-            if ($SSHOutputPrep -match "powershell -NoProfile -EncodedCommand") {
+            <#
+            if ($OS -eq "Windows") {
                 Write-Host "Waiting 5 mintutes for install/config to finish..."
                 Start-Sleep -Seconds 300
             }
+            if ($OS -eq "MacOS") {
+                Write-Host "Waiting 10 mintutes for install/config to finish..."
+                Start-Sleep -Seconds 600
+            }
+            #>
 
             if (!$SSHOutputPrep) {
                 $TentativeResult = "ManualVerificationRequired"
@@ -1726,29 +1786,7 @@ function Bootstrap-PowerShellCore {
     if ($OSCheck.OS -eq "Linux" -or $OSCheck.OS -eq "MacOS") {
         if (!$PSVersionTable.Platform -or $PSVersionTable.Platform -eq "Win32NT") {
             $BootstrapSB = {
-                if ($OS -ne "MacOS") {
-                    if ($UsePackageManagement) {
-                        if ($ConfigurePSRemoting) {
-                            $SSHCmdString = $($SSHCmdStringArray -join " ") + ' "' +
-                            $($args[0].PackageManagerInstallScript.Substring(0,$($args[0].PackageManagerInstallScript.Length-3)) -replace [regex]::Escape('\"'),'\`"' -replace [regex]::Escape('$'),'\`$') + '; ' +
-                            $($args[0].ConfigurePwshRemotingScriptWindowsToLinux -replace [regex]::Escape('sudo bash -c \`"'),'') + '"'
-                        }
-                        else {
-                            $SSHCmdString = $($SSHCmdStringArray -join " ") + ' "' + $($args[0].PackageManagerInstallScript -replace [regex]::Escape('\"'),'\`"' -replace [regex]::Escape('$'),'\`$') + '"'
-                        }
-                    }
-                    else {
-                        if ($ConfigurePSRemoting) {
-                            $SSHCmdString = $($SSHCmdStringArray -join " ") + ' "' +
-                            $($args[0].ManualInstallScript.Substring(0,$($args[0].ManualInstallScript.Length-3)) -replace [regex]::Escape('\"'),'\`"' -replace [regex]::Escape('$'),'\`$') + '; ' +
-                            $($args[0].ConfigurePwshRemotingScriptWindowsToLinux -replace [regex]::Escape('sudo bash -c \`"'),'') + '"'
-                        }
-                        else {
-                            $SSHCmdString = $($SSHCmdStringArray -join " ") + ' "' + $($args[0].ManualInstallScript -replace [regex]::Escape('\"'),'\`"' -replace [regex]::Escape('$'),'\`$') + '"'
-                        }
-                    }
-                }
-                else {
+                if ($OS -eq "MacOS" -or $OS -eq "Arch") {
                     if ($UsePackageManagement) {
                         if ($ConfigurePSRemoting) {
                             $SSHCmdString = $($SSHCmdStringArray -join " ") + ' "' +
@@ -1770,13 +1808,35 @@ function Bootstrap-PowerShellCore {
                         }
                     }
                 }
+                else {
+                    if ($UsePackageManagement) {
+                        if ($ConfigurePSRemoting) {
+                            $SSHCmdString = $($SSHCmdStringArray -join " ") + ' "' +
+                            $($args[0].PackageManagerInstallScript.Substring(0,$($args[0].PackageManagerInstallScript.Length-3)) -replace [regex]::Escape('\"'),'\`"' -replace [regex]::Escape('$'),'\`$') + '; ' +
+                            $($args[0].ConfigurePwshRemotingScriptWindowsToLinux -replace [regex]::Escape('sudo bash -c \`"'),'') + '"'
+                        }
+                        else {
+                            $SSHCmdString = $($SSHCmdStringArray -join " ") + ' "' + $($args[0].PackageManagerInstallScript -replace [regex]::Escape('\"'),'\`"' -replace [regex]::Escape('$'),'\`$') + '"'
+                        }
+                    }
+                    else {
+                        if ($ConfigurePSRemoting) {
+                            $SSHCmdString = $($SSHCmdStringArray -join " ") + ' "' +
+                            $($args[0].ManualInstallScript.Substring(0,$($args[0].ManualInstallScript.Length-3)) -replace [regex]::Escape('\"'),'\`"' -replace [regex]::Escape('$'),'\`$') + '; ' +
+                            $($args[0].ConfigurePwshRemotingScriptWindowsToLinux -replace [regex]::Escape('sudo bash -c \`"'),'') + '"'
+                        }
+                        else {
+                            $SSHCmdString = $($SSHCmdStringArray -join " ") + ' "' + $($args[0].ManualInstallScript -replace [regex]::Escape('\"'),'\`"' -replace [regex]::Escape('$'),'\`$') + '"'
+                        }
+                    }
+                }
             
                 $SSHCmdString
             }
             
             $SSHCmdString = Invoke-Command -ScriptBlock $BootstrapSB -ArgumentList $(Get-Variable -Name $OS -ValueOnly)
             
-            #Write-Host "`$SSHCmdString is:`n    $SSHCmdString"
+            Write-Host "`$SSHCmdString is:`n    $SSHCmdString"
 
             try {
                 if ($(Get-Module -ListAvailable).Name -notcontains 'WinSSH') {$null = Install-Module WinSSH -ErrorAction Stop}
@@ -2042,9 +2102,11 @@ function Bootstrap-PowerShellCore {
                     Start-Sleep -Seconds 3
 
                     $SuccessOrAcceptHostKeyOrPwdPrompt = Receive-AwaitResponse
-
+                    
                     # Now we may or may not receive a password prompt for sudo...
-                    if ($SuccessOrAcceptHostKeyOrPwdPrompt -match "password.*:") {
+                    if ($SuccessOrAcceptHostKeyOrPwdPrompt -match "password.*:" -and
+                    $($SSHCmdString -replace $($SSHCmdStringArray -join " "),'').Trim() -match '^"sudo'
+                    ) {
                         if ($LocalPassword) {
                             $null = Send-AwaitCommand $LocalPassword
                         }
@@ -2054,6 +2116,63 @@ function Bootstrap-PowerShellCore {
                         Start-Sleep -Seconds 3
 
                         $SuccessOrAcceptHostKeyOrPwdPrompt = Receive-AwaitResponse
+                    }
+
+                    if ($OS -eq "Arch") {
+                        # If we're also configuring /etc/ssh/sshd_config on Arch, we can expect another Password prompt for 'sudo', but we may not
+                        # actually receive a prompt if the user doesn't require a sudo password, so we shouldn't outright fail here
+                        if ($ConfigurePSRemoting) {
+                            $Counter = 0
+                            while (![bool]$($($SSHOutputPrep -split "`n") -match "password.*:") -and $Counter -le 15) {
+                                $SuccessOrAcceptHostKeyOrPwdPrompt = Receive-AwaitResponse
+                                if (![System.String]::IsNullOrWhiteSpace($SuccessOrAcceptHostKeyOrPwdPrompt)) {
+                                    $null = $SSHOutputPrep.Add($SuccessOrAcceptHostKeyOrPwdPrompt)
+                                }
+                                Start-Sleep -Seconds 2
+                                $Counter++
+                            }
+                            if ($Counter -eq 16) {
+                                Write-Warning "Sending the user's password (Arch PSRemoting) timed out!"
+                                $DontSendPassword = $True
+    
+                                if ($PSAwaitProcess.Id) {
+                                    try {
+                                        $null = Stop-AwaitSession
+                                    }
+                                    catch {
+                                        if ($PSAwaitProcess.Id -eq $PID) {
+                                            Write-Error "The PSAwaitSession never spawned! Halting!"
+                                            $global:FunctionResult = "1"
+                                            return
+                                        }
+                                        else {
+                                            if ([bool]$(Get-Process -Id $PSAwaitProcess.Id -ErrorAction SilentlyContinue)) {
+                                                Stop-Process -Id $PSAwaitProcess.Id -ErrorAction SilentlyContinue
+                                            }
+                                            $Counter = 0
+                                            while ([bool]$(Get-Process -Id $PSAwaitProcess.Id -ErrorAction SilentlyContinue) -and $Counter -le 15) {
+                                                Write-Verbose "Waiting for Await Module Process Id $($PSAwaitProcess.Id) to end..."
+                                                Start-Sleep -Seconds 1
+                                                $Counter++
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+    
+                            if (!$DontSendPassword) {
+                                if ($LocalPassword) {
+                                    $null = Send-AwaitCommand $LocalPassword
+                                }
+                                if ($DomainPassword) {
+                                    $null = Send-AwaitCommand $DomainPassword
+                                }
+                                Start-Sleep -Seconds 3
+            
+                                $SuccessOrAcceptHostKeyOrPwdPrompt = Receive-AwaitResponse
+                                $null = $SSHOutputPrep.Add($SuccessOrAcceptHostKeyOrPwdPrompt)
+                            }
+                        }
                     }
 
                     # If $OS is MacOS, we need to wait for another password prompt because 'brew cask reinstall powershell' WILL prompt for 'Password:'
@@ -2230,7 +2349,9 @@ function Bootstrap-PowerShellCore {
                 $SuccessOrAcceptHostKeyOrPwdPrompt = Receive-AwaitResponse
 
                 # Now we may or may not receive a password prompt for sudo...
-                if ($SuccessOrAcceptHostKeyOrPwdPrompt -match "password.*:") {
+                if ($SuccessOrAcceptHostKeyOrPwdPrompt -match "password.*:" -and
+                $($SSHCmdString -replace $($SSHCmdStringArray -join " "),'').Trim() -match '^"sudo'
+                ) {
                     if ($LocalPassword) {
                         $null = Send-AwaitCommand $LocalPassword
                     }
@@ -2240,6 +2361,63 @@ function Bootstrap-PowerShellCore {
                     Start-Sleep -Seconds 3
 
                     $SuccessOrAcceptHostKeyOrPwdPrompt = Receive-AwaitResponse
+                }
+
+                if ($OS -eq "Arch") {
+                    # If we're also configuring /etc/ssh/sshd_config on Arch, we can expect another Password prompt for 'sudo', but we may not
+                    # actually receive a prompt if the user doesn't require a sudo password, so we shouldn't outright fail here
+                    if ($ConfigurePSRemoting) {
+                        $Counter = 0
+                        while (![bool]$($($SSHOutputPrep -split "`n") -match "password.*:") -and $Counter -le 15) {
+                            $SuccessOrAcceptHostKeyOrPwdPrompt = Receive-AwaitResponse
+                            if (![System.String]::IsNullOrWhiteSpace($SuccessOrAcceptHostKeyOrPwdPrompt)) {
+                                $null = $SSHOutputPrep.Add($SuccessOrAcceptHostKeyOrPwdPrompt)
+                            }
+                            Start-Sleep -Seconds 2
+                            $Counter++
+                        }
+                        if ($Counter -eq 16) {
+                            Write-Warning "Sending the user's password (Arch PSRemoting) timed out!"
+                            $DontSendPassword = $True
+
+                            if ($PSAwaitProcess.Id) {
+                                try {
+                                    $null = Stop-AwaitSession
+                                }
+                                catch {
+                                    if ($PSAwaitProcess.Id -eq $PID) {
+                                        Write-Error "The PSAwaitSession never spawned! Halting!"
+                                        $global:FunctionResult = "1"
+                                        return
+                                    }
+                                    else {
+                                        if ([bool]$(Get-Process -Id $PSAwaitProcess.Id -ErrorAction SilentlyContinue)) {
+                                            Stop-Process -Id $PSAwaitProcess.Id -ErrorAction SilentlyContinue
+                                        }
+                                        $Counter = 0
+                                        while ([bool]$(Get-Process -Id $PSAwaitProcess.Id -ErrorAction SilentlyContinue) -and $Counter -le 15) {
+                                            Write-Verbose "Waiting for Await Module Process Id $($PSAwaitProcess.Id) to end..."
+                                            Start-Sleep -Seconds 1
+                                            $Counter++
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        if (!$DontSendPassword) {
+                            if ($LocalPassword) {
+                                $null = Send-AwaitCommand $LocalPassword
+                            }
+                            if ($DomainPassword) {
+                                $null = Send-AwaitCommand $DomainPassword
+                            }
+                            Start-Sleep -Seconds 3
+        
+                            $SuccessOrAcceptHostKeyOrPwdPrompt = Receive-AwaitResponse
+                            $null = $SSHOutputPrep.Add($SuccessOrAcceptHostKeyOrPwdPrompt)
+                        }
+                    }
                 }
 
                 # If $OS is MacOS, we need to wait for another password prompt because 'brew cask reinstall powershell' WILL prompt for 'Password:'
@@ -2410,6 +2588,15 @@ function Bootstrap-PowerShellCore {
             # Give Await session a little more time to finish just in case
             Start-Sleep -Seconds 15
 
+            if ($SSHOutputPrep -and $OS -eq "MacOS") {
+                Write-Host "Waiting 10 minutes for install/config to finish..."
+                Start-Sleep -Seconds 600
+            }
+            if ($SSHOutputPrep -and $OS -eq "Arch") {
+                Write-Host "Waiting 2 minutes for install/config to finish..."
+                Start-Sleep -Seconds 120
+            }
+
             if ($PSAwaitProcess.Id) {
                 try {
                     $null = Stop-AwaitSession
@@ -2456,76 +2643,173 @@ function Bootstrap-PowerShellCore {
             #$FinalPassword = $FinalPassword -replace [regex]::Escape('$'),'\\\$' -replace [regex]::Escape('"'),'\\\"'
             $ExpectScripts = $(Get-Variable -Name $OS -ValueOnly).ExpectScripts
 
-            if ($UsePackageManagement) {
-                if ($ConfigurePSRemoting) {
-                    $SSHScript = $ExpectScripts.PackageManagerInstallScript + $ExpectScripts.ConfigurePwshRemotingScript
+            if ($OS -eq "Arch") {
+                $SSHScriptB = $ExpectScripts.ConfigurePwshRemotingScript | foreach {
+                    if ($_ -match "powershellInstallComplete") {
+                        'send -- \"' + $_ + '\r\"' + "`n" + 'expect \"*powershellInstallComplete*\"'
+                    }
+                    elseif ($_ -match "pwshConfigComplete") {
+                        'send -- \"' + $_ + '\r\"' + "`n" + 'expect \"*pwshConfigComplete*\"'
+                    }
+                    else {
+                        'send -- \"' + $_ + '\r\"' + "`n" + 'expect -re \"$prompt\"'
+                    }
+                }
+
+                if ($UsePackageManagement) {
+                    $SSHScriptA = $ExpectScripts.PackageManagerInstallScript | foreach {
+                        if ($_ -match "powershellInstallComplete") {
+                            'send -- \"' + $_ + '\r\"' + "`n" + 'expect \"*powershellInstallComplete*\"'
+                        }
+                        elseif ($_ -match "pwshConfigComplete") {
+                            'send -- \"' + $_ + '\r\"' + "`n" + 'expect \"*pwshConfigComplete*\"'
+                        }
+                        else {
+                            'send -- \"' + $_ + '\r\"' + "`n" + 'expect -re \"$prompt\"'
+                        }
+                    }
                 }
                 else {
-                    $SSHScript = $ExpectScripts.PackageManagerInstallScript
+                    $SSHScriptA = $ExpectScripts.ManualInstallScript | foreach {
+                        if ($_ -match "powershellInstallComplete") {
+                            'send -- \"' + $_ + '\r\"' + "`n" + 'expect \"*powershellInstallComplete*\"'
+                        }
+                        elseif ($_ -match "pwshConfigComplete") {
+                            'send -- \"' + $_ + '\r\"' + "`n" + 'expect \"*pwshConfigComplete*\"'
+                        }
+                        else {
+                            'send -- \"' + $_ + '\r\"' + "`n" + 'expect -re \"$prompt\"'
+                        }
+                    }
                 }
             }
             else {
-                if ($ConfigurePSRemoting) {
-                    $SSHScript = $ExpectScripts.ManualInstallScript + $ExpectScripts.ConfigurePwshRemotingScript
+                if ($UsePackageManagement) {
+                    if ($ConfigurePSRemoting) {
+                        $SSHScript = $ExpectScripts.PackageManagerInstallScript + $ExpectScripts.ConfigurePwshRemotingScript
+                    }
+                    else {
+                        $SSHScript = $ExpectScripts.PackageManagerInstallScript
+                    }
                 }
                 else {
-                    $SSHScript = $ExpectScripts.ManualInstallScript
+                    if ($ConfigurePSRemoting) {
+                        $SSHScript = $ExpectScripts.ManualInstallScript + $ExpectScripts.ConfigurePwshRemotingScript
+                    }
+                    else {
+                        $SSHScript = $ExpectScripts.ManualInstallScript
+                    }
+                }
+
+                $SSHScript = $SSHScript | foreach {
+                    if ($_ -match "powershellInstallComplete") {
+                        'send -- \"' + $_ + '\r\"' + "`n" + 'expect \"*powershellInstallComplete*\"'
+                    }
+                    elseif ($_ -match "pwshConfigComplete") {
+                        'send -- \"' + $_ + '\r\"' + "`n" + 'expect \"*pwshConfigComplete*\"'
+                    }
+                    else {
+                        'send -- \"' + $_ + '\r\"' + "`n" + 'expect -re \"$prompt\"'
+                    }
                 }
             }
 
-            $SSHScript = $SSHScript | foreach {
-                if ($_ -match "powershellInstallComplete") {
-                    'send -- \"' + $_ + '\r\"' + "`n" + 'expect \"*powershellInstallComplete*\"'
-                }
-                elseif ($_ -match "pwshConfigComplete") {
-                    'send -- \"' + $_ + '\r\"' + "`n" + 'expect \"*pwshConfigComplete*\"'
-                }
-                else {
-                    'send -- \"' + $_ + '\r\"' + "`n" + 'expect -re \"$prompt\"'
-                }
-            }
+            
 
             #Write-Host "`$SSHScript is:`n$SSHScript"
-
-            $ExpectScriptPrep = @(
-                'expect - << EOF'
-                'set timeout 120'
-                "set password $FinalPassword"
-                'set prompt \"(>|:|#|\\\\\\$)\\\\s+\\$\"'
-                "spawn $($SSHCmdStringArray -join " ")"
-                'match_max 100000'
-                'expect {'
-                '    \"*(yes/no)?*\" {'
-                '        send -- \"yes\r\"'
-                '        exp_continue'
-                '    }'
-                '    -re \".*assword.*:\" {'
-                '        send -- \"\$password\r\"'
-                '        exp_continue'
-                '    }'
-                '    -re \"\$prompt\" {'
-                '        send -- \"echo LoggedIn\r\"'
-                '        expect \"*\"'
-                '    }'
-                '}'
-                'send -- \"sudo su\r\"'
-                'expect {'
-                '    -re \".*assword.*:\" {'
-                '        send -- \"\$password\r\"'
-                '        exp_continue'
-                '    }'
-                '    -re \"\$prompt\" {'
-                '        send -- \"echo StartInstall\r\"'
-                '        expect \"StartInstall\"'
-                '    }'
-                '}'
-                $SSHScript
-                'send -- \"exit\r\"'
-                'expect -re \"\$prompt\"'
-                'send -- \"exit\r\"'
-                'expect eof'
-                'EOF'
-            )
+            
+            if ($OS -eq "Arch") {
+                [System.Collections.ArrayList]$ExpectScriptPrep = @(
+                    'expect - << EOF'
+                    'set timeout 120'
+                    "set password $FinalPassword"
+                    'set prompt \"(>|:|#|\\\\\\$)\\\\s+\\$\"'
+                    "spawn $($SSHCmdStringArray -join " ")"
+                    'match_max 100000'
+                    'expect {'
+                    '    \"*(yes/no)?*\" {'
+                    '        send -- \"yes\r\"'
+                    '        exp_continue'
+                    '    }'
+                    '    -re \".*assword.*:\" {'
+                    '        send -- \"\$password\r\"'
+                    '        exp_continue'
+                    '    }'
+                    '    -re \"\$prompt\" {'
+                    '        send -- \"echo LoggedIn\r\"'
+                    '        expect \"*\"'
+                    '    }'
+                    '}'
+                    $SSHScriptA
+                )
+                if ($ConfigurePSRemoting) {
+                    $null = $ExpectScriptPrep.Add('send -- \"sudo su\r\"')
+                    $null = $ExpectScriptPrep.Add('expect {')
+                    $null = $ExpectScriptPrep.Add('    -re \".*assword.*:\" {')
+                    $null = $ExpectScriptPrep.Add('        send -- \"\$password\r\"')
+                    $null = $ExpectScriptPrep.Add('        exp_continue')
+                    $null = $ExpectScriptPrep.Add('    }')
+                    $null = $ExpectScriptPrep.Add('    -re \"\$prompt\" {')
+                    $null = $ExpectScriptPrep.Add('        send -- \"echo StartInstall\r\"')
+                    $null = $ExpectScriptPrep.Add('        expect \"StartInstall\"')
+                    $null = $ExpectScriptPrep.Add('    }')
+                    $null = $ExpectScriptPrep.Add('}')
+                    $SSHScriptB | foreach {
+                        $null = $ExpectScriptPrep.Add($_)
+                    }
+                    $null = $ExpectScriptPrep.Add('send -- \"exit\r\"')
+                    $null = $ExpectScriptPrep.Add('expect -re \"\$prompt\"')
+                    $null = $ExpectScriptPrep.Add('send -- \"exit\r\"')
+                    $null = $ExpectScriptPrep.Add('expect eof')
+                    $null = $ExpectScriptPrep.Add('EOF')
+                }
+                else {
+                    $null = $ExpectScriptPrep.Add('send -- \"exit\r\"')
+                    $null = $ExpectScriptPrep.Add('expect eof')
+                    $null = $ExpectScriptPrep.Add('EOF')
+                }
+            }
+            else {
+                $ExpectScriptPrep = @(
+                    'expect - << EOF'
+                    'set timeout 120'
+                    "set password $FinalPassword"
+                    'set prompt \"(>|:|#|\\\\\\$)\\\\s+\\$\"'
+                    "spawn $($SSHCmdStringArray -join " ")"
+                    'match_max 100000'
+                    'expect {'
+                    '    \"*(yes/no)?*\" {'
+                    '        send -- \"yes\r\"'
+                    '        exp_continue'
+                    '    }'
+                    '    -re \".*assword.*:\" {'
+                    '        send -- \"\$password\r\"'
+                    '        exp_continue'
+                    '    }'
+                    '    -re \"\$prompt\" {'
+                    '        send -- \"echo LoggedIn\r\"'
+                    '        expect \"*\"'
+                    '    }'
+                    '}'
+                    'send -- \"sudo su\r\"'
+                    'expect {'
+                    '    -re \".*assword.*:\" {'
+                    '        send -- \"\$password\r\"'
+                    '        exp_continue'
+                    '    }'
+                    '    -re \"\$prompt\" {'
+                    '        send -- \"echo StartInstall\r\"'
+                    '        expect \"StartInstall\"'
+                    '    }'
+                    '}'
+                    $SSHScript
+                    'send -- \"exit\r\"'
+                    'expect -re \"\$prompt\"'
+                    'send -- \"exit\r\"'
+                    'expect eof'
+                    'EOF'
+                )
+            }
             $ExpectScript = $ExpectScriptPrep -join "`n"
 
             #Write-Host "`$ExpectScript is:`n$ExpectScript"
@@ -4106,6 +4390,8 @@ function Get-SSHProbe {
             #$SSHCmdString = $script:SSHCmdString = '@($(' + $($SSHCmdStringArray -join " ") + ') -replace "\e\[(\d+;)*(\d+)?[ABCDHJKfmsu]","") 2>$null'
             $SSHCmdString = $script:SSHCmdString = $SSHCmdStringArray -join " "
 
+            #Write-Host "`$SSHCmdString is:`n$SSHCmdString"
+
             $FinalPassword = if ($DomainPassword) {$DomainPassword} else {$LocalPassword}
 
             $SSHScript = $SSHScript | foreach {
@@ -4141,6 +4427,8 @@ function Get-SSHProbe {
                 'EOF'
             )
             $ExpectScript = $ExpectScriptPrep -join "`n"
+
+            #Write-Host "`$ExpectScript is:`n$ExpectScript"
             
             # The below $ExpectOutput is an array of strings
             $ExpectOutput = bash -c "$ExpectScript"
@@ -4560,8 +4848,8 @@ puts "Run `brew help` to get started"
 # SIG # Begin signature block
 # MIIMiAYJKoZIhvcNAQcCoIIMeTCCDHUCAQExCzAJBgUrDgMCGgUAMGkGCisGAQQB
 # gjcCAQSgWzBZMDQGCisGAQQBgjcCAR4wJgIDAQAABBAfzDtgWUsITrck0sYpfvNR
-# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUFB6+kBY2JDNCsy7OpxhpH1R+
-# +I2gggn9MIIEJjCCAw6gAwIBAgITawAAAB/Nnq77QGja+wAAAAAAHzANBgkqhkiG
+# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUgDl7cH0ylcwsREr95yS2I40+
+# HaWgggn9MIIEJjCCAw6gAwIBAgITawAAAB/Nnq77QGja+wAAAAAAHzANBgkqhkiG
 # 9w0BAQsFADAwMQwwCgYDVQQGEwNMQUIxDTALBgNVBAoTBFpFUk8xETAPBgNVBAMT
 # CFplcm9EQzAxMB4XDTE3MDkyMDIxMDM1OFoXDTE5MDkyMDIxMTM1OFowPTETMBEG
 # CgmSJomT8ixkARkWA0xBQjEUMBIGCgmSJomT8ixkARkWBFpFUk8xEDAOBgNVBAMT
@@ -4618,11 +4906,11 @@ puts "Run `brew help` to get started"
 # ARkWA0xBQjEUMBIGCgmSJomT8ixkARkWBFpFUk8xEDAOBgNVBAMTB1plcm9TQ0EC
 # E1gAAAH5oOvjAv3166MAAQAAAfkwCQYFKw4DAhoFAKB4MBgGCisGAQQBgjcCAQwx
 # CjAIoAKAAKECgAAwGQYJKoZIhvcNAQkDMQwGCisGAQQBgjcCAQQwHAYKKwYBBAGC
-# NwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFLAngQhzNAbp02Dd
-# yzCZHBqr3sWrMA0GCSqGSIb3DQEBAQUABIIBAMDO+aznvNgo72yDeBZcIY2UU6Ki
-# Mp4agLw3qzs6+UUcwdoxoLvSBA7PfKAOyALXTP9H8r13bqF35i/Fs7fpMBSDc2Dn
-# wap7xCDmrDewAFlxFG1C+OzVo3+XTQOqHomfp7SjbSLuFPOLEbF8Fj7XtlKNhIkU
-# f8IGCYKeJI19NcTPvUH/Xxe1lhHUgcAblmdMMbMNWyttg4QcR6LoTNJkqLU+fgOF
-# c+Us1XymJCW4un/f+49wgGyvJHmbZwii3cJux8mnUJmRuI9uJ7HWP7Unr15xvtcn
-# WzczKTH01eXM2rd0eYG/W6SMexRsQqsaJgk2i/0rGBXXlPT1y/r8r4ur8gA=
+# NwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFAA41fM2Z1TD09aM
+# h194Nrn5fwk5MA0GCSqGSIb3DQEBAQUABIIBAIvB4Va8wjBLk68XAZcqviLCRHVe
+# tVqgC8dG5TfT1cMser0uvopQud8SqXtIcw90+QPajI2d0xeI1ai6KIaZw/X29YZ+
+# 6Go8UB7bfDYag0gBW5tNcC3vFs40FQ8mXAosUdxTJqorbYInsCL2yTS4QQ8R1vDh
+# 3De6M5Ie3wEQwGBF/M1BKLOiz0MbCM+Jh5kGeSxERK63LV2aIGe8Wq9vIf9Sy9RR
+# pFWzItbtfCdhBT1GD8BRQVRIT0CS7+2+CLJnC4xobK8lUdjrfVjuvP6ZJ5PEA671
+# ZZbxQWL+0vxyRHaq8+ENjivJy/qNRAO3IdqaS8HVJPpftMSP8z6y+6Kn/lw=
 # SIG # End signature block

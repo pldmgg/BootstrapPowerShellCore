@@ -1543,6 +1543,8 @@ function Get-SSHProbe {
             #$SSHCmdString = $script:SSHCmdString = '@($(' + $($SSHCmdStringArray -join " ") + ') -replace "\e\[(\d+;)*(\d+)?[ABCDHJKfmsu]","") 2>$null'
             $SSHCmdString = $script:SSHCmdString = $SSHCmdStringArray -join " "
 
+            #Write-Host "`$SSHCmdString is:`n$SSHCmdString"
+
             $FinalPassword = if ($DomainPassword) {$DomainPassword} else {$LocalPassword}
 
             $SSHScript = $SSHScript | foreach {
@@ -1578,6 +1580,8 @@ function Get-SSHProbe {
                 'EOF'
             )
             $ExpectScript = $ExpectScriptPrep -join "`n"
+
+            #Write-Host "`$ExpectScript is:`n$ExpectScript"
             
             # The below $ExpectOutput is an array of strings
             $ExpectOutput = bash -c "$ExpectScript"
@@ -1722,8 +1726,8 @@ function Get-SSHProbe {
 # SIG # Begin signature block
 # MIIMiAYJKoZIhvcNAQcCoIIMeTCCDHUCAQExCzAJBgUrDgMCGgUAMGkGCisGAQQB
 # gjcCAQSgWzBZMDQGCisGAQQBgjcCAR4wJgIDAQAABBAfzDtgWUsITrck0sYpfvNR
-# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUl8aKK3LSTq6zuVKjJTeTGe1J
-# E52gggn9MIIEJjCCAw6gAwIBAgITawAAAB/Nnq77QGja+wAAAAAAHzANBgkqhkiG
+# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQU6i34EHtgbHDR5UurDJJrdkc1
+# NDegggn9MIIEJjCCAw6gAwIBAgITawAAAB/Nnq77QGja+wAAAAAAHzANBgkqhkiG
 # 9w0BAQsFADAwMQwwCgYDVQQGEwNMQUIxDTALBgNVBAoTBFpFUk8xETAPBgNVBAMT
 # CFplcm9EQzAxMB4XDTE3MDkyMDIxMDM1OFoXDTE5MDkyMDIxMTM1OFowPTETMBEG
 # CgmSJomT8ixkARkWA0xBQjEUMBIGCgmSJomT8ixkARkWBFpFUk8xEDAOBgNVBAMT
@@ -1780,11 +1784,11 @@ function Get-SSHProbe {
 # ARkWA0xBQjEUMBIGCgmSJomT8ixkARkWBFpFUk8xEDAOBgNVBAMTB1plcm9TQ0EC
 # E1gAAAH5oOvjAv3166MAAQAAAfkwCQYFKw4DAhoFAKB4MBgGCisGAQQBgjcCAQwx
 # CjAIoAKAAKECgAAwGQYJKoZIhvcNAQkDMQwGCisGAQQBgjcCAQQwHAYKKwYBBAGC
-# NwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFHF7yk/K9tO7zxYn
-# SKTqzXsk7JXOMA0GCSqGSIb3DQEBAQUABIIBAHU9T54HBP+brQsLNeJiypLyW6ki
-# sp0VizrSq/4PdQJlkxKdBYVDF2nT7PPJ0ip/+5CHEvi9w7hN/+SguuK7pFUZLU65
-# xPL9yvBXlLHTupdfuWGatPDUd179TCGFhMrWe/LG0TDO+2nboFsIjz3qKQ6f+E3m
-# 21ly8HDqx6HTlGe4Ba5b/MRUoqt7mn1ubh7vBYO1IxcxRUfwrnUZV2n1QQRFHTXj
-# wYySAIOYaphNw1OOgirklIEcPpQ6gBScNu20oUWSnIku4Bpx2GpMht+51mVAsFDZ
-# 4yl05pVwonOOONAQNQnTuk3nLVreJzGj+lrIjkt5i5ZfYsk+oqyzEx+y5Y4=
+# NwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFAD/0YetSDEtYaW+
+# o+dV7OB7QgQ9MA0GCSqGSIb3DQEBAQUABIIBABYIglWgrlYINr5ufxYHs2gLuDj1
+# 5OHSk/JWMHuLN9Yo8mkge0PoOj39lNtOiN2/X+g5TznOf4sA9q4IRoU0H8JFOloD
+# CHi7d36Kg95eK4e14NlYwZ5vEfXe/JBZ1vtR57igsTBLJxgx4ypWGBaJWYqmazye
+# vFSl8eN3KWxq5y8Vt1giildglfwXrZoDJMx085P5DhKhatyNp3N8J8g3anVsF8zZ
+# A+19UqbZfYogz6fYsOdjP6m2bLAvWfI1v4BMKAttkud3ErCm9O1jOF7iv2N32DIN
+# RPEo+Y/mpa2eKXAgsGLlEWdkCAjU4uC3nOu7i/7c2QZ6jUH4GyMqp4WY7rw=
 # SIG # End signature block
