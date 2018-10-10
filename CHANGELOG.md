@@ -1,5 +1,10 @@
 # Change log
 
+## 0.9.0 (October 10, 2018)
+
+- Fixed issue using Windows to target Linux
+- Fixed issue with targeting MacOS from Linux
+
 ## 0.8.9 (October 09, 2018)
 
 - Updated README.md
