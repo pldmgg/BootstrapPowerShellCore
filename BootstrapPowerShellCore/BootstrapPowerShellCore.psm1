@@ -1523,8 +1523,12 @@ function Bootstrap-PowerShellCore {
 
                     $SuccessOrAcceptHostKeyOrPwdPrompt = Receive-AwaitResponse
 
-                    [System.Collections.ArrayList]$script:SSHOutputPrep = @()
-                    $null = $SSHOutputPrep.Add($SuccessOrAcceptHostKeyOrPwdPrompt)
+                    if (!$SSHOutputPrep) {
+                        [System.Collections.ArrayList]$script:SSHOutputPrep = @()
+                        if (![System.String]::IsNullOrWhiteSpace($SuccessOrAcceptHostKeyOrPwdPrompt)) {
+                            $null = $SSHOutputPrep.Add($SuccessOrAcceptHostKeyOrPwdPrompt)
+                        }
+                    }
                     $Counter = 0
                     $CompleteIndicatorRegex = if ($ConfigurePSRemoting) {"^pwshConfigComplete|^powershellInstallComplete"} else {"^powershellInstallComplete"}
                     while (![bool]$($($SSHOutputPrep -split "`n") -match $CompleteIndicatorRegex) -and $Counter -le 6) {
@@ -1580,8 +1584,12 @@ function Bootstrap-PowerShellCore {
 
                 $SuccessOrAcceptHostKeyOrPwdPrompt = Receive-AwaitResponse
 
-                [System.Collections.ArrayList]$script:SSHOutputPrep = @()
-                $null = $SSHOutputPrep.Add($SuccessOrAcceptHostKeyOrPwdPrompt)
+                if (!$SSHOutputPrep) {
+                    [System.Collections.ArrayList]$script:SSHOutputPrep = @()
+                    if (![System.String]::IsNullOrWhiteSpace($SuccessOrAcceptHostKeyOrPwdPrompt)) {
+                        $null = $SSHOutputPrep.Add($SuccessOrAcceptHostKeyOrPwdPrompt)
+                    }
+                }
                 $Counter = 0
                 $CompleteIndicatorRegex = if ($ConfigurePSRemoting) {"^pwshConfigComplete|^powershellInstallComplete"} else {"^powershellInstallComplete"}
                 while (![bool]$($($SSHOutputPrep -split "`n") -match $CompleteIndicatorRegex) -and $Counter -le 6) {
@@ -2122,6 +2130,12 @@ function Bootstrap-PowerShellCore {
                         # If we're also configuring /etc/ssh/sshd_config on Arch, we can expect another Password prompt for 'sudo', but we may not
                         # actually receive a prompt if the user doesn't require a sudo password, so we shouldn't outright fail here
                         if ($ConfigurePSRemoting) {
+                            if (!$SSHOutputPrep) {
+                                [System.Collections.ArrayList]$script:SSHOutputPrep = @()
+                                if (![System.String]::IsNullOrWhiteSpace($SuccessOrAcceptHostKeyOrPwdPrompt)) {
+                                    $null = $SSHOutputPrep.Add($SuccessOrAcceptHostKeyOrPwdPrompt)
+                                }
+                            }
                             $Counter = 0
                             while (![bool]$($($SSHOutputPrep -split "`n") -match "password.*:") -and $Counter -le 15) {
                                 $SuccessOrAcceptHostKeyOrPwdPrompt = Receive-AwaitResponse
@@ -2134,30 +2148,6 @@ function Bootstrap-PowerShellCore {
                             if ($Counter -eq 16) {
                                 Write-Warning "Sending the user's password (Arch PSRemoting) timed out!"
                                 $DontSendPassword = $True
-    
-                                if ($PSAwaitProcess.Id) {
-                                    try {
-                                        $null = Stop-AwaitSession
-                                    }
-                                    catch {
-                                        if ($PSAwaitProcess.Id -eq $PID) {
-                                            Write-Error "The PSAwaitSession never spawned! Halting!"
-                                            $global:FunctionResult = "1"
-                                            return
-                                        }
-                                        else {
-                                            if ([bool]$(Get-Process -Id $PSAwaitProcess.Id -ErrorAction SilentlyContinue)) {
-                                                Stop-Process -Id $PSAwaitProcess.Id -ErrorAction SilentlyContinue
-                                            }
-                                            $Counter = 0
-                                            while ([bool]$(Get-Process -Id $PSAwaitProcess.Id -ErrorAction SilentlyContinue) -and $Counter -le 15) {
-                                                Write-Verbose "Waiting for Await Module Process Id $($PSAwaitProcess.Id) to end..."
-                                                Start-Sleep -Seconds 1
-                                                $Counter++
-                                            }
-                                        }
-                                    }
-                                }
                             }
     
                             if (!$DontSendPassword) {
@@ -2170,7 +2160,9 @@ function Bootstrap-PowerShellCore {
                                 Start-Sleep -Seconds 3
             
                                 $SuccessOrAcceptHostKeyOrPwdPrompt = Receive-AwaitResponse
-                                $null = $SSHOutputPrep.Add($SuccessOrAcceptHostKeyOrPwdPrompt)
+                                if (![System.String]::IsNullOrWhiteSpace($SuccessOrAcceptHostKeyOrPwdPrompt)) {
+                                    $null = $SSHOutputPrep.Add($SuccessOrAcceptHostKeyOrPwdPrompt)
+                                }
                             }
                         }
                     }
@@ -2179,8 +2171,12 @@ function Bootstrap-PowerShellCore {
                     # Sometimes, the preceding step of installing openssl (dependency) can take up to 10 minutes, so we need to sit here for awhile
                     if ($OS -eq "MacOS") {
                         Write-Warning "Attempting install on MacOS! This could take up to 15 minutes! Please be patient..."
-                        [System.Collections.ArrayList]$script:SSHOutputPrep = @()
-                        $null = $SSHOutputPrep.Add($SuccessOrAcceptHostKeyOrPwdPrompt)
+                        if (!$SSHOutputPrep) {
+                            [System.Collections.ArrayList]$script:SSHOutputPrep = @()
+                            if (![System.String]::IsNullOrWhiteSpace($SuccessOrAcceptHostKeyOrPwdPrompt)) {
+                                $null = $SSHOutputPrep.Add($SuccessOrAcceptHostKeyOrPwdPrompt)
+                            }
+                        }
                         $Counter = 0
                         while (![bool]$($($SSHOutputPrep -split "`n") -match "password.*:") -and $Counter -le 90) {
                             $SuccessOrAcceptHostKeyOrPwdPrompt = Receive-AwaitResponse
@@ -2248,30 +2244,6 @@ function Bootstrap-PowerShellCore {
                             if ($Counter -eq 16) {
                                 Write-Warning "Sending the user's password (MacOS PSRemoting) timed out!"
                                 $DontSendPassword = $True
-    
-                                if ($PSAwaitProcess.Id) {
-                                    try {
-                                        $null = Stop-AwaitSession
-                                    }
-                                    catch {
-                                        if ($PSAwaitProcess.Id -eq $PID) {
-                                            Write-Error "The PSAwaitSession never spawned! Halting!"
-                                            $global:FunctionResult = "1"
-                                            return
-                                        }
-                                        else {
-                                            if ([bool]$(Get-Process -Id $PSAwaitProcess.Id -ErrorAction SilentlyContinue)) {
-                                                Stop-Process -Id $PSAwaitProcess.Id -ErrorAction SilentlyContinue
-                                            }
-                                            $Counter = 0
-                                            while ([bool]$(Get-Process -Id $PSAwaitProcess.Id -ErrorAction SilentlyContinue) -and $Counter -le 15) {
-                                                Write-Verbose "Waiting for Await Module Process Id $($PSAwaitProcess.Id) to end..."
-                                                Start-Sleep -Seconds 1
-                                                $Counter++
-                                            }
-                                        }
-                                    }
-                                }
                             }
     
                             if (!$DontSendPassword) {
@@ -2284,14 +2256,18 @@ function Bootstrap-PowerShellCore {
                                 Start-Sleep -Seconds 3
             
                                 $SuccessOrAcceptHostKeyOrPwdPrompt = Receive-AwaitResponse
-                                $null = $SSHOutputPrep.Add($SuccessOrAcceptHostKeyOrPwdPrompt)
+                                if (![System.String]::IsNullOrWhiteSpace($SuccessOrAcceptHostKeyOrPwdPrompt)) {
+                                    $null = $SSHOutputPrep.Add($SuccessOrAcceptHostKeyOrPwdPrompt)
+                                }
                             }
                         }
                     }
 
                     if (!$SSHOutputPrep) {
                         [System.Collections.ArrayList]$script:SSHOutputPrep = @()
-                        $null = $SSHOutputPrep.Add($SuccessOrAcceptHostKeyOrPwdPrompt)
+                        if (![System.String]::IsNullOrWhiteSpace($SuccessOrAcceptHostKeyOrPwdPrompt)) {
+                            $null = $SSHOutputPrep.Add($SuccessOrAcceptHostKeyOrPwdPrompt)
+                        }
                     }
                     $Counter = 0
                     $CompleteIndicatorRegex = if ($ConfigurePSRemoting) {"^pwshConfigComplete|^powershellInstallComplete"} else {"^powershellInstallComplete"}
@@ -2367,6 +2343,12 @@ function Bootstrap-PowerShellCore {
                     # If we're also configuring /etc/ssh/sshd_config on Arch, we can expect another Password prompt for 'sudo', but we may not
                     # actually receive a prompt if the user doesn't require a sudo password, so we shouldn't outright fail here
                     if ($ConfigurePSRemoting) {
+                        if (!$SSHOutputPrep) {
+                            [System.Collections.ArrayList]$script:SSHOutputPrep = @()
+                            if (![System.String]::IsNullOrWhiteSpace($SuccessOrAcceptHostKeyOrPwdPrompt)) {
+                                $null = $SSHOutputPrep.Add($SuccessOrAcceptHostKeyOrPwdPrompt)
+                            }
+                        }
                         $Counter = 0
                         while (![bool]$($($SSHOutputPrep -split "`n") -match "password.*:") -and $Counter -le 15) {
                             $SuccessOrAcceptHostKeyOrPwdPrompt = Receive-AwaitResponse
@@ -2379,30 +2361,6 @@ function Bootstrap-PowerShellCore {
                         if ($Counter -eq 16) {
                             Write-Warning "Sending the user's password (Arch PSRemoting) timed out!"
                             $DontSendPassword = $True
-
-                            if ($PSAwaitProcess.Id) {
-                                try {
-                                    $null = Stop-AwaitSession
-                                }
-                                catch {
-                                    if ($PSAwaitProcess.Id -eq $PID) {
-                                        Write-Error "The PSAwaitSession never spawned! Halting!"
-                                        $global:FunctionResult = "1"
-                                        return
-                                    }
-                                    else {
-                                        if ([bool]$(Get-Process -Id $PSAwaitProcess.Id -ErrorAction SilentlyContinue)) {
-                                            Stop-Process -Id $PSAwaitProcess.Id -ErrorAction SilentlyContinue
-                                        }
-                                        $Counter = 0
-                                        while ([bool]$(Get-Process -Id $PSAwaitProcess.Id -ErrorAction SilentlyContinue) -and $Counter -le 15) {
-                                            Write-Verbose "Waiting for Await Module Process Id $($PSAwaitProcess.Id) to end..."
-                                            Start-Sleep -Seconds 1
-                                            $Counter++
-                                        }
-                                    }
-                                }
-                            }
                         }
 
                         if (!$DontSendPassword) {
@@ -2415,7 +2373,9 @@ function Bootstrap-PowerShellCore {
                             Start-Sleep -Seconds 3
         
                             $SuccessOrAcceptHostKeyOrPwdPrompt = Receive-AwaitResponse
-                            $null = $SSHOutputPrep.Add($SuccessOrAcceptHostKeyOrPwdPrompt)
+                            if (![System.String]::IsNullOrWhiteSpace($SuccessOrAcceptHostKeyOrPwdPrompt)) {
+                                $null = $SSHOutputPrep.Add($SuccessOrAcceptHostKeyOrPwdPrompt)
+                            }
                         }
                     }
                 }
@@ -2424,8 +2384,12 @@ function Bootstrap-PowerShellCore {
                 # Sometimes, the preceding step of installing openssl (dependency) can take up to 10 minutes, so we need to sit here for awhile
                 if ($OS -eq "MacOS") {
                     Write-Warning "Attempting install on MacOS! This could take up to 15 minutes! Please be patient..."
-                    [System.Collections.ArrayList]$script:SSHOutputPrep = @()
-                    $null = $SSHOutputPrep.Add($SuccessOrAcceptHostKeyOrPwdPrompt)
+                    if (!$SSHOutputPrep) {
+                        [System.Collections.ArrayList]$script:SSHOutputPrep = @()
+                        if (![System.String]::IsNullOrWhiteSpace($SuccessOrAcceptHostKeyOrPwdPrompt)) {
+                            $null = $SSHOutputPrep.Add($SuccessOrAcceptHostKeyOrPwdPrompt)
+                        }
+                    }
                     $Counter = 0
                     while (![bool]$($($SSHOutputPrep -split "`n") -match "password.*:") -and $Counter -le 90) {
                         $SuccessOrAcceptHostKeyOrPwdPrompt = Receive-AwaitResponse
@@ -2493,30 +2457,6 @@ function Bootstrap-PowerShellCore {
                         if ($Counter -eq 16) {
                             Write-Warning "Sending the user's password (MacOS PSRemoting) timed out!"
                             $DontSendPassword = $True
-
-                            if ($PSAwaitProcess.Id) {
-                                try {
-                                    $null = Stop-AwaitSession
-                                }
-                                catch {
-                                    if ($PSAwaitProcess.Id -eq $PID) {
-                                        Write-Error "The PSAwaitSession never spawned! Halting!"
-                                        $global:FunctionResult = "1"
-                                        return
-                                    }
-                                    else {
-                                        if ([bool]$(Get-Process -Id $PSAwaitProcess.Id -ErrorAction SilentlyContinue)) {
-                                            Stop-Process -Id $PSAwaitProcess.Id -ErrorAction SilentlyContinue
-                                        }
-                                        $Counter = 0
-                                        while ([bool]$(Get-Process -Id $PSAwaitProcess.Id -ErrorAction SilentlyContinue) -and $Counter -le 15) {
-                                            Write-Verbose "Waiting for Await Module Process Id $($PSAwaitProcess.Id) to end..."
-                                            Start-Sleep -Seconds 1
-                                            $Counter++
-                                        }
-                                    }
-                                }
-                            }
                         }
 
                         if (!$DontSendPassword) {
@@ -2529,14 +2469,18 @@ function Bootstrap-PowerShellCore {
                             Start-Sleep -Seconds 3
         
                             $SuccessOrAcceptHostKeyOrPwdPrompt = Receive-AwaitResponse
-                            $null = $SSHOutputPrep.Add($SuccessOrAcceptHostKeyOrPwdPrompt)
+                            if (![System.String]::IsNullOrWhiteSpace($SuccessOrAcceptHostKeyOrPwdPrompt)) {
+                                $null = $SSHOutputPrep.Add($SuccessOrAcceptHostKeyOrPwdPrompt)
+                            }
                         }
                     }
                 }
 
                 if (!$SSHOutputPrep) {
                     [System.Collections.ArrayList]$script:SSHOutputPrep = @()
-                    $null = $SSHOutputPrep.Add($SuccessOrAcceptHostKeyOrPwdPrompt)
+                    if (![System.String]::IsNullOrWhiteSpace($SuccessOrAcceptHostKeyOrPwdPrompt)) {
+                        $null = $SSHOutputPrep.Add($SuccessOrAcceptHostKeyOrPwdPrompt)
+                    }
                 }
                 $Counter = 0
                 $CompleteIndicatorRegex = if ($ConfigurePSRemoting) {"^pwshConfigComplete|^powershellInstallComplete"} else {"^powershellInstallComplete"}
@@ -4848,8 +4792,8 @@ puts "Run `brew help` to get started"
 # SIG # Begin signature block
 # MIIMiAYJKoZIhvcNAQcCoIIMeTCCDHUCAQExCzAJBgUrDgMCGgUAMGkGCisGAQQB
 # gjcCAQSgWzBZMDQGCisGAQQBgjcCAR4wJgIDAQAABBAfzDtgWUsITrck0sYpfvNR
-# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUgDl7cH0ylcwsREr95yS2I40+
-# HaWgggn9MIIEJjCCAw6gAwIBAgITawAAAB/Nnq77QGja+wAAAAAAHzANBgkqhkiG
+# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUe60xrCAqnta94wqZYJo9Ta/z
+# Pgmgggn9MIIEJjCCAw6gAwIBAgITawAAAB/Nnq77QGja+wAAAAAAHzANBgkqhkiG
 # 9w0BAQsFADAwMQwwCgYDVQQGEwNMQUIxDTALBgNVBAoTBFpFUk8xETAPBgNVBAMT
 # CFplcm9EQzAxMB4XDTE3MDkyMDIxMDM1OFoXDTE5MDkyMDIxMTM1OFowPTETMBEG
 # CgmSJomT8ixkARkWA0xBQjEUMBIGCgmSJomT8ixkARkWBFpFUk8xEDAOBgNVBAMT
@@ -4906,11 +4850,11 @@ puts "Run `brew help` to get started"
 # ARkWA0xBQjEUMBIGCgmSJomT8ixkARkWBFpFUk8xEDAOBgNVBAMTB1plcm9TQ0EC
 # E1gAAAH5oOvjAv3166MAAQAAAfkwCQYFKw4DAhoFAKB4MBgGCisGAQQBgjcCAQwx
 # CjAIoAKAAKECgAAwGQYJKoZIhvcNAQkDMQwGCisGAQQBgjcCAQQwHAYKKwYBBAGC
-# NwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFAA41fM2Z1TD09aM
-# h194Nrn5fwk5MA0GCSqGSIb3DQEBAQUABIIBAIvB4Va8wjBLk68XAZcqviLCRHVe
-# tVqgC8dG5TfT1cMser0uvopQud8SqXtIcw90+QPajI2d0xeI1ai6KIaZw/X29YZ+
-# 6Go8UB7bfDYag0gBW5tNcC3vFs40FQ8mXAosUdxTJqorbYInsCL2yTS4QQ8R1vDh
-# 3De6M5Ie3wEQwGBF/M1BKLOiz0MbCM+Jh5kGeSxERK63LV2aIGe8Wq9vIf9Sy9RR
-# pFWzItbtfCdhBT1GD8BRQVRIT0CS7+2+CLJnC4xobK8lUdjrfVjuvP6ZJ5PEA671
-# ZZbxQWL+0vxyRHaq8+ENjivJy/qNRAO3IdqaS8HVJPpftMSP8z6y+6Kn/lw=
+# NwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFIwssxLELdg57hh6
+# TdsH5oNS3rU9MA0GCSqGSIb3DQEBAQUABIIBAJ0zlxiRTdf+WfAWiatfnxnGkxjb
+# rZDpakdUt/5sYAFcS7K9jz3u5sy1Cnemm9f/zCN9F9CWNu3NXC2RRJWoHw2vuAmd
+# f+E6y6MAtVq4k70QBBebEv5YV6FtG62jQt7745gUaTSWSyLnuMBgwUBtZ0A19ght
+# 7m2f50a/jNOm9Kh0dwnG46ZuQhQO3GAWcMJpgeyl1X62XEnLO1ypbGk/9bb3rRRm
+# skv4DV1OIuKg4sFeDUA8txAQMAxt98NAICVmPDYjdvskzZ/9GuwhT8YeDkxbHPQK
+# +PFv5CSbLIlwSwa4gIxjSsk7Pwb7xoldpcs6RM6ftf9JbGWuStjSk/jHI1A=
 # SIG # End signature block

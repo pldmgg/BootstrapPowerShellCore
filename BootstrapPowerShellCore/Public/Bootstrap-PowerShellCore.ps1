@@ -2060,7 +2060,7 @@ function Bootstrap-PowerShellCore {
                                 $Counter++
                             }
                             if ($Counter -eq 16) {
-                                Write-Warning "Sending the user's password (Arch PSRemoting) timed out!"
+                                Write-Verbose "Sending the user's password (Arch PSRemoting) timed out!"
                                 $DontSendPassword = $True
                             }
     
@@ -2156,7 +2156,7 @@ function Bootstrap-PowerShellCore {
                                 $Counter++
                             }
                             if ($Counter -eq 16) {
-                                Write-Warning "Sending the user's password (MacOS PSRemoting) timed out!"
+                                Write-Verbose "Sending the user's password (MacOS PSRemoting) timed out!"
                                 $DontSendPassword = $True
                             }
     
@@ -2273,7 +2273,7 @@ function Bootstrap-PowerShellCore {
                             $Counter++
                         }
                         if ($Counter -eq 16) {
-                            Write-Warning "Sending the user's password (Arch PSRemoting) timed out!"
+                            Write-Verbose "Sending the user's password (Arch PSRemoting) timed out!"
                             $DontSendPassword = $True
                         }
 
@@ -2369,7 +2369,7 @@ function Bootstrap-PowerShellCore {
                             $Counter++
                         }
                         if ($Counter -eq 16) {
-                            Write-Warning "Sending the user's password (MacOS PSRemoting) timed out!"
+                            Write-Verbose "Sending the user's password (MacOS PSRemoting) timed out!"
                             $DontSendPassword = $True
                         }
 
@@ -2705,8 +2705,8 @@ function Bootstrap-PowerShellCore {
 # SIG # Begin signature block
 # MIIMiAYJKoZIhvcNAQcCoIIMeTCCDHUCAQExCzAJBgUrDgMCGgUAMGkGCisGAQQB
 # gjcCAQSgWzBZMDQGCisGAQQBgjcCAR4wJgIDAQAABBAfzDtgWUsITrck0sYpfvNR
-# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUYBdr2IyQNXCxio497OkAp3u9
-# RkSgggn9MIIEJjCCAw6gAwIBAgITawAAAB/Nnq77QGja+wAAAAAAHzANBgkqhkiG
+# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQULtJGguCWDsOFlsJI+OvINUSK
+# NOmgggn9MIIEJjCCAw6gAwIBAgITawAAAB/Nnq77QGja+wAAAAAAHzANBgkqhkiG
 # 9w0BAQsFADAwMQwwCgYDVQQGEwNMQUIxDTALBgNVBAoTBFpFUk8xETAPBgNVBAMT
 # CFplcm9EQzAxMB4XDTE3MDkyMDIxMDM1OFoXDTE5MDkyMDIxMTM1OFowPTETMBEG
 # CgmSJomT8ixkARkWA0xBQjEUMBIGCgmSJomT8ixkARkWBFpFUk8xEDAOBgNVBAMT
@@ -2763,11 +2763,11 @@ function Bootstrap-PowerShellCore {
 # ARkWA0xBQjEUMBIGCgmSJomT8ixkARkWBFpFUk8xEDAOBgNVBAMTB1plcm9TQ0EC
 # E1gAAAH5oOvjAv3166MAAQAAAfkwCQYFKw4DAhoFAKB4MBgGCisGAQQBgjcCAQwx
 # CjAIoAKAAKECgAAwGQYJKoZIhvcNAQkDMQwGCisGAQQBgjcCAQQwHAYKKwYBBAGC
-# NwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFFupb5oFVgyC+t2H
-# 5qOGT5QjRArQMA0GCSqGSIb3DQEBAQUABIIBACYER+Pd9ykfukcdO6XM0jEJB1Zh
-# +ENqpMQpEe02sfQWEXJqaULb7kxgM9ynGeX6EXBRyl0UkQRSxlw99nQHgA4PNADZ
-# azbYWo/vRgWQrLluRNxF+89zriym/Jyz7HajpIJtWD1XhvPW9v4JFKrudVevR9g9
-# tzEWYWzfqAo+hpXrdonkqTdx2VEO2o7Ze3EUGMvgumQ7RtK/C9LqlMFzI1VcvNVG
-# hNQJRE76qJJr42DK6ZgdDQpq5OIC8NI5H4hEO1I4u/osc9jQr1/g+/8g1xIxaqg1
-# f/Hr35FS9qSfmvgwP/VTNDxTU2uO5eJrAdUdYl9k6cE7OpsB0TDlQVX5gig=
+# NwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFCSs+DjrOD++A1MV
+# 7r21owkZDQNIMA0GCSqGSIb3DQEBAQUABIIBAJaY6GaI45kpATorLVd5MkBLL5c3
+# zs2lp2xI5S+OVUDOtfJ85/4AgwUANlKjgfCF25vROM8kdKZcm3Vf22IYG9ie0MPg
+# iM0+/qLtnfWUUjuAWRM3ksrc5Z3vn6a30PbPzw1RAFH8BcWvQLvCoCdNoFeyQTji
+# 0K/LL/WNKy1DiUPQWrUNw/gUazDxAFnCBZzjte0EXFAKj5Ieyrl/P6uXLwRjhGIm
+# RVUsAcHtLSGuh8g5Jp48sVBkqgUy70DQpdxE6VUfb47p5I/gtBPnAKt0Dx6ZInYB
+# aeCJoWWMBOnPe4fLenNwY9ch4TdJel5K9x25m6/FD+vliUVs8JGYMN2QyLI=
 # SIG # End signature block
