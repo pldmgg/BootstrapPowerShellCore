@@ -4,11 +4,11 @@
 # BootstrapPowerShellCore
 This Module allows you to install PowerShell Core on a Remote Host and optionally configure pwsh for PSRemoting. The only requirement is that you have ssh available on your local workstation. (See my [WinSSH Module](https://github.com/pldmgg/WinSSH) if you would like an easy way to install/configure OpenSSH on Windows)
 
-The target Remote Host can be (almost) any Operating System mentioned in Microsoft's official documentation (with the exception of Arch and Kali): https://docs.microsoft.com/en-us/powershell/scripting/setup/installing-powershell?view=powershell-6
+The target Remote Host can be (almost) any Operating System mentioned in Microsoft's official documentation (with the exception of Kali): https://docs.microsoft.com/en-us/powershell/scripting/setup/installing-powershell?view=powershell-6
 
 The Module itself can be installed and imported using Windows PowerShell 5.1 or and Powershell Core 6.X (Windows or Linux).
 
-I will eventually add support for targeting Arch and Kali.
+I will eventually add support for Kali.
 
 ## Getting Started
 
