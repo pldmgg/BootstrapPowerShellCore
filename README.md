@@ -38,7 +38,7 @@ I will eventually add support for Kali.
 ```powershell
 $BootstrapPwshSplatParams = @{
     RemoteHostNameOrIP      = "zerowin16sshb"
-    DomainUserNameSS        = "zero\zeroadmin"
+    DomainUserName          = "zero\zeroadmin"
     DomainPasswordSS        = $(Read-Host -Prompt "Enter password" -AsSecureString)
 }
 Bootstrap-PowerShellCore @BootstrapPwshSplatParams
@@ -49,7 +49,7 @@ Bootstrap-PowerShellCore @BootstrapPwshSplatParams
 ```powershell
 $BootstrapPwshSplatParams = @{
     RemoteHostNameOrIP      = "centos7nodomain"
-    LocalUserNameSS         = "centos7nodomain\vagrant"
+    LocalUserName           = "centos7nodomain\vagrant"
     LocalPasswordSS         = $(Read-Host -Prompt "Enter password" -AsSecureString)
     ConfigurePSRemoting     = $True
 }
@@ -61,7 +61,7 @@ Bootstrap-PowerShellCore @BootstrapPwshSplatParams
 ```powershell
 $BootstrapPwshSplatParams = @{
     RemoteHostNameOrIP      = "centos7nodomain"
-    LocalUserNameSS         = "centos7nodomain\vagrant"
+    LocalUserName           = "centos7nodomain\vagrant"
     LocalPasswordSS         = $(Read-Host -Prompt "Enter password" -AsSecureString)
     UsePackageManagement    = $False
 }

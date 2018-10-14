@@ -8,9 +8,11 @@
     ${Function:InvokePSCompatibility}.Ast.Extent.Text
     ${Function:ManualPSGalleryModuleInstall}.Ast.Extent.Text
     ${Function:ResolveHost}.Ast.Extent.Text
+    ${Function:SSHScriptBuilder}.Ast.Extent.Text
     ${Function:TestIsValidIPAddress}.Ast.Extent.Text
     ${Function:Bootstrap-PowerShellCore}.Ast.Extent.Text
     ${Function:Get-SSHProbe}.Ast.Extent.Text
+    ${Function:Remove-SudoPwd}.Ast.Extent.Text
 )
 
 
@@ -250,8 +252,8 @@ puts "Run `brew help` to get started"
 # SIG # Begin signature block
 # MIIMiAYJKoZIhvcNAQcCoIIMeTCCDHUCAQExCzAJBgUrDgMCGgUAMGkGCisGAQQB
 # gjcCAQSgWzBZMDQGCisGAQQBgjcCAR4wJgIDAQAABBAfzDtgWUsITrck0sYpfvNR
-# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUVMH87krJ/Pr3kMhk7IqFMqsD
-# qdCgggn9MIIEJjCCAw6gAwIBAgITawAAAB/Nnq77QGja+wAAAAAAHzANBgkqhkiG
+# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUtmPV5gqo2IePfbQitAaDQYcr
+# S8ygggn9MIIEJjCCAw6gAwIBAgITawAAAB/Nnq77QGja+wAAAAAAHzANBgkqhkiG
 # 9w0BAQsFADAwMQwwCgYDVQQGEwNMQUIxDTALBgNVBAoTBFpFUk8xETAPBgNVBAMT
 # CFplcm9EQzAxMB4XDTE3MDkyMDIxMDM1OFoXDTE5MDkyMDIxMTM1OFowPTETMBEG
 # CgmSJomT8ixkARkWA0xBQjEUMBIGCgmSJomT8ixkARkWBFpFUk8xEDAOBgNVBAMT
@@ -308,11 +310,11 @@ puts "Run `brew help` to get started"
 # ARkWA0xBQjEUMBIGCgmSJomT8ixkARkWBFpFUk8xEDAOBgNVBAMTB1plcm9TQ0EC
 # E1gAAAH5oOvjAv3166MAAQAAAfkwCQYFKw4DAhoFAKB4MBgGCisGAQQBgjcCAQwx
 # CjAIoAKAAKECgAAwGQYJKoZIhvcNAQkDMQwGCisGAQQBgjcCAQQwHAYKKwYBBAGC
-# NwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFA1DLjcFlmV0OrO0
-# VlZSRoOzqQyVMA0GCSqGSIb3DQEBAQUABIIBADT3b3kx5kQf7jxq31XRgIebwOCu
-# BJysNXiRT95x06MYbLHRlAx1++Qst2N+jEDswnuJMH1JLfMO9lDoAqn81KhPuKY/
-# vRMn+byhJkPNxOKDnBd0U64P5Uh6ERU8iKU5cxeW1T4McMBt2APnCqko7GGEAtSI
-# snzYso754Ny7McVHP3okkX6dfHnUhyTuA61GYfQYpdeC5YhZeM0UvNRle4maj7hC
-# 108peoqEXal2LT3ksjEExlgI6vZsf9hQNv2OJZ7x1hANvNVN19/AMySFEBxt0YHj
-# J7AqoGl5viVPmR6f9pGz2uNQkFtMWjhzJz8RndpEDAVTGkcvR4SncFqe5b0=
+# NwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFHFwjPIJHGy/xwAZ
+# U6EC5GyybG0gMA0GCSqGSIb3DQEBAQUABIIBABCLu1aSGm1t90sF783Cx5MRGk32
+# PU8pVE+5nouss7mysEqjcdvPFofERxbZ/rC8E7wrzmhKnxmbLfLDGf64Aqq7PH3T
+# BgeU/p/elWDw24naBRHQfWirH8Nx/HuGSwtpsWHoHv8tCLccsPS/u1NcVPivLYMJ
+# ALLlIbw+8UHfZ84TqCVjco+1iPypDvKlwQpGdttA6VooT3wl0bUlhIafE10pfqJx
+# daRQTvcztrLubJlaOzKdu5P1MzycxQLrP3uTzWgQL4fMsMg7qbKufdTXv7KewuiZ
+# zc7l5WQIYPfwaF+xteVhKQHvEzIDvpC2ROw1WjdCP+iNfn+wnJjrDXfCOSY=
 # SIG # End signature block

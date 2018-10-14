@@ -136,7 +136,7 @@ function Get-SSHProbe {
         }
 
         if (!$LocalUserName -and !$DomainUserName) {
-            Write-Error "You must suppy either -LocalUserName or -DomainUserName when using the -KeyFilePath parameter! Halting!"
+            Write-Error "You must supply either -LocalUserName or -DomainUserName when using the -KeyFilePath parameter! Halting!"
             $global:FunctionResult = "1"
             return
         }
@@ -349,7 +349,7 @@ function Get-SSHProbe {
             $null = $CheckForExpectedResponses.Add($SuccessOrAcceptHostKeyOrPwdPrompt)
             $Counter = 0
             while (![bool]$($($CheckForExpectedResponses -split "`n") -match [regex]::Escape("Are you sure you want to continue connecting (yes/no)?")) -and
-            ![bool]$($($CheckForExpectedResponses -split "`n") -match [regex]::Escape("password:")) -and 
+            ![bool]$($($CheckForExpectedResponses -split "`n") -match "assword.*:") -and 
             ![bool]$($($CheckForExpectedResponses -split "`n") -match "^}") -and $Counter -le 30
             ) {
                 $SuccessOrAcceptHostKeyOrPwdPrompt = Receive-AwaitResponse
@@ -443,7 +443,7 @@ function Get-SSHProbe {
                 $null = $CheckForExpectedResponses.Add($SuccessOrAcceptHostKeyOrPwdPrompt)
                 $Counter = 0
                 while (![bool]$($SuccessOrAcceptHostKeyOrPwdPrompt -match [regex]::Escape("Are you sure you want to continue connecting (yes/no)?")) -and
-                ![bool]$($SuccessOrAcceptHostKeyOrPwdPrompt -match [regex]::Escape("password:")) -and 
+                ![bool]$($SuccessOrAcceptHostKeyOrPwdPrompt -match "assword.*:") -and 
                 ![bool]$($SuccessOrAcceptHostKeyOrPwdPrompt -match "^}") -and $Counter -le 30
                 ) {
                     $SuccessOrAcceptHostKeyOrPwdPrompt = Receive-AwaitResponse
@@ -489,9 +489,14 @@ function Get-SSHProbe {
             }
 
             # At this point, if we don't have the expected output, we need to fail
-            if ($CheckResponsesOutput -match "must be greater than zero" -or @($CheckResponsesOutput)[-1] -notmatch "[a-zA-Z]" -and
-            ![bool]$($CheckResponsesOutput -match "background process reported an error")) {
-                Write-Verbose "Something went wrong within the PowerShell Await Module!"
+            if ($CheckResponsesOutput -match "must be greater than zero" -or @($CheckResponsesOutput)[-1] -notmatch "[a-zA-Z]" -or
+            $CheckResponsesOutput -match "background process reported an error") {
+                if ($CheckResponsesOutput -match "must be greater than zero" -or @($CheckResponsesOutput)[-1] -notmatch "[a-zA-Z]") {
+                    Write-Verbose "Something went wrong with the PowerShell Await Module!"
+                }
+                if ($CheckResponsesOutput -match "background process reported an error") {
+                    Write-Verbose "Please check your credentials!"
+                }
 
                 #Write-Host "Await ScriptBlock (`$PwshCmdString) was:`n    $PwshCmdString"
 
@@ -533,7 +538,7 @@ function Get-SSHProbe {
                 [System.Collections.ArrayList]$CheckExpectedSendYesOutput = @()
                 $null = $CheckExpectedSendYesOutput.Add($SuccessOrAcceptHostKeyOrPwdPrompt)
                 $Counter = 0
-                while (![bool]$($($CheckExpectedSendYesOutput -split "`n") -match [regex]::Escape("password:")) -and 
+                while (![bool]$($($CheckExpectedSendYesOutput -split "`n") -match "assword.*:") -and 
                 ![bool]$($($CheckExpectedSendYesOutput -split "`n") -match "^}") -and $Counter -le 30
                 ) {
                     $SuccessOrAcceptHostKeyOrPwdPrompt = Receive-AwaitResponse
@@ -574,7 +579,7 @@ function Get-SSHProbe {
 
                 $CheckSendYesOutput = $CheckExpectedSendYesOutput | foreach {$_ -split "`n"}
                 
-                if ($CheckSendYesOutput -match [regex]::Escape("password:")) {
+                if ($CheckSendYesOutput -match "assword.*:") {
                     if ($LocalPassword) {
                         $null = Send-AwaitCommand $LocalPassword
                     }
@@ -632,7 +637,7 @@ function Get-SSHProbe {
                     }
                 }
             }
-            elseif ($CheckResponsesOutput -match [regex]::Escape("password:")) {
+            elseif ($CheckResponsesOutput -match "assword.*:") {
                 if ($LocalPassword) {
                     $null = Send-AwaitCommand $LocalPassword
                 }
@@ -870,7 +875,7 @@ function Get-SSHProbe {
             $null = $CheckForExpectedResponses.Add($SuccessOrAcceptHostKeyOrPwdPrompt)
             $Counter = 0
             while (![bool]$($($CheckForExpectedResponses -split "`n") -match [regex]::Escape("Are you sure you want to continue connecting (yes/no)?")) -and
-            ![bool]$($($CheckForExpectedResponses -split "`n") -match [regex]::Escape("password:")) -and 
+            ![bool]$($($CheckForExpectedResponses -split "`n") -match "assword.*:") -and 
             ![bool]$($($CheckForExpectedResponses -split "`n") -match "^111HostnamectlOutput111") -and $Counter -le 30
             ) {
                 $SuccessOrAcceptHostKeyOrPwdPrompt = Receive-AwaitResponse
@@ -906,6 +911,7 @@ function Get-SSHProbe {
                             }
                         }
                     }
+                    $PSAwaitProcess = $null
                 }
             }
             #endregion >> Await Attempt 1 of 2
@@ -916,8 +922,8 @@ function Get-SSHProbe {
             
             # If $CheckResponsesOutput contains the string "must be greater than zero", then something broke with the Await Module.
             # Most of the time, just trying again resolves any issues
-            if ($CheckResponsesOutput -match "must be greater than zero" -or @($CheckResponsesOutput)[-1] -notmatch "[a-zA-Z]" -and
-            ![bool]$($CheckResponsesOutput -match "background process reported an error")) {
+            if ($CheckResponsesOutput -match "must be greater than zero" -or @($CheckResponsesOutput)[-1] -notmatch "[a-zA-Z]" -or
+            $CheckResponsesOutput -match "background process reported an error") {
                 if ($PSAwaitProcess.Id) {
                     try {
                         $null = Stop-AwaitSession
@@ -960,7 +966,7 @@ function Get-SSHProbe {
                 $null = $CheckForExpectedResponses.Add($SuccessOrAcceptHostKeyOrPwdPrompt)
                 $Counter = 0
                 while (![bool]$($SuccessOrAcceptHostKeyOrPwdPrompt -match [regex]::Escape("Are you sure you want to continue connecting (yes/no)?")) -and
-                ![bool]$($SuccessOrAcceptHostKeyOrPwdPrompt -match [regex]::Escape("password:")) -and 
+                ![bool]$($SuccessOrAcceptHostKeyOrPwdPrompt -match "assword.*:") -and 
                 ![bool]$($SuccessOrAcceptHostKeyOrPwdPrompt -match "^111HostnamectlOutput111") -and $Counter -le 30
                 ) {
                     $SuccessOrAcceptHostKeyOrPwdPrompt = Receive-AwaitResponse
@@ -1007,9 +1013,14 @@ function Get-SSHProbe {
             $CheckResponsesOutput = $CheckForExpectedResponses | foreach {$_ -split "`n"}
 
             # At this point, if we don't have the expected output, we need to fail
-            if ($CheckResponsesOutput -match "must be greater than zero" -or @($CheckResponsesOutput)[-1] -notmatch "[a-zA-Z]" -and
-            ![bool]$($CheckResponsesOutput -match "background process reported an error")) {
-                Write-Error "Something went wrong with the PowerShell Await Module! Halting!"
+            if ($CheckResponsesOutput -match "must be greater than zero" -or @($CheckResponsesOutput)[-1] -notmatch "[a-zA-Z]" -or
+            $CheckResponsesOutput -match "background process reported an error") {
+                if ($CheckResponsesOutput -match "must be greater than zero" -or @($CheckResponsesOutput)[-1] -notmatch "[a-zA-Z]") {
+                    Write-Error "Something went wrong with the PowerShell Await Module! Halting!"
+                }
+                if ($CheckResponsesOutput -match "background process reported an error") {
+                    Write-Error "Please check your credentials! Halting!"
+                }
                 $global:FunctionResult = "1"
 
                 #Write-Host "Await ScriptBlock (`$SSHCmdString) was:`n    $SSHCmdString"
@@ -1053,7 +1064,7 @@ function Get-SSHProbe {
                 [System.Collections.ArrayList]$CheckExpectedSendYesOutput = @()
                 $null = $CheckExpectedSendYesOutput.Add($SuccessOrAcceptHostKeyOrPwdPrompt)
                 $Counter = 0
-                while (![bool]$($($CheckExpectedSendYesOutput -split "`n") -match [regex]::Escape("password:")) -and 
+                while (![bool]$($($CheckExpectedSendYesOutput -split "`n") -match "assword.*:") -and 
                 ![bool]$($($CheckExpectedSendYesOutput -split "`n") -match "^111HostnamectlOutput111") -and $Counter -le 30
                 ) {
                     $SuccessOrAcceptHostKeyOrPwdPrompt = Receive-AwaitResponse
@@ -1094,7 +1105,7 @@ function Get-SSHProbe {
 
                 $CheckSendYesOutput = $CheckExpectedSendYesOutput | foreach {$_ -split "`n"}
                 
-                if ($CheckSendYesOutput -match [regex]::Escape("password:")) {
+                if ($CheckSendYesOutput -match "assword.*:") {
                     if ($LocalPassword) {
                         $null = Send-AwaitCommand $LocalPassword
                     }
@@ -1150,7 +1161,7 @@ function Get-SSHProbe {
                     }
                 }
             }
-            elseif ($CheckResponsesOutput -match [regex]::Escape("password:")) {
+            elseif ($CheckResponsesOutput -match "assword.*:") {
                 if ($LocalPassword) {
                     $null = Send-AwaitCommand $LocalPassword
                 }
@@ -1726,8 +1737,8 @@ function Get-SSHProbe {
 # SIG # Begin signature block
 # MIIMiAYJKoZIhvcNAQcCoIIMeTCCDHUCAQExCzAJBgUrDgMCGgUAMGkGCisGAQQB
 # gjcCAQSgWzBZMDQGCisGAQQBgjcCAR4wJgIDAQAABBAfzDtgWUsITrck0sYpfvNR
-# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQU6i34EHtgbHDR5UurDJJrdkc1
-# NDegggn9MIIEJjCCAw6gAwIBAgITawAAAB/Nnq77QGja+wAAAAAAHzANBgkqhkiG
+# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUOvwGB67+RP3/JlXm50CSzcvM
+# FNmgggn9MIIEJjCCAw6gAwIBAgITawAAAB/Nnq77QGja+wAAAAAAHzANBgkqhkiG
 # 9w0BAQsFADAwMQwwCgYDVQQGEwNMQUIxDTALBgNVBAoTBFpFUk8xETAPBgNVBAMT
 # CFplcm9EQzAxMB4XDTE3MDkyMDIxMDM1OFoXDTE5MDkyMDIxMTM1OFowPTETMBEG
 # CgmSJomT8ixkARkWA0xBQjEUMBIGCgmSJomT8ixkARkWBFpFUk8xEDAOBgNVBAMT
@@ -1784,11 +1795,11 @@ function Get-SSHProbe {
 # ARkWA0xBQjEUMBIGCgmSJomT8ixkARkWBFpFUk8xEDAOBgNVBAMTB1plcm9TQ0EC
 # E1gAAAH5oOvjAv3166MAAQAAAfkwCQYFKw4DAhoFAKB4MBgGCisGAQQBgjcCAQwx
 # CjAIoAKAAKECgAAwGQYJKoZIhvcNAQkDMQwGCisGAQQBgjcCAQQwHAYKKwYBBAGC
-# NwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFAD/0YetSDEtYaW+
-# o+dV7OB7QgQ9MA0GCSqGSIb3DQEBAQUABIIBABYIglWgrlYINr5ufxYHs2gLuDj1
-# 5OHSk/JWMHuLN9Yo8mkge0PoOj39lNtOiN2/X+g5TznOf4sA9q4IRoU0H8JFOloD
-# CHi7d36Kg95eK4e14NlYwZ5vEfXe/JBZ1vtR57igsTBLJxgx4ypWGBaJWYqmazye
-# vFSl8eN3KWxq5y8Vt1giildglfwXrZoDJMx085P5DhKhatyNp3N8J8g3anVsF8zZ
-# A+19UqbZfYogz6fYsOdjP6m2bLAvWfI1v4BMKAttkud3ErCm9O1jOF7iv2N32DIN
-# RPEo+Y/mpa2eKXAgsGLlEWdkCAjU4uC3nOu7i/7c2QZ6jUH4GyMqp4WY7rw=
+# NwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFDIKzN96kcsB8Gh1
+# uKOIFCv613GYMA0GCSqGSIb3DQEBAQUABIIBAH/CCDnG5SZRsajJH4tDE8y2rClX
+# audvCoOV7IjII5nlHKrOAqWy8G6UHLgMbFsdvDsICiB6QZMOOrnvzenKFqF/Uik+
+# v0gV4fsl9PkIO8U70N03OFz5vGz8XIHvZE0YWH7a5pP4UtIwlwPa9jS/OeXDz74G
+# H10dww7eL21A1N0Z+QjFyk3dtIQatSb5fJpj58303v3cDhh4rxbDQjFHqJJJG2/+
+# nBToojcVDkO5GAF3LH6DDeaVxdY2BVrdD22VsJa1msYyICIV/N4Tv4VuR8X1zRQJ
+# XTKVtoXLip+z76Je7zfBSQdHDgeIJwULPxnuYDa8KNoPez0tvoOCVmNPjUc=
 # SIG # End signature block

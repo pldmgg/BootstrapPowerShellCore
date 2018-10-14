@@ -66,10 +66,11 @@ Describe -Name "General Project Validation: $env:BHProjectName" -Tag 'Validation
         $Commands -contains 'InvokePSCompatibility' | Should Be $False
         $Commands -contains 'ManualPSGalleryModuleInstall' | Should Be $False
         $Commands -contains 'ResolveHost' | Should Be $False
+        $Commands -contains 'SSHScriptBuilder' | Should Be $False
         $Commands -contains 'TestIsValidIPAddress' | Should Be $False
-        
         $Commands -contains 'Bootstrap-PowerShellCore' | Should Be $True
         $Commands -contains 'Get-SSHProbe' | Should Be $True
+        $Commands -contains 'Remove-SudoPwd' | Should Be $True
     }
 
     It "Module '$env:BHProjectName' Private Functions Are Available in Internal Scope" {
@@ -83,6 +84,7 @@ Describe -Name "General Project Validation: $env:BHProjectName" -Tag 'Validation
         [bool]$Module.Invoke({Get-Item function:InvokePSCompatibility}) | Should Be $True
         [bool]$Module.Invoke({Get-Item function:ManualPSGalleryModuleInstall}) | Should Be $True
         [bool]$Module.Invoke({Get-Item function:ResolveHost}) | Should Be $True
+        [bool]$Module.Invoke({Get-Item function:SSHScriptBuilder}) | Should Be $True
         [bool]$Module.Invoke({Get-Item function:TestIsValidIPAddress}) | Should Be $True
     }
 }
@@ -90,8 +92,8 @@ Describe -Name "General Project Validation: $env:BHProjectName" -Tag 'Validation
 # SIG # Begin signature block
 # MIIMiAYJKoZIhvcNAQcCoIIMeTCCDHUCAQExCzAJBgUrDgMCGgUAMGkGCisGAQQB
 # gjcCAQSgWzBZMDQGCisGAQQBgjcCAR4wJgIDAQAABBAfzDtgWUsITrck0sYpfvNR
-# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUPI/PEh2pQx+XlWLbCpaAAGAW
-# Klagggn9MIIEJjCCAw6gAwIBAgITawAAAB/Nnq77QGja+wAAAAAAHzANBgkqhkiG
+# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUn7IDWYgQ0MNWcrhXs2LOW1l4
+# zK6gggn9MIIEJjCCAw6gAwIBAgITawAAAB/Nnq77QGja+wAAAAAAHzANBgkqhkiG
 # 9w0BAQsFADAwMQwwCgYDVQQGEwNMQUIxDTALBgNVBAoTBFpFUk8xETAPBgNVBAMT
 # CFplcm9EQzAxMB4XDTE3MDkyMDIxMDM1OFoXDTE5MDkyMDIxMTM1OFowPTETMBEG
 # CgmSJomT8ixkARkWA0xBQjEUMBIGCgmSJomT8ixkARkWBFpFUk8xEDAOBgNVBAMT
@@ -148,11 +150,11 @@ Describe -Name "General Project Validation: $env:BHProjectName" -Tag 'Validation
 # ARkWA0xBQjEUMBIGCgmSJomT8ixkARkWBFpFUk8xEDAOBgNVBAMTB1plcm9TQ0EC
 # E1gAAAH5oOvjAv3166MAAQAAAfkwCQYFKw4DAhoFAKB4MBgGCisGAQQBgjcCAQwx
 # CjAIoAKAAKECgAAwGQYJKoZIhvcNAQkDMQwGCisGAQQBgjcCAQQwHAYKKwYBBAGC
-# NwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFBqIlSxXmn/F1H81
-# 2jXoUXOxJ2E1MA0GCSqGSIb3DQEBAQUABIIBAAQFb2vKWYtIrjU8m4i8rAW6YUt3
-# sMIfVjkj/SwMZAFpqkPta75MnEQETu2faxo2bCadDYpnCcN2SaTPNb5EcmjnNo6Z
-# h5JLNmTJRc9YinlGrxmy7ncO9XyGQOfItTJFi13chAg/0IyWAfd4MIYW2pf6Ys/I
-# CWWC61n62XGxibEMn9iyZgbUgY3cUlfDU/cTy5D1jtEQdRb6Z/a2aExsA1FhmbES
-# nQsMcX6d2Dsw2dzKZKGW6B5sFTsM/knhd6dsxh5YW69QHCCCo6w+FNEJHcKE31r+
-# U6FhCQ7zMDR8dm1kgZWjwtT+er4+SycRvSWM55eoxnf7KvWHN49JS0d1W9s=
+# NwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFM/dLgp436JmqWJI
+# wdAJaOldQOwqMA0GCSqGSIb3DQEBAQUABIIBABZwtWwQsNgaQUT0Fz7DvNnS3cSB
+# eW+8n1432HJQpqzhAxVn+3lgq4wGTzRO7yvlvyXDNfLDs3zUlJUmOXTgpudHW1x/
+# Xtv7oW1aOZc9bMIsWcaoGE9ZtfdlEYJ/pqaQ4hshdnfMChYO0HTvYa+8hBPu2ZfP
+# ksgfzlfmn7IcddQiKU9c93I2K8nF3dKuoIUfqHbxPHLWm2o7QVe8kinekjKb3n54
+# vA1raLxB7jj+zSQPB+b7aNyMvv15FcU9kbojyuq9LNU+hFkkZOtX7i533IxAkr2+
+# 4aU3kiL9/L50ksu4FYo3Jh9G7L9GPyzPEDLFm0ZqajmQIPKcRlnR7xjtcXc=
 # SIG # End signature block
