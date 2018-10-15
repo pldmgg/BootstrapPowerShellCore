@@ -188,7 +188,7 @@ function Get-SudoStatus {
     }
 
     if ($PSVersionTable.Platform -eq "Unix") {
-        # Determine if we have the required Linux commands
+        # Determine if we have required Linux commands
         [System.Collections.ArrayList]$LinuxCommands = @(
             "echo"
             "expect"
