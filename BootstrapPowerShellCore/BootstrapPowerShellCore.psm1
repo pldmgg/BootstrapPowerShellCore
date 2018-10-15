@@ -370,11 +370,11 @@ function Bootstrap-PowerShellCore {
             $WinArm32PackageUrl = $_
             $WinArm32PackageName = $($_ -split '/')[-1]
         }
-        {$_ -match "linux" -and $_ -match "x64" -and $_ -match "\.tag\.gz"} {
+        {$_ -match "linux" -and $_ -match "x64" -and $_ -match "\.tar\.gz"} {
             $LinuxGenericPackageUrl = $_
             $LinuxGenericPackageName = $($_ -split '/')[-1]
         }
-        {$_ -match "linux" -and $_ -match "arm32" -and $_ -match "\.tag\.gz"} {
+        {$_ -match "linux" -and $_ -match "arm32" -and $_ -match "\.tar\.gz"} {
             $LinuxGenericArmPackageUrl = $RaspbianArmPackageUrl = $_
             $LinuxGenericArmPackageName = $RaspbianArmPackageName = $($_ -split '/')[-1]
         }
@@ -3132,8 +3132,8 @@ puts "Run `brew help` to get started"
 # SIG # Begin signature block
 # MIIMiAYJKoZIhvcNAQcCoIIMeTCCDHUCAQExCzAJBgUrDgMCGgUAMGkGCisGAQQB
 # gjcCAQSgWzBZMDQGCisGAQQBgjcCAR4wJgIDAQAABBAfzDtgWUsITrck0sYpfvNR
-# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUZ2GYd+GglAt6QByf/tUiDyuU
-# Jvqgggn9MIIEJjCCAw6gAwIBAgITawAAAB/Nnq77QGja+wAAAAAAHzANBgkqhkiG
+# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUaQZkpQ/snIZbdbrkOcmiCiLe
+# xtGgggn9MIIEJjCCAw6gAwIBAgITawAAAB/Nnq77QGja+wAAAAAAHzANBgkqhkiG
 # 9w0BAQsFADAwMQwwCgYDVQQGEwNMQUIxDTALBgNVBAoTBFpFUk8xETAPBgNVBAMT
 # CFplcm9EQzAxMB4XDTE3MDkyMDIxMDM1OFoXDTE5MDkyMDIxMTM1OFowPTETMBEG
 # CgmSJomT8ixkARkWA0xBQjEUMBIGCgmSJomT8ixkARkWBFpFUk8xEDAOBgNVBAMT
@@ -3190,11 +3190,11 @@ puts "Run `brew help` to get started"
 # ARkWA0xBQjEUMBIGCgmSJomT8ixkARkWBFpFUk8xEDAOBgNVBAMTB1plcm9TQ0EC
 # E1gAAAH5oOvjAv3166MAAQAAAfkwCQYFKw4DAhoFAKB4MBgGCisGAQQBgjcCAQwx
 # CjAIoAKAAKECgAAwGQYJKoZIhvcNAQkDMQwGCisGAQQBgjcCAQQwHAYKKwYBBAGC
-# NwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFBy8pmjoMZydlK6A
-# ALsEybIC4ZIJMA0GCSqGSIb3DQEBAQUABIIBAGMZQjOesVsCf10H5lLNrpL2iT9N
-# w2+4hmGpywIATepq5tTj6pZZY6MLXWlvLYIYrdmYrwL9SD4W+oZQyKS1L9tpBjNT
-# FAyD21jzSPU6mjmxMTs01MNO4jwsSRQzO41m9pOrGcOUiy9OqAs1zuyWiI0f44Hy
-# R++cuuQHKfrTeeshXdPaV7SQQI/dpsBJE04jDDhvua/X6gxWGryolw1UOfVkS7xL
-# 2lB9XeK8NZHu6ysJxH70agbO/Ykrwt7ogFSNcMx2Iucc7Mj6g9iYOAdSYnfXrWne
-# ZTUlqp8GrHR2Wky96PfuCdXlrFgyvKk1j0Q6Rs3IyvHuUAwPXhtbwnQ6++0=
+# NwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFIb1FriGKhuaIcEi
+# ECQqb5URm0rbMA0GCSqGSIb3DQEBAQUABIIBAMN7gYJikIrrg44s9J+1ow+qr1UL
+# Mj2UalAE30xxpO0IsKzPtS9MUc5bP5u+/+9ka8AJ2l6UK5TXs6koPoeFn3kKK4NX
+# l3KMZpODh3IHu2JPCN8kpS/78UjZfQy5O6+QlffWpNgq/nzh3nfjWUtNeGT7OCOw
+# t6O3yOodf3DqfLrOTEsdjATz2pPaFa2MI84Q0ylRV8W/zVnPs9lEZ8QFay4yjJHu
+# zacNZJCel+NRKXiotXlhxFMyn1demivQTASCaKCluhm3o3Qhx04nMRu0uhnrorlp
+# wGfdHq49rvMJE5hQ8fpCG7JqMgZuEtzsOHHcgBs6Oo0Q9sabeGLZSydeUIc=
 # SIG # End signature block

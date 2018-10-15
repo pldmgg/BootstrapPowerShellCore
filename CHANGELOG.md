@@ -1,5 +1,9 @@
 # Change log
 
+## 1.0.1 (October 15, 2018)
+
+- Fixed typo with Raspbian Package Url regex
+
 ## 1.0.0 (October 14, 2018)
 
 - Reorganized code to improve readability/maintainability
