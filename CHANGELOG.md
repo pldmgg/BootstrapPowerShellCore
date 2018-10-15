@@ -1,5 +1,9 @@
 # Change log
 
+## 1.0.0 (October 14, 2018)
+
+- Reorganized code to improve readability/maintainability
+
 ## 0.9.0 (October 10, 2018)
 
 - Fixed issue using Windows to target Linux
