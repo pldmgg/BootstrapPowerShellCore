@@ -423,6 +423,33 @@ function Bootstrap-PowerShellCore {
 
     Write-Host "Get-SSHProbe identified OS: $($OSCheck.OS); Shell: $($OSCheck.Shell)"
 
+    # Check to make sure the user has sudo privileges
+    $GetSudoStatusSplatParams = @{
+        RemoteHostNameOrIP  = $RemoteHostNameOrIP
+    }
+    if ($KeyFilePath) {
+        $GetSudoStatusSplatParams.Add("KeyFilePath",$KeyFilePath)
+    }
+    if ($LocalUserName) {
+        $GetSudoStatusSplatParams.Add("LocalUserName",$LocalUserName)
+    }
+    if ($DomainUserName) {
+        $GetSudoStatusSplatParams.Add("DomainUserName",$DomainUserName)
+    }
+    if ($LocalPasswordSS -and !$KeyFilePath) {
+        $GetSudoStatusSplatParams.Add("LocalPasswordSS",$LocalPasswordSS)
+    }
+    if ($DomainPasswordSS -and !$KeyFilePath) {
+        $GetSudoStatusSplatParams.Add("DomainPasswordSS",$DomainPasswordSS)
+    }
+    $GetSudoStatusResult = Get-SudoStatus @GetSudoStatusSplatParams
+    
+    if (!$GetSudoStatusResult.HasSudoPrivileges) {
+        Write-Error "The user does not appear to have sudo privileges on $RemoteHostNameOrIP! Halting!"
+        $global:FunctionResult = "1"
+        return
+    }
+
     if (!$OS) {
         # It's possible that the OSVersionInfo property is an array of strings, but we don't want the below switch to loop through each one,
         # so we have to make sure we only give the switch one string object (i.e. $SanitizedOSVersionInfo)
@@ -715,8 +742,8 @@ function Bootstrap-PowerShellCore {
 # SIG # Begin signature block
 # MIIMiAYJKoZIhvcNAQcCoIIMeTCCDHUCAQExCzAJBgUrDgMCGgUAMGkGCisGAQQB
 # gjcCAQSgWzBZMDQGCisGAQQBgjcCAR4wJgIDAQAABBAfzDtgWUsITrck0sYpfvNR
-# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUp7ScRlC2CrPexWmeYEkk0Gz/
-# wlmgggn9MIIEJjCCAw6gAwIBAgITawAAAB/Nnq77QGja+wAAAAAAHzANBgkqhkiG
+# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQU1JaSqQqqd0eOWH26mrbNKDFV
+# nhagggn9MIIEJjCCAw6gAwIBAgITawAAAB/Nnq77QGja+wAAAAAAHzANBgkqhkiG
 # 9w0BAQsFADAwMQwwCgYDVQQGEwNMQUIxDTALBgNVBAoTBFpFUk8xETAPBgNVBAMT
 # CFplcm9EQzAxMB4XDTE3MDkyMDIxMDM1OFoXDTE5MDkyMDIxMTM1OFowPTETMBEG
 # CgmSJomT8ixkARkWA0xBQjEUMBIGCgmSJomT8ixkARkWBFpFUk8xEDAOBgNVBAMT
@@ -773,11 +800,11 @@ function Bootstrap-PowerShellCore {
 # ARkWA0xBQjEUMBIGCgmSJomT8ixkARkWBFpFUk8xEDAOBgNVBAMTB1plcm9TQ0EC
 # E1gAAAH5oOvjAv3166MAAQAAAfkwCQYFKw4DAhoFAKB4MBgGCisGAQQBgjcCAQwx
 # CjAIoAKAAKECgAAwGQYJKoZIhvcNAQkDMQwGCisGAQQBgjcCAQQwHAYKKwYBBAGC
-# NwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFD93AxoaTo1jjznU
-# 020RfV8ecM/sMA0GCSqGSIb3DQEBAQUABIIBAF8unidAUB1f5Q7aR9nzBEQ+D+F8
-# Zp2DKvSgNgeC0fLSD4iB8Va624kPNinoEE9YeGAZrYN1BQa6S/fFJ8nYZopPBoq0
-# ijU7d76WXLeNnLKKfQIMB0TW9lvqiFt+2LuiIp0Uech6upiwCd/HA4GGOZiqdG2T
-# u/jlYpsSuTWE0yD5ObDtYTs1xFbjF7Xm2pCjY+oTuJTI+Eh2M1vipC7ksBPqbvxV
-# X6X1l4dmKI/ndU9bQXJ2wFFodoJaSdj1j9Dj8kkf2KONlMZGM02rMoUet/w5a7x1
-# zkFJUDwC0dgp7CpP20glfn2GECqs9N91lAMa9MUnTyjTmzEYPBeuuoBv3wE=
+# NwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFFj+vdB2uhTqcjko
+# LDcSAr1oFE+QMA0GCSqGSIb3DQEBAQUABIIBABYdcz2GqVagVbHxC6wnGeRczpaP
+# 6ud3EnL/sbhcD/OXqdpc6iN2Ta+lTb4jGtGyE92tmLHCXVvjRyM9SOx7RaqM43zo
+# HS/9NP60RmF24yboDN9Z1wlOyC36Y83x80vkScn7FAv5mRgNoHtOAL2bXJqQ74ih
+# jg0v0E0V0uWH54TebhVxO3fUjBt9bmLSVmgXOGCfglEauG4PRAqQmJisFvbwjaNj
+# 0FyYzxqUd8gftyLOIJQ65q0/8U3XZgVndRuI6e3D1HJdd5EP0y5XXKUYVIo2HpWK
+# aULFI8m41ddDL0AJ1MR2HyfIKDtuWcP7C9VRmIVPigsZtSZxMusSn3H/QWM=
 # SIG # End signature block

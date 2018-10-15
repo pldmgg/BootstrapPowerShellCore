@@ -12,7 +12,7 @@
 RootModule = 'BootstrapPowerShellCore.psm1'
 
 # Version number of this module.
-ModuleVersion = '1.0.1'
+ModuleVersion = '1.0.2'
 
 # Supported PSEditions
 # CompatiblePSEditions = @()
@@ -69,7 +69,7 @@ PowerShellVersion = '5.1'
 # NestedModules = @()
 
 # Functions to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no functions to export.
-FunctionsToExport = 'Bootstrap-PowerShellCore','Get-SSHProbe','Remove-SudoPwd'
+FunctionsToExport = 'Bootstrap-PowerShellCore','Get-SSHProbe','Get-SudoStatus','Remove-SudoPwd'
 
 # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
 CmdletsToExport = '*'

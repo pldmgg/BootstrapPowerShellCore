@@ -509,6 +509,33 @@ function Bootstrap-PowerShellCore {
 
     Write-Host "Get-SSHProbe identified OS: $($OSCheck.OS); Shell: $($OSCheck.Shell)"
 
+    # Check to make sure the user has sudo privileges
+    $GetSudoStatusSplatParams = @{
+        RemoteHostNameOrIP  = $RemoteHostNameOrIP
+    }
+    if ($KeyFilePath) {
+        $GetSudoStatusSplatParams.Add("KeyFilePath",$KeyFilePath)
+    }
+    if ($LocalUserName) {
+        $GetSudoStatusSplatParams.Add("LocalUserName",$LocalUserName)
+    }
+    if ($DomainUserName) {
+        $GetSudoStatusSplatParams.Add("DomainUserName",$DomainUserName)
+    }
+    if ($LocalPasswordSS -and !$KeyFilePath) {
+        $GetSudoStatusSplatParams.Add("LocalPasswordSS",$LocalPasswordSS)
+    }
+    if ($DomainPasswordSS -and !$KeyFilePath) {
+        $GetSudoStatusSplatParams.Add("DomainPasswordSS",$DomainPasswordSS)
+    }
+    $GetSudoStatusResult = Get-SudoStatus @GetSudoStatusSplatParams
+    
+    if (!$GetSudoStatusResult.HasSudoPrivileges) {
+        Write-Error "The user does not appear to have sudo privileges on $RemoteHostNameOrIP! Halting!"
+        $global:FunctionResult = "1"
+        return
+    }
+
     if (!$OS) {
         # It's possible that the OSVersionInfo property is an array of strings, but we don't want the below switch to loop through each one,
         # so we have to make sure we only give the switch one string object (i.e. $SanitizedOSVersionInfo)
@@ -2538,6 +2565,330 @@ function Get-SSHProbe {
 
 <#
     .SYNOPSIS
+        Determines if the specified user has sudo privileges on a Remote Host, and if so, whether or not they are prompted for a
+        sudo password when running 'sudo pwsh'.
+
+        Returns a pscustomobject with bool properties 'HasSudoPrivileges' and 'PasswordPrompt'.
+
+    .DESCRIPTION
+        See SYNOPSIS
+
+    .PARAMETER RemoteHostNameOrIP
+        This parameter is MANDATORY.
+
+        This parameter takes a string that represents the DNS-resolvable HostName/FQDN or IPv4 Address of the target Remote Host
+
+    .PARAMETER LocalUserName
+        This parameter is MANDATORY for the Parameter Set 'Local'.
+
+        This parameter takes a string that represents the Local User Account on the Remote Host that you are using to ssh into
+        the Remote Host. This string must be in format: <RemoteHostName>\<UserName>
+
+    .Parameter DomainUserName
+        This parameter is MANDATORY for the Parameter Set 'Domain'.
+
+        This parameter takes a string that represents the Domain User Account on the Remote Host that you are using to ssh into
+        the Remote Host. This string must be in format: <DomainShortName>\<UserName>
+
+    .Parameter LocalPasswordSS
+        This parameter is MANDATORY for the Parameter Set 'Local'.
+
+        This parameter takes a securestring that represents the password for the -LocalUserName you are using to ssh into the
+        Remote Host.
+
+    .Parameter DomainPasswordSS
+        This parameter is MANDATORY for the Parameter Set 'Domain'.
+
+        This parameter takes a securestring that represents the password for the -DomainUserName you are using to ssh into the
+        Remote Host.
+
+    .PARAMETER KeyFilePath
+        This parameter is OPTIONAL.
+
+        This parameter takes a string that represents the full path to the Key File you are using to ssh into the Remote Host.
+        Use this parameter instead of -LocalPasswordSS or -DomainPasswordSS.
+
+    .EXAMPLE
+        # Minimal parameters...
+
+        $GetSudoStatusSplatParams = @{
+            RemoteHostNameOrIP      = "zerowin16sshb"
+            DomainUserNameSS        = "zero\zeroadmin"
+            DomainPasswordSS        = $(Read-Host -Prompt "Enter password" -AsSecureString)
+        }
+        Get-SudoStatus @GetSudoStatusSplatParams
+
+    .EXAMPLE
+        # Using a local account on the Remote Host...
+
+        $GetSudoStatusSplatParams = @{
+            RemoteHostNameOrIP      = "centos7nodomain"
+            LocalUserNameSS         = "centos7nodomain\vagrant"
+            LocalPasswordSS         = $(Read-Host -Prompt "Enter password" -AsSecureString)
+        }
+        Get-SudoStatus @GetSudoStatusSplatParams
+
+    .EXAMPLE
+        # Using an ssh Key File instead of a password...
+
+        $GetSudoStatusSplatParams = @{
+            RemoteHostNameOrIP      = "centos7nodomain"
+            LocalUserNameSS         = "centos7nodomain\vagrant"
+            KeyFilePath             = $HOME/.ssh/my_ssh_key
+        }
+        Get-SudoStatus @GetSudoStatusSplatParams
+        
+#>
+function Get-SudoStatus {
+    [CmdletBinding()]
+    Param(
+        [Parameter(Mandatory=$True)]
+        [string]$RemoteHostNameOrIP,
+
+        [Parameter(
+            Mandatory=$True,
+            ParameterSetName='Local'
+        )]
+        [ValidatePattern("\\")] # Must be in format <RemoteHostName>\<User>
+        [string]$LocalUserName,
+
+        [Parameter(
+            Mandatory=$True,
+            ParameterSetName='Domain'    
+        )]
+        [ValidatePattern("\\")] # Must be in format <DomainShortName>\<User>
+        [string]$DomainUserName,
+
+        [Parameter(
+            Mandatory=$False,
+            ParameterSetName='Local'    
+        )]
+        [securestring]$LocalPasswordSS,
+
+        [Parameter(
+            Mandatory=$False,
+            ParameterSetName='Domain'
+        )]
+        [securestring]$DomainPasswordSS,
+
+        [Parameter(Mandatory=$False)]
+        [string]$KeyFilePath
+    )
+
+    #region >> Prep
+
+    if (!$(Get-Command ssh -ErrorAction SilentlyContinue)) {
+        Write-Error "Unable to find 'ssh'! Please make sure it is installed and part of your Environment/System Path! Halting!"
+        $global:FunctionResult = "1"
+        return
+    }
+
+    if ($KeyFilePath) {
+        if (!$(Test-Path $KeyFilePath)) {
+            Write-Error "Unable to find KeyFilePath '$KeyFilePath'! Halting!"
+            $global:FunctionResult = "1"
+            return
+        }
+
+        if (!$LocalUserName -and !$DomainUserName) {
+            Write-Error "You must supply either -LocalUserName or -DomainUserName when using the -KeyFilePath parameter! Halting!"
+            $global:FunctionResult = "1"
+            return
+        }
+    }
+
+    try {
+        $RemoteHostNetworkInfo = ResolveHost -HostNameOrIP $RemoteHostNameOrIP -ErrorAction Stop
+    }
+    catch {
+        Write-Error $_
+        Write-Error "Unable to resolve '$RemoteHostNameOrIP'! Halting!"
+        $global:FunctionResult = "1"
+        return
+    }
+
+    if ($LocalPasswordSS -or $DomainPasswordSS -and $KeyFilePath) {
+        Write-Error "Please use EITHER -KeyFilePath OR -LocalPasswordSS/-DomainPasswordSS in order to ssh to $RemoteHostNameOrIP! Halting!"
+        $global:FunctionResult = "1"
+        return
+    }
+
+    if ($LocalUserName) {
+        if ($($LocalUserName -split "\\")[0] -ne $RemoteHostNetworkInfo.HostName) {
+            $ErrMsg = "The HostName indicated by -LocalUserName (i.e. $($($LocalUserName -split "\\")[0]) is not the same as " +
+            "the HostName as determined by network resolution (i.e. $($RemoteHostNetworkInfo.HostName))! Halting!"
+            Write-Error $ErrMsg
+            $global:FunctionResult = "1"
+            return
+        }
+    }
+    if ($DomainUserName) {
+        if ($($DomainUserName -split "\\")[0] -ne $($RemoteHostNetworkInfo.Domain -split "\.")[0]) {
+            $ErrMsg = "The Domain indicated by -DomainUserName (i.e. '$($($DomainUserName -split "\\")[0])') is not the same as " +
+            "the Domain as determined by network resolution (i.e. '$($($RemoteHostNetworkInfo.Domain -split "\.")[0])')! Halting!"
+            Write-Error $ErrMsg
+            $global:FunctionResult = "1"
+            return
+        }
+    }
+
+    if (!$PSVersionTable.Platform -or $PSVersionTable.Platform -eq "Win32NT") {
+        try {
+            if ($(Get-Module -ListAvailable).Name -notcontains 'WinSSH') {$null = Install-Module WinSSH -ErrorAction Stop}
+            if ($(Get-Module).Name -notcontains 'WinSSH') {$null = Import-Module WinSSH -ErrorAction Stop}
+            Import-Module "$($(Get-Module WinSSH).ModuleBase)\Await\Await.psd1" -ErrorAction Stop
+        }
+        catch {
+            Write-Error $_
+            $global:FunctionResult = "1"
+            return
+        }
+
+        try {
+            $null = Stop-AwaitSession
+        }
+        catch {
+            Write-Verbose $_.Exception.Message
+        }
+    }
+
+    if ($PSVersionTable.Platform -eq "Unix") {
+        # Determine if we have the required Linux commands
+        [System.Collections.ArrayList]$LinuxCommands = @(
+            "echo"
+            "expect"
+        )
+        [System.Collections.ArrayList]$CommandsNotPresent = @()
+        foreach ($CommandName in $LinuxCommands) {
+            $CommandCheckResult = command -v $CommandName
+            if (!$CommandCheckResult) {
+                $null = $CommandsNotPresent.Add($CommandName)
+            }
+        }
+
+        if ($CommandsNotPresent.Count -gt 0) {
+            [System.Collections.ArrayList]$FailedInstalls = @()
+            if ($CommandsNotPresent -contains "echo") {
+                try {
+                    $null = InstallLinuxPackage -PossiblePackageNames "coreutils" -CommandName "echo"
+                }
+                catch {
+                    $null = $FailedInstalls.Add("coreutils")
+                }
+            }
+            if ($CommandsNotPresent -contains "expect") {
+                try {
+                    $null = InstallLinuxPackage -PossiblePackageNames "expect" -CommandName "expect"
+                }
+                catch {
+                    $null = $FailedInstalls.Add("expect")
+                }
+            }
+    
+            if ($FailedInstalls.Count -gt 0) {
+                Write-Error "The following Linux packages are required, but were not able to be installed:`n$($FailedInstalls -join "`n")`nHalting!"
+                $global:FunctionResult = "1"
+                return
+            }
+        }
+
+        [System.Collections.ArrayList]$CommandsNotPresent = @()
+        foreach ($CommandName in $LinuxCommands) {
+            $CommandCheckResult = command -v $CommandName
+            if (!$CommandCheckResult) {
+                $null = $CommandsNotPresent.Add($CommandName)
+            }
+        }
+    
+        if ($CommandsNotPresent.Count -gt 0) {
+            Write-Error "The following Linux commands are required, but not present on $env:ComputerName:`n$($CommandsNotPresent -join "`n")`nHalting!"
+            $global:FunctionResult = "1"
+            return
+        }
+    }
+
+    if ($LocalPasswordSS) {
+        $LocalPassword = [Runtime.InteropServices.Marshal]::PtrToStringAuto([Runtime.InteropServices.Marshal]::SecureStringToBSTR($LocalPasswordSS))
+    }
+    If ($DomainPasswordSS) {
+        $DomainPassword = [Runtime.InteropServices.Marshal]::PtrToStringAuto([Runtime.InteropServices.Marshal]::SecureStringToBSTR($DomainPasswordSS))
+    }
+
+    if ($LocalUserName) {
+        $FullUserName = $($LocalUserName -split "\\")[-1]
+    }
+    if ($DomainUserName) {
+        $DomainNameShort = $($DomainUserName -split "\\")[0]
+        $FullUserName = $($DomainUserName -split "\\")[-1]
+    }
+
+    $OnWindows = !$PSVersionTable.Platform -or $PSVersionTable.Platform -eq "Win32NT"
+
+    #endregion >> Prep
+
+    #region >> Main
+
+    $PSVerTablePwshBytes = [System.Text.Encoding]::Unicode.GetBytes('$PSVersionTable')
+    $EncodedCommand = [Convert]::ToBase64String($PSVerTablePwshBytes)
+
+    [System.Collections.ArrayList]$CheckSudoStatusScript = @(
+        $('prompt=$(sudo -n pwsh -EncodedCommand {0} 2>&1)' -f $EncodedCommand)
+        $('if [ $? -eq 0 ]; then echo {0}; elif echo $prompt | grep -q {1}; then echo {2}; else echo {3}; fi' -f "'NoPasswordPrompt'","'^sudo'","'PasswordPrompt'","'NoSudoPrivileges'")
+    )
+    $null = $CheckSudoStatusScript.Add('echo checkSudoComplete')
+
+    $SSHScriptBuilderSplatParams = @{
+        RemoteHostNameOrIP  = $RemoteHostNameOrIP
+    }
+    if ($LocalUserName) {
+        $null = $SSHScriptBuilderSplatParams.Add('LocalUserName',$LocalUserName)
+    }
+    if ($DomainUserName) {
+        $null = $SSHScriptBuilderSplatParams.Add('DomainUserName',$DomainUserName)
+    }
+    if ($LocalPassword) {
+        $null = $SSHScriptBuilderSplatParams.Add('LocalPassword',$LocalPassword)
+    }
+    if ($DomainPassword) {
+        $null = $SSHScriptBuilderSplatParams.Add('DomainPassword',$DomainPassword)
+    }
+
+    if ($OnWindows) {
+        $null = $SSHScriptBuilderSplatParams.Add('WindowsWaitTimeMin',[float]'.25')
+    }
+        
+    $null = $SSHScriptBuilderSplatParams.Add('SSHScriptArray',$CheckSudoStatusScript)
+
+    $Output = SSHScriptBuilder @SSHScriptBuilderSplatParams
+    
+    if ($Output.AllOutput -match 'NoPasswordPrompt') {
+        [pscustomobject]@{
+            HasSudoPrivileges   = $True
+            PasswordPrompt      = $False
+            AllOutput           = $Output.AllOutput
+        }
+    }
+    elseif ($Output.AllOutput -match 'PasswordPrompt') {
+        [pscustomobject]@{
+            HasSudoPrivileges   = $True
+            PasswordPrompt      = $True
+            AllOutput           = $Output.AllOutput
+        }
+    }
+    elseif ($Output.AllOutput -match 'NoSudoPrivileges') {
+        [pscustomobject]@{
+            HasSudoPrivileges   = $False
+            PasswordPrompt      = $False
+            AllOutput           = $Output.AllOutput
+        }
+    }
+
+    #endregion >> Main
+}
+
+
+<#
+    .SYNOPSIS
         Edits /etc/sudoers to allow the specified user to run 'sudo pwsh' without needing to enter a sudo password.
 
     .DESCRIPTION
@@ -2581,32 +2932,32 @@ function Get-SSHProbe {
     .EXAMPLE
         # Minimal parameters...
 
-        $GetSSHProbeSplatParams = @{
+        $RemoveSudoPwdSplatParams = @{
             RemoteHostNameOrIP      = "zerowin16sshb"
             DomainUserNameSS        = "zero\zeroadmin"
             DomainPasswordSS        = $(Read-Host -Prompt "Enter password" -AsSecureString)
         }
-        Get-SSHProbe @GetSSHProbeSplatParams
+        Remove-SudoPwd @RemoveSudoPwdSplatParams
 
     .EXAMPLE
         # Using a local account on the Remote Host...
 
-        $GetSSHProbeSplatParams = @{
+        $RemoveSudoPwdSplatParams = @{
             RemoteHostNameOrIP      = "centos7nodomain"
             LocalUserNameSS         = "centos7nodomain\vagrant"
             LocalPasswordSS         = $(Read-Host -Prompt "Enter password" -AsSecureString)
         }
-        Get-SSHProbe @GetSSHProbeSplatParams
+        Remove-SudoPwd @RemoveSudoPwdSplatParams
 
     .EXAMPLE
         # Using an ssh Key File instead of a password...
 
-        $GetSSHProbeSplatParams = @{
+        $RemoveSudoPwdSplatParams = @{
             RemoteHostNameOrIP      = "centos7nodomain"
             LocalUserNameSS         = "centos7nodomain\vagrant"
             KeyFilePath             = $HOME/.ssh/my_ssh_key
         }
-        Get-SSHProbe @GetSSHProbeSplatParams
+        Remove-SudoPwd @RemoveSudoPwdSplatParams
         
 #>
 function Remove-SudoPwd {
@@ -2837,8 +3188,6 @@ function Remove-SudoPwd {
         $null = $SSHScriptBuilderSplatParams.Add('DomainPassword',$DomainPassword)
     }
 
-    $OnWindows = !$PSVersionTable.Platform -or $PSVersionTable.Platform -eq "Win32NT"
-
     if ($OnWindows) {
         $null = $SSHScriptBuilderSplatParams.Add('WindowsWaitTimeMin',1)
     }
@@ -2892,6 +3241,7 @@ if ($PSVersionTable.Platform -eq "Win32NT" -and $PSVersionTable.PSEdition -eq "C
     ${Function:TestIsValidIPAddress}.Ast.Extent.Text
     ${Function:Bootstrap-PowerShellCore}.Ast.Extent.Text
     ${Function:Get-SSHProbe}.Ast.Extent.Text
+    ${Function:Get-SudoStatus}.Ast.Extent.Text
     ${Function:Remove-SudoPwd}.Ast.Extent.Text
 )
 
@@ -3132,8 +3482,8 @@ puts "Run `brew help` to get started"
 # SIG # Begin signature block
 # MIIMiAYJKoZIhvcNAQcCoIIMeTCCDHUCAQExCzAJBgUrDgMCGgUAMGkGCisGAQQB
 # gjcCAQSgWzBZMDQGCisGAQQBgjcCAR4wJgIDAQAABBAfzDtgWUsITrck0sYpfvNR
-# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUaQZkpQ/snIZbdbrkOcmiCiLe
-# xtGgggn9MIIEJjCCAw6gAwIBAgITawAAAB/Nnq77QGja+wAAAAAAHzANBgkqhkiG
+# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUMKCcX8gItJIdph8nK337lLVL
+# spagggn9MIIEJjCCAw6gAwIBAgITawAAAB/Nnq77QGja+wAAAAAAHzANBgkqhkiG
 # 9w0BAQsFADAwMQwwCgYDVQQGEwNMQUIxDTALBgNVBAoTBFpFUk8xETAPBgNVBAMT
 # CFplcm9EQzAxMB4XDTE3MDkyMDIxMDM1OFoXDTE5MDkyMDIxMTM1OFowPTETMBEG
 # CgmSJomT8ixkARkWA0xBQjEUMBIGCgmSJomT8ixkARkWBFpFUk8xEDAOBgNVBAMT
@@ -3190,11 +3540,11 @@ puts "Run `brew help` to get started"
 # ARkWA0xBQjEUMBIGCgmSJomT8ixkARkWBFpFUk8xEDAOBgNVBAMTB1plcm9TQ0EC
 # E1gAAAH5oOvjAv3166MAAQAAAfkwCQYFKw4DAhoFAKB4MBgGCisGAQQBgjcCAQwx
 # CjAIoAKAAKECgAAwGQYJKoZIhvcNAQkDMQwGCisGAQQBgjcCAQQwHAYKKwYBBAGC
-# NwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFIb1FriGKhuaIcEi
-# ECQqb5URm0rbMA0GCSqGSIb3DQEBAQUABIIBAMN7gYJikIrrg44s9J+1ow+qr1UL
-# Mj2UalAE30xxpO0IsKzPtS9MUc5bP5u+/+9ka8AJ2l6UK5TXs6koPoeFn3kKK4NX
-# l3KMZpODh3IHu2JPCN8kpS/78UjZfQy5O6+QlffWpNgq/nzh3nfjWUtNeGT7OCOw
-# t6O3yOodf3DqfLrOTEsdjATz2pPaFa2MI84Q0ylRV8W/zVnPs9lEZ8QFay4yjJHu
-# zacNZJCel+NRKXiotXlhxFMyn1demivQTASCaKCluhm3o3Qhx04nMRu0uhnrorlp
-# wGfdHq49rvMJE5hQ8fpCG7JqMgZuEtzsOHHcgBs6Oo0Q9sabeGLZSydeUIc=
+# NwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFF4GdF/o07Nrbs3n
+# DNJ+tVvA4ENjMA0GCSqGSIb3DQEBAQUABIIBAJ+Hl5GEsZI7eu61RWAisth6F0tg
+# g07oas90Nlp29bOkMTvAjkgARZct1qWl/zMDsAQqK9c/NyPmAXHbz0/aT2q7xw/P
+# I1eJNgyPwQOaodSIjihO8H+3kFBgqbb4rkrbxFYwsT64IVWcD42TDb6uPGO9uClD
+# InvWAEu2IwdB/XxXSEssZjO9p/iEdFD8HiwJucZ7bp7Z19yBooIsay0zxlLkx0EI
+# R5yXwE5rhSHWEOpd0YiG0ia9oJvt9trvKkTiNATaHbM1+hYQQqxqqhv+hiblb9nj
+# aMydVZAG4i/RD5hZ++psGaFU6xrrs/EW7oMFYjVhMXlQxhqK5DestqeyxxM=
 # SIG # End signature block

@@ -1,5 +1,9 @@
 # Change log
 
+## 1.0.2 (October 15, 2018)
+
+- Added Remove-SudoPwd and Get-SudoStatus functions
+
 ## 1.0.1 (October 15, 2018)
 
 - Fixed typo with Raspbian Package Url regex

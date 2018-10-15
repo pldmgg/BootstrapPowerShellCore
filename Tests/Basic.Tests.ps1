@@ -70,6 +70,7 @@ Describe -Name "General Project Validation: $env:BHProjectName" -Tag 'Validation
         $Commands -contains 'TestIsValidIPAddress' | Should Be $False
         $Commands -contains 'Bootstrap-PowerShellCore' | Should Be $True
         $Commands -contains 'Get-SSHProbe' | Should Be $True
+        $Commands -contains 'Get-SudoStatus' | Should Be $True
         $Commands -contains 'Remove-SudoPwd' | Should Be $True
     }
 
@@ -92,8 +93,8 @@ Describe -Name "General Project Validation: $env:BHProjectName" -Tag 'Validation
 # SIG # Begin signature block
 # MIIMiAYJKoZIhvcNAQcCoIIMeTCCDHUCAQExCzAJBgUrDgMCGgUAMGkGCisGAQQB
 # gjcCAQSgWzBZMDQGCisGAQQBgjcCAR4wJgIDAQAABBAfzDtgWUsITrck0sYpfvNR
-# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUn7IDWYgQ0MNWcrhXs2LOW1l4
-# zK6gggn9MIIEJjCCAw6gAwIBAgITawAAAB/Nnq77QGja+wAAAAAAHzANBgkqhkiG
+# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQU/g79fO8LoUCnksnUmVGzgCcF
+# PXWgggn9MIIEJjCCAw6gAwIBAgITawAAAB/Nnq77QGja+wAAAAAAHzANBgkqhkiG
 # 9w0BAQsFADAwMQwwCgYDVQQGEwNMQUIxDTALBgNVBAoTBFpFUk8xETAPBgNVBAMT
 # CFplcm9EQzAxMB4XDTE3MDkyMDIxMDM1OFoXDTE5MDkyMDIxMTM1OFowPTETMBEG
 # CgmSJomT8ixkARkWA0xBQjEUMBIGCgmSJomT8ixkARkWBFpFUk8xEDAOBgNVBAMT
@@ -150,11 +151,11 @@ Describe -Name "General Project Validation: $env:BHProjectName" -Tag 'Validation
 # ARkWA0xBQjEUMBIGCgmSJomT8ixkARkWBFpFUk8xEDAOBgNVBAMTB1plcm9TQ0EC
 # E1gAAAH5oOvjAv3166MAAQAAAfkwCQYFKw4DAhoFAKB4MBgGCisGAQQBgjcCAQwx
 # CjAIoAKAAKECgAAwGQYJKoZIhvcNAQkDMQwGCisGAQQBgjcCAQQwHAYKKwYBBAGC
-# NwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFM/dLgp436JmqWJI
-# wdAJaOldQOwqMA0GCSqGSIb3DQEBAQUABIIBABZwtWwQsNgaQUT0Fz7DvNnS3cSB
-# eW+8n1432HJQpqzhAxVn+3lgq4wGTzRO7yvlvyXDNfLDs3zUlJUmOXTgpudHW1x/
-# Xtv7oW1aOZc9bMIsWcaoGE9ZtfdlEYJ/pqaQ4hshdnfMChYO0HTvYa+8hBPu2ZfP
-# ksgfzlfmn7IcddQiKU9c93I2K8nF3dKuoIUfqHbxPHLWm2o7QVe8kinekjKb3n54
-# vA1raLxB7jj+zSQPB+b7aNyMvv15FcU9kbojyuq9LNU+hFkkZOtX7i533IxAkr2+
-# 4aU3kiL9/L50ksu4FYo3Jh9G7L9GPyzPEDLFm0ZqajmQIPKcRlnR7xjtcXc=
+# NwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFPBrf7Pht3WYj7W0
+# fOdXNxgpNcBYMA0GCSqGSIb3DQEBAQUABIIBADo8WjLcyKn5fhSbzKdSF6mMfnkq
+# QlRLiPS8SEfKByeOzGVPVd4LrNdTLdveTeC+zHNnZOO+Ll8qdMvYX2aV7lniof6Q
+# vPLtc3wdmuNppwpjA1SARKEXQrGVIKpv87q0dIVwaYfRslWFVMiA79wLuhAmOfBE
+# GEXgvNUZc0VSUtR9eu8AWgGb9NDeANDk6svXDPQMCYrizN30orY/Sn/607z+juwW
+# qiq58nCT3FSr+nIm2PaY1JvAm8DsrLRrEck78luY8/COC7XVOloomCWZOFmAqzl1
+# StWQuS4HnWojzIQX0sWPwYrEjo2/YjnsZLlZ2UmLusb9QsoUw7cc2r2WofA=
 # SIG # End signature block

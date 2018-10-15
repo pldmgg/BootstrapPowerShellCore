@@ -52,7 +52,7 @@ function SSHScriptBuilder {
         [int]$PwdPromptDelaySeconds,
 
         [Parameter(Mandatory=$False)]
-        [int]$WindowsWaitTimeMin = 2,
+        [float]$WindowsWaitTimeMin = 2,
 
         [Parameter(Mandatory=$False)]
         [switch]$WindowsTarget
@@ -816,7 +816,7 @@ function SSHScriptBuilder {
             $SSHOutputPrep = $($CheckResponsesOutput | Out-String) -split "`n"
         }
 
-        Write-Host "Waiting for up to $WindowsWaitTimeMin minutes for install/config to finish..."
+        Write-Host "Waiting for up to $WindowsWaitTimeMin minutes for operation to finish..."
         Start-Sleep -Seconds $($WindowsWaitTimeMin*60)
 
         if ($PSAwaitProcess.Id) {
@@ -1036,8 +1036,8 @@ function SSHScriptBuilder {
 # SIG # Begin signature block
 # MIIMiAYJKoZIhvcNAQcCoIIMeTCCDHUCAQExCzAJBgUrDgMCGgUAMGkGCisGAQQB
 # gjcCAQSgWzBZMDQGCisGAQQBgjcCAR4wJgIDAQAABBAfzDtgWUsITrck0sYpfvNR
-# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUInwF9kV4fvg/69PnQJzYTUw3
-# YYqgggn9MIIEJjCCAw6gAwIBAgITawAAAB/Nnq77QGja+wAAAAAAHzANBgkqhkiG
+# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUwAqWzI8gGoSTwiHea0E+doBK
+# xjigggn9MIIEJjCCAw6gAwIBAgITawAAAB/Nnq77QGja+wAAAAAAHzANBgkqhkiG
 # 9w0BAQsFADAwMQwwCgYDVQQGEwNMQUIxDTALBgNVBAoTBFpFUk8xETAPBgNVBAMT
 # CFplcm9EQzAxMB4XDTE3MDkyMDIxMDM1OFoXDTE5MDkyMDIxMTM1OFowPTETMBEG
 # CgmSJomT8ixkARkWA0xBQjEUMBIGCgmSJomT8ixkARkWBFpFUk8xEDAOBgNVBAMT
@@ -1094,11 +1094,11 @@ function SSHScriptBuilder {
 # ARkWA0xBQjEUMBIGCgmSJomT8ixkARkWBFpFUk8xEDAOBgNVBAMTB1plcm9TQ0EC
 # E1gAAAH5oOvjAv3166MAAQAAAfkwCQYFKw4DAhoFAKB4MBgGCisGAQQBgjcCAQwx
 # CjAIoAKAAKECgAAwGQYJKoZIhvcNAQkDMQwGCisGAQQBgjcCAQQwHAYKKwYBBAGC
-# NwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFPwjeabyvze9uPYx
-# w3R+wpGleGeuMA0GCSqGSIb3DQEBAQUABIIBAKf4AUIYlxhetGgG0TMAt9HerOW0
-# NXPrUHJAsbOC4difU+ztYj5kwXX3oBpTjInEzsOqfSF1xHNHGggcoFg5ZnlWaNss
-# qUv6x10UY7OLgVlJy1baApSkSu8V++C1RsYr67GV3cco0bEcxfUFvqBu2iIfvnN9
-# vpM9h68Hojj8bhxsYALSIVkXFUJ+IbOckymdwn4WWGfZHz3XVJ1VSZd29UcSC//7
-# QUMTDZq8kmj7tbg6kICBTCfrNEsS942i1H0UqxdRnKzIY1eLBTiqKp0evnRRg9Yv
-# JAhhEWJMngbBimPVJneHaHvPK6ktu02Ugqvo/u6pe3zxMq+jcDwkoND+GM4=
+# NwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFD4dFcEFHmjufd0C
+# 3qz+TbtAvM0jMA0GCSqGSIb3DQEBAQUABIIBAH5GXGXYF737sU7lSzPu+pYErXMe
+# V8eXoP52/z0hFvUAbjYiG/t4NulXHx5pQIuF7PcDZ5Byu/1lpv6N1vtKnXrW4aHP
+# RHOHr1SaKOdR9/TqcyXZbMj8rDhQwsqYuQbII3SDav3D8CQc82bfPeBNBby6NbpS
+# Mhar579AcToWSryVGYhRwZ6qgsyt727IoDMNoJdP8AAhFF+/+w68bYm3GQ/1OupL
+# 3a8V5nV9wf9ud92NdV0S0BEu8Pf3xQ5B3IckLQ1/2nVorDevjRnmgRG4V/LeH5O2
+# 2v9ZvT7bkLb98wJQgbwdf+rzIijMttKkW0eFvOeYOqAa9bgEgcWwE3PUH0o=
 # SIG # End signature block

@@ -1,6 +1,9 @@
 <#
     .SYNOPSIS
-        Edits /etc/sudoers to allow the specified user to run 'sudo pwsh' without needing to enter a sudo password.
+        Determines if the specified user has sudo privileges on a Remote Host, and if so, whether or not they are prompted for a
+        sudo password when running 'sudo pwsh'.
+
+        Returns a pscustomobject with bool properties 'HasSudoPrivileges' and 'PasswordPrompt'.
 
     .DESCRIPTION
         See SYNOPSIS
@@ -43,35 +46,35 @@
     .EXAMPLE
         # Minimal parameters...
 
-        $RemoveSudoPwdSplatParams = @{
+        $GetSudoStatusSplatParams = @{
             RemoteHostNameOrIP      = "zerowin16sshb"
             DomainUserNameSS        = "zero\zeroadmin"
             DomainPasswordSS        = $(Read-Host -Prompt "Enter password" -AsSecureString)
         }
-        Remove-SudoPwd @RemoveSudoPwdSplatParams
+        Get-SudoStatus @GetSudoStatusSplatParams
 
     .EXAMPLE
         # Using a local account on the Remote Host...
 
-        $RemoveSudoPwdSplatParams = @{
+        $GetSudoStatusSplatParams = @{
             RemoteHostNameOrIP      = "centos7nodomain"
             LocalUserNameSS         = "centos7nodomain\vagrant"
             LocalPasswordSS         = $(Read-Host -Prompt "Enter password" -AsSecureString)
         }
-        Remove-SudoPwd @RemoveSudoPwdSplatParams
+        Get-SudoStatus @GetSudoStatusSplatParams
 
     .EXAMPLE
         # Using an ssh Key File instead of a password...
 
-        $RemoveSudoPwdSplatParams = @{
+        $GetSudoStatusSplatParams = @{
             RemoteHostNameOrIP      = "centos7nodomain"
             LocalUserNameSS         = "centos7nodomain\vagrant"
             KeyFilePath             = $HOME/.ssh/my_ssh_key
         }
-        Remove-SudoPwd @RemoveSudoPwdSplatParams
+        Get-SudoStatus @GetSudoStatusSplatParams
         
 #>
-function Remove-SudoPwd {
+function Get-SudoStatus {
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory=$True)]
@@ -260,31 +263,17 @@ function Remove-SudoPwd {
 
     #region >> Main
 
-    # cat /etc/sudoers | grep -Eic 'Cmnd_Alias SUDO_PWSH = /bin/pwsh' > /dev/null && echo present || echo absent
-    [System.Collections.ArrayList]$UpdateSudoersScript = @(
-        'pscorepath=$(command -v pwsh)'
-        "cat /etc/sudoers | grep -Eic 'Cmnd_Alias SUDO_PWSH =' > /dev/null && echo present || echo 'Cmnd_Alias SUDO_PWSH = '`"`$pscorepath`" | sudo EDITOR='tee -a' visudo"
-        "cat /etc/sudoers | grep -Eic 'Defaults!SUDO_PWSH !requiretty' > /dev/null && echo present || echo 'Defaults!SUDO_PWSH !requiretty' | sudo EDITOR='tee -a' visudo"
+    $PSVerTablePwshBytes = [System.Text.Encoding]::Unicode.GetBytes('$PSVersionTable')
+    $EncodedCommand = [Convert]::ToBase64String($PSVerTablePwshBytes)
+
+    [System.Collections.ArrayList]$CheckSudoStatusScript = @(
+        $('prompt=$(sudo -n pwsh -EncodedCommand {0} 2>&1)' -f $EncodedCommand)
+        $('if [ $? -eq 0 ]; then echo {0}; elif echo $prompt | grep -q {1}; then echo {2}; else echo {3}; fi' -f "'NoPasswordPrompt'","'^sudo'","'PasswordPrompt'","'NoSudoPrivileges'")
     )
-    if ($DomainUserName) {
-        if (!$OnWindows) {
-            $AddUserString = "cat /etc/sudoers | grep -Eic '\%$DomainNameShort..$FullUserName ALL=\(ALL\) NOPASSWD: SUDO_PWSH' > " +
-            "/dev/null && echo present || echo '%$DomainNameShort\\\$FullUserName ALL=(ALL) NOPASSWD: SUDO_PWSH' | sudo EDITOR='tee -a' visudo"
-        }
-        else {
-            $AddUserString = "cat /etc/sudoers | grep -Eic '\%$DomainNameShort..$FullUserName ALL=\(ALL\) NOPASSWD: SUDO_PWSH' > " +
-            "/dev/null && echo present || echo '%$DomainNameShort\\$FullUserName ALL=(ALL) NOPASSWD: SUDO_PWSH' | sudo EDITOR='tee -a' visudo"
-        }
-    }
-    if ($LocalUserName) {
-        $AddUserString = "cat /etc/sudoers | grep -Eic '$FullUserName ALL=\(ALL\) NOPASSWD: SUDO_PWSH' > " +
-        "/dev/null && echo present || echo '$FullUserName ALL=(ALL) NOPASSWD: SUDO_PWSH' | sudo EDITOR='tee -a' visudo"
-    }
-    $null = $UpdateSudoersScript.Add($AddUserString)
-    $null = $UpdateSudoersScript.Add('echo sudoersUpdated')
+    $null = $CheckSudoStatusScript.Add('echo checkSudoComplete')
 
     $SSHScriptBuilderSplatParams = @{
-        RemoteHostNameOrIP      = $RemoteHostNameOrIP
+        RemoteHostNameOrIP  = $RemoteHostNameOrIP
     }
     if ($LocalUserName) {
         $null = $SSHScriptBuilderSplatParams.Add('LocalUserName',$LocalUserName)
@@ -300,14 +289,34 @@ function Remove-SudoPwd {
     }
 
     if ($OnWindows) {
-        $null = $SSHScriptBuilderSplatParams.Add('WindowsWaitTimeMin',1)
+        $null = $SSHScriptBuilderSplatParams.Add('WindowsWaitTimeMin',[float]'.25')
     }
         
-    $null = $SSHScriptBuilderSplatParams.Add('ElevatedSSHScriptArray',$UpdateSudoersScript)
+    $null = $SSHScriptBuilderSplatParams.Add('SSHScriptArray',$CheckSudoStatusScript)
 
-    $FinalOutput = SSHScriptBuilder @SSHScriptBuilderSplatParams
+    $Output = SSHScriptBuilder @SSHScriptBuilderSplatParams
     
-    $FinalOutput
+    if ($Output.AllOutput -match 'NoPasswordPrompt') {
+        [pscustomobject]@{
+            HasSudoPrivileges   = $True
+            PasswordPrompt      = $False
+            AllOutput           = $Output.AllOutput
+        }
+    }
+    elseif ($Output.AllOutput -match 'PasswordPrompt') {
+        [pscustomobject]@{
+            HasSudoPrivileges   = $True
+            PasswordPrompt      = $True
+            AllOutput           = $Output.AllOutput
+        }
+    }
+    elseif ($Output.AllOutput -match 'NoSudoPrivileges') {
+        [pscustomobject]@{
+            HasSudoPrivileges   = $False
+            PasswordPrompt      = $False
+            AllOutput           = $Output.AllOutput
+        }
+    }
 
     #endregion >> Main
 }
@@ -315,8 +324,8 @@ function Remove-SudoPwd {
 # SIG # Begin signature block
 # MIIMiAYJKoZIhvcNAQcCoIIMeTCCDHUCAQExCzAJBgUrDgMCGgUAMGkGCisGAQQB
 # gjcCAQSgWzBZMDQGCisGAQQBgjcCAR4wJgIDAQAABBAfzDtgWUsITrck0sYpfvNR
-# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUKFBmVTK3+2ZdE14rP0M80slj
-# s1igggn9MIIEJjCCAw6gAwIBAgITawAAAB/Nnq77QGja+wAAAAAAHzANBgkqhkiG
+# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUZXToWPzQN8uHC7EkYWKVIPrJ
+# BKWgggn9MIIEJjCCAw6gAwIBAgITawAAAB/Nnq77QGja+wAAAAAAHzANBgkqhkiG
 # 9w0BAQsFADAwMQwwCgYDVQQGEwNMQUIxDTALBgNVBAoTBFpFUk8xETAPBgNVBAMT
 # CFplcm9EQzAxMB4XDTE3MDkyMDIxMDM1OFoXDTE5MDkyMDIxMTM1OFowPTETMBEG
 # CgmSJomT8ixkARkWA0xBQjEUMBIGCgmSJomT8ixkARkWBFpFUk8xEDAOBgNVBAMT
@@ -373,11 +382,11 @@ function Remove-SudoPwd {
 # ARkWA0xBQjEUMBIGCgmSJomT8ixkARkWBFpFUk8xEDAOBgNVBAMTB1plcm9TQ0EC
 # E1gAAAH5oOvjAv3166MAAQAAAfkwCQYFKw4DAhoFAKB4MBgGCisGAQQBgjcCAQwx
 # CjAIoAKAAKECgAAwGQYJKoZIhvcNAQkDMQwGCisGAQQBgjcCAQQwHAYKKwYBBAGC
-# NwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFG6B4r9fYdg4o2aL
-# COEijSR0jFVSMA0GCSqGSIb3DQEBAQUABIIBAD+Ar3wkB+PXXkpWQrFGZEetRF0h
-# 3YybrHQv4TndzL+axVGXyFWO0vqeXUoQsYbtnYYKdUeNGVvE+l/g0jfXivIWkjHJ
-# O2pICc25g8XGlNQC7qXpCXvsLINssbwH7Sp2pudBD9/dlIGsJuwQ1o86T8ffJgFf
-# 2KDZ91QQThILv2eCxOhfPzQLSzRC7YrvrLcbWC5sa6kYGgTHp+itnp3Bva665xWJ
-# fhoLQjTfvK8BB8wseNZRXMvqQPgN3aHW2jN9ZU0MJqdzR0Nue4NKWebVhRwihbtT
-# LwNGJIgBeqfyK7XbSyJlW+evzW8danhf0frIFNacMxVCTG/yZvnrAby6yks=
+# NwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFIm/sUM6SSCNeeZC
+# PbMaCwxgbWvJMA0GCSqGSIb3DQEBAQUABIIBAJwnITTTKbwEVD1b1wQyhNh9Sjwq
+# FF316pFN/48m+9T8WDcmC9KmVJuMWy5xXhPcUMvtuqBv4vH8VTbeL+6Rm8VeD9du
+# R8XDmZyGCHq2Sgwdohs9QRbea8QcWX4Lz2uDFwNit9ENXVFG3SaIGCIQ9zKI5NBI
+# m66SQtQLmtnzqFlISlyDMrCIZ1RSISTjsMIVH5j8cmNf7DNO4S+eRPxXm5o/wDzR
+# mPknQJJMxDNOaBsI45xO+2bT4W6AKjy7ruRp4G+Lc/xmtZ6CoILgwXk/DqfJD+G7
+# GbKMSVmz9w2QaVRofL61v9+BPfiX/41+m6ihOx24pSjPN5LImFUiF3GxFvw=
 # SIG # End signature block
