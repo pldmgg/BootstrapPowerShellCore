@@ -294,412 +294,45 @@ function Bootstrap-PowerShellCore {
         }
     }
 
-    # Windows Install Info
-    [System.Collections.ArrayList]$WindowsPMInstallScriptPrep = @(
-        'try {'
-        "    if (`$(Get-Module -ListAvailable).Name -notcontains 'ProgramManagement') {`$null = Install-Module ProgramManagement -ErrorAction Stop}"
-        "    if (`$(Get-Module).Name -notcontains 'ProgramManagement') {`$null = Import-Module ProgramManagement -ErrorAction Stop}"
-        '    $null = Uninstall-Program -ProgramName powershell-core -ErrorAction SilentlyContinue'
-        '    $InstallPwshResult = Install-Program -ProgramName powershell-core -CommandName pwsh.exe -ExpectedInstallLocation "$env:ProgramFiles\PowerShell"'
-        '    if (!$InstallPwshResult.MainExecutable) {throw "Unable to find pwsh.exe after successful installation!"}'
-        '    $RegistrySystemPath = "HKLM:\System\CurrentControlSet\Control\Session Manager\Environment"'
-        '    $CurrentSystemPath = $(Get-ItemProperty -Path $RegistrySystemPath -Name PATH).Path'
-        '    [System.Collections.Arraylist][array]$CurrentSystemPathArray = $CurrentSystemPath -split ";" | Where-Object {![System.String]::IsNullOrWhiteSpace($_)} | Sort-Object | Get-Unique'
-        '    $PwshParentDir = $InstallPwshResult.MainExecutable | Split-Path -Parent'
-        '    if ($CurrentSystemPathArray -notcontains $PwshParentDir) {'
-        '        $CurrentSystemPathArray.Insert(0,$PwshParentDir)'
-        '        $UpdatedSystemPath = $CurrentSystemPathArray -join ";"'
-        '        Set-ItemProperty -Path $RegistrySystemPath -Name PATH -Value $UpdatedSystemPath'
-        '    }'
-        '} catch {'
-        '    Write-Error $_'
-        "    `$global:FunctionResult = '1'"
-        '    return'
-        '}'
-        'echo powershellInstallComplete'
-    )
-    $InstallPwshBytes = [System.Text.Encoding]::Unicode.GetBytes($($WindowsPMInstallScriptPrep -join "`n"))
-    $EncodedCommandInstallPwsh = [Convert]::ToBase64String($InstallPwshBytes)
-    [System.Collections.ArrayList]$WindowsPMInstallScript = @("powershell -NoProfile -EncodedCommand $EncodedCommandInstallPwsh")
-
-    [System.Collections.ArrayList]$WindowsManualInstallScriptPrep = @(
-        "`$OutFilePath = Join-Path `$HOME 'Downloads\$Win64PackageName'"
-        "Invoke-WebRequest -Uri $Win64PackageUrl -OutFile `$OutFilePath"
-        '$DateStamp = Get-Date -Format yyyyMMddTHHmmss'
-        '$MSIFullPath = $OutFilePath'
-        '$MSIParentDir = $MSIFullPath | Split-Path -Parent'
-        '$MSIFileName = $MSIFullPath | Split-Path -Leaf'
-        "`$MSIFileNameOnly = `$MSIFileName -replace [regex]::Escape('.msi'),''"
-        "`$logFile = Join-Path `$MSIParentDir (`$MSIFileNameOnly + `$DateStamp + '.log')"
-        '$MSIArguments = @('
-        "    '/i'"
-        '    $MSIFullPath'
-        "    '/qn'"
-        "    '/norestart'"
-        "    '/L*v'"
-        '    $logFile'
-        ')'
-        'Start-Process msiexec.exe -ArgumentList $MSIArguments -Wait -NoNewWindow'
-        'echo powershellInstallComplete'
-    )
-    $InstallPwshBytes = [System.Text.Encoding]::Unicode.GetBytes($($WindowsManualInstallScriptPrep -join "`n"))
-    $EncodedCommandInstallPwsh = [Convert]::ToBase64String($InstallPwshBytes)
-    [System.Collections.ArrayList]$WindowsManualInstallScript = @("powershell -NoProfile -EncodedCommand $EncodedCommandInstallPwsh")
-
-    [System.Collections.ArrayList]$WindowsUninstallScript = @(
-        'try {'
-        '    if ($(Get-Module -ListAvailable).Name -notcontains "ProgramManagement") {$null = Install-Module ProgramManagement -ErrorAction Stop}'
-        '    if ($(Get-Module).Name -notcontains "ProgramManagement") {$null = Import-Module ProgramManagement -ErrorAction Stop}'
-        '    Install-Program -ProgramName powershell-core -CommandName pwsh.exe'
-        '} catch {'
-        '    Write-Error $_'
-        '    $global:FunctionResult = "1"'
-        '    return'
-        '}'
-        'try {'
-        '    Uninstall-Program -ProgramName powershell-core -ErrorAction Stop'
-        '} catch {'
-        '    Write-Error $_'
-        '    $global:FunctionResult = "1"'
-        '    return'
-        '}'
-        'echo pwshConfigComplete'
-    )
-    $InstallPwshBytes = [System.Text.Encoding]::Unicode.GetBytes($($WindowsUninstallScript -join "`n"))
-    $EncodedCommandInstallPwsh = [Convert]::ToBase64String($InstallPwshBytes)
-    [System.Collections.ArrayList]$WindowsUninstallScript = @("powershell -NoProfile -EncodedCommand $EncodedCommandInstallPwsh")
-
-    [System.Collections.ArrayList]$WindowsPwshRemotingScript = @(
-        'try {'
-        "    if (`$(Get-Module -ListAvailable).Name -notcontains 'WinSSH') {`$null = Install-Module WinSSH -ErrorAction Stop}"
-        "    if (`$(Get-Module).Name -notcontains 'WinSSH') {`$null = Import-Module WinSSH -ErrorAction Stop}"
-        '    Install-WinSSH -GiveWinSSHBinariesPathPriority -ConfigureSSHDOnLocalHost -DefaultShell pwsh'
-        '} catch {'
-        '    Write-Error $_'
-        "    `$global:FunctionResult = '1'"
-        '    return'
-        '}'
-    )
-    $InstallPwshBytes = [System.Text.Encoding]::Unicode.GetBytes($($WindowsPwshRemotingScript -join "`n"))
-    $EncodedCommandInstallPwsh = [Convert]::ToBase64String($InstallPwshBytes)
-    [System.Collections.ArrayList]$WindowsPwshRemotingScript = @("powershell -NoProfile -EncodedCommand $EncodedCommandInstallPwsh")
-
-    $Windows = [pscustomobject]@{
-        PackageManagerInstallScript = $WindowsPMInstallScript
-        ManualInstallScript         = $WindowsManualInstallScript
-        UninstallScript             = $WindowsUninstallScript
-        ConfigurePwshRemotingScript = $WindowsPwshRemotingScript
-    }
-
-    # Pwsh PSRemoting Scripts targeting every platform except Windows and MacOS
-    [System.Collections.ArrayList]$LinuxPwshRemotingScript = @(
-        "if echo `$(cat /etc/ssh/sshd_config | grep -c '^Subsystem powershell') > /dev/null -gt 0; then sed -i '/^Subsystem powershell/d' /etc/ssh/sshd_config; fi"
-        'pscorepath=$(command -v pwsh)'
-        'if test -z $pscorepath; then echo pwshNotFound && exit 1; fi'
-        'subsystemline=$(echo "Subsystem powershell $pscorepath -sshs -NoLogo -NoProfile")'
-        'sed -i "s|sftp-server|sftp-server\n$subsystemline|" /etc/ssh/sshd_config'
-        'systemctl restart sshd'
-    )
-
-    # Pwsh PSRemoting Scripts for MacOS target
-    [System.Collections.ArrayList]$MacPwshRemotingScript = @(
-        "cat /etc/ssh/sshd_config | grep -Eic 'Subsystem.*powershell' > /dev/null && echo sed -i '' '/^Subsystem powershell/d' /etc/ssh/sshd_config || echo false"
-        'command -v pwsh > /dev/null && echo true || echo pwshNotFound'
-        "sed -i '' -e 's/sftp-server/\'`$'\nSubsystem powershell \/usr\/local\/bin\/pwsh -sshs -NoLogo -NoProfile/g' /etc/ssh/sshd_config"
-        "sed -i '' -e 's/libexec\/`$/libexec\/sftp-server/g' /etc/ssh/sshd_config"
-        'launchctl stop com.openssh.sshd && launchctl start com.openssh.sshd'
-    )
-
-
+    # Windows Install Scripts
+    # $Windows is a PSCustomObject containing properties: PackageManagerInstallScript, ManualInstallScript, UninstallScript, ConfigurePwshRemotingScript
+    $Windows = GetWindowsScripts -Win64PackageUrl $Win64PackageUrl -Win64PackageName $Win64PackageName
     
     # Ubuntu 14.04 Install Info
-    [System.Collections.ArrayList]$Ubuntu1404PMInstallScript = @(
-        'apt-get remove -y powershell'
-        'ls packages-microsoft-prod.deb && rm -f packages-microsoft-prod.deb'
-        'dpkg --purge packages-microsoft-prod'
-        'wget -q https://packages.microsoft.com/config/ubuntu/14.04/packages-microsoft-prod.deb'
-        'dpkg -i packages-microsoft-prod.deb'
-        'apt-get update'
-        'apt-get install -y powershell'
-    )
-
-    [System.Collections.ArrayList]$Ubuntu1404ManualInstallScript = @(
-        "wget -q $Ubuntu1404PackageUrl"
-        "dpkg -i $Ubuntu1404PackageName"
-        'apt-get install -f'
-    )
-
-    [System.Collections.ArrayList]$Ubuntu1404UninstallScript = @('apt-get remove powershell')
-
-    $Ubuntu1404 = [pscustomobject]@{
-        PackageManagerInstallScript                 = $Ubuntu1404PMInstallScript
-        ManualInstallScript                         = $Ubuntu1404ManualInstallScript
-        UninstallScript                             = $Ubuntu1404UninstallScript
-        ConfigurePwshRemotingScript                 = $LinuxPwshRemotingScript
-    }
+    $Ubuntu1404 = GetUbuntu1404Scripts -Ubuntu1404PackageUrl $Ubuntu1404PackageUrl -Ubuntu1404PackageName $Ubuntu1404PackageName
 
     # Ubuntu 16.04 Install Info
-    [System.Collections.ArrayList]$Ubuntu1604PMInstallScript = @(
-        'apt-get remove -y powershell'
-        'ls packages-microsoft-prod.deb && rm -f packages-microsoft-prod.deb'
-        'dpkg --purge packages-microsoft-prod'
-        'wget -q https://packages.microsoft.com/config/ubuntu/16.04/packages-microsoft-prod.deb'
-        'dpkg -i packages-microsoft-prod.deb'
-        'apt-get update'
-        'apt-get install -y powershell'
-    )
-
-    [System.Collections.ArrayList]$Ubuntu1604ManualInstallScript = @(
-        "wget -q $Ubuntu1604PackageUrl"
-        "dpkg -i $Ubuntu1604PackageName"
-        'apt-get install -f'
-    )
-
-    [System.Collections.ArrayList]$Ubuntu1604UninstallScript = @('apt-get remove powershell')
-
-    $Ubuntu1604 = [pscustomobject]@{
-        PackageManagerInstallScript                 = $Ubuntu1604PMInstallScript
-        ManualInstallScript                         = $Ubuntu1604ManualInstallScript
-        UninstallScript                             = $Ubuntu1604UninstallScript
-        ConfigurePwshRemotingScript                 = $LinuxPwshRemotingScript
-    }
+    $Ubuntu1604 = GetUbuntu1604Scripts -Ubuntu1604PackageUrl $Ubuntu1604PackageUrl -Ubuntu1604PackageName $Ubuntu1604PackageName
 
     # Ubuntu 18.04 Install Info
-    [System.Collections.ArrayList]$Ubuntu1804PMInstallScript = @(
-        'apt-get remove -y powershell'
-        'ls packages-microsoft-prod.deb && rm -f packages-microsoft-prod.deb'
-        'dpkg --purge packages-microsoft-prod'
-        'wget -q https://packages.microsoft.com/config/ubuntu/18.04/packages-microsoft-prod.deb'
-        'dpkg -i packages-microsoft-prod.deb'
-        'apt-get update'
-        'apt-get install -y powershell'
-    )
-
-    [System.Collections.ArrayList]$Ubuntu1804ManualInstallScript = @(
-        "wget -q $Ubuntu1804PackageUrl"
-        "dpkg -i $Ubuntu1804PackageName"
-        'apt-get install -f'
-    )
-
-    [System.Collections.ArrayList]$Ubuntu1804UninstallScript = @('apt-get remove powershell')
-
-    $Ubuntu1804 = [pscustomobject]@{
-        PackageManagerInstallScript                 = $Ubuntu1804PMInstallScript
-        ManualInstallScript                         = $Ubuntu1804ManualInstallScript
-        UninstallScript                             = $Ubuntu1804UninstallScript
-        ConfigurePwshRemotingScript                 = $LinuxPwshRemotingScript
-    }
+    $Ubuntu1804 = GetUbuntu1804Scripts -Ubuntu1804PackageUrl $Ubuntu1804PackageUrl -Ubuntu1804PackageName $Ubuntu1804PackageName
 
     # Debian 8 Install Info
-    [System.Collections.ArrayList]$Debian8PMInstallScript = @(
-        'apt-get remove -y powershell'
-        'apt-get install -y curl apt-transport-https ca-certificates'
-        'curl https://packages.microsoft.com/keys/microsoft.asc | sudo apt-key add -'
-        "sh -c 'echo `"deb [arch=amd64] https://packages.microsoft.com/repos/microsoft-debian-jessie-prod jessie main`" > /etc/apt/sources.list.d/microsoft.list'"
-        'apt-get update'
-        'apt-get install -y powershell'
-    )
-
-    [System.Collections.ArrayList]$Debian8ManualInstallScript = @(
-        "ls $Debian8PackageName && rm -f $Debian8PackageName"
-        "wget -q $Debian8PackageUrl"
-        "dpkg -i $Debian8PackageName"
-        'apt install -f'
-    )
-
-    [System.Collections.ArrayList]$Debian8UninstallScript = @('apt-get remove powershell')
-
-    $Debian8 = [pscustomobject]@{
-        PackageManagerInstallScript = $Debian8PMInstallScript
-        ManualInstallScript         = $Debian8ManualInstallScript
-        UninstallScript             = $Debian8UninstallScript
-        ConfigurePwshRemotingScript = $LinuxPwshRemotingScript
-    }
+    $Debian8 = GetDebian8Scripts -Debian8PackageUrl $Debian8PackageUrl -Debian8PackageName $Debian8PackageName
 
     # Debian 9 Install Info
-    $Debian9PMInstallScript = @(
-        'apt-get remove -y powershell'
-        'apt-get install -y curl gnupg apt-transport-https ca-certificates'
-        'curl https://packages.microsoft.com/keys/microsoft.asc | sudo apt-key add -'
-        "sh -c 'echo `"deb [arch=amd64] https://packages.microsoft.com/repos/microsoft-debian-stretch-prod stretch main`" > /etc/apt/sources.list.d/microsoft.list'"
-        'apt-get update'
-        'apt-get install -y powershell'
-    )
-
-    [System.Collections.ArrayList]$Debian9ManualInstallScript = @(
-        "ls $Debian9PackageName && rm -f $Debian9PackageName"
-        "wget -q $Debian9PackageUrl"
-        "dpkg -i $Debian9PackageName"
-        'apt install -f'
-    )
-
-    [System.Collections.ArrayList]$Debian9UninstallScript = @('apt-get remove powershell')
-
-    $Debian9 = [pscustomobject]@{
-        PackageManagerInstallScript                 = $Debian9PMInstallScript
-        ManualInstallScript                         = $Debian9ManualInstallScript
-        UninstallScript                             = $Debian9UninstallScript
-        ConfigurePwshRemotingScript                 = $LinuxPwshRemotingScript
-    }
+    $Debian9 = GetDebian9Scripts -Debian9PackageUrl $Debian9PackageUrl -Debian9PackageName $Debian9PackageName
 
     # CentOS 7 and RHEL 7 Install Info
-    # 'curl -s https://packages.microsoft.com/config/rhel/7/prod.repo > /etc/yum.repos.d/microsoft.repo'
-    [System.Collections.ArrayList]$CentOS7PMInstallScript = @(
-        'curl https://packages.microsoft.com/config/rhel/7/prod.repo | sudo tee /etc/yum.repos.d/microsoft.repo'
-        'yum install -y powershell'
-    )
-
-    [System.Collections.ArrayList]$CentOS7ManualInstallScript = @(
-        "yum install $CentOS7PackageUrl"
-    )
-
-    [System.Collections.ArrayList]$CentOS7UninstallScript = @('yum remove powershell')
-
-    $CentOS7 = [pscustomobject]@{
-        PackageManagerInstallScript                 = $CentOS7PMInstallScript
-        ManualInstallScript                         = $CentOS7ManualInstallScript
-        UninstallScript                             = $CentOS7UninstallScript
-        ConfigurePwshRemotingScript                 = $LinuxPwshRemotingScript
-    }
+    $CentOS7 = GetCentOS7Scripts -CentOS7PackageUrl $CentOS7PackageUrl -CentOS7PackageName $CentOS7PackageName
 
     # OpenSUSE 42.3 Install Info
-    [System.Collections.ArrayList]$OpenSUSE423PMInstallScript = @(
-        'zypper -n remove powershell'
-        'zypper --non-interactive rr microsoft'
-        'rpm --import https://packages.microsoft.com/keys/microsoft.asc'
-        'zypper --non-interactive ar --gpgcheck-allow-unsigned-repo https://packages.microsoft.com/rhel/7/prod/ microsoft'
-        'zypper --non-interactive update'
-        "rpm -ivh --nodeps $OpenSUSE423PackageUrl"
-        #"zypper -n install --force powershell"
-    )
-
-    [System.Collections.ArrayList]$OpenSUSE423ManualInstallScript = @(
-        'zypper -n remove powershell'
-        'zypper --non-interactive rr microsoft'
-        'rpm --import https://packages.microsoft.com/keys/microsoft.asc'
-        'zypper --non-interactive ar --gpgcheck-allow-unsigned-repo https://packages.microsoft.com/rhel/7/prod/ microsoft'
-        "rpm -ivh --nodeps $OpenSUSE423PackageUrl"
-        #"zypper -n install --force $OpenSUSE423PackageUrl"
-    )
-
-    [System.Collections.ArrayList]$OpenSUSE423UninstallScript = @('zypper remove powershell')
-
-    $OpenSUSE423 = [pscustomobject]@{
-        PackageManagerInstallScript                 = $OpenSUSE423PMInstallScript
-        ManualInstallScript                         = $OpenSUSE423ManualInstallScript
-        UninstallScript                             = $OpenSUSE423UninstallScript
-        ConfigurePwshRemotingScript                 = $LinuxPwshRemotingScript
-    }
+    $OpenSUSE423 = GetOpenSUSE423Scripts -OpenSUSE423PackageUrl $OpenSUSE423PackageUrl -OpenSUSE423PackageName $OpenSUSE423PackageName
 
     # Fedora Install Info
-    [System.Collections.ArrayList]$FedoraPMInstallScript = @(
-        'dnf remove powershell -y'
-        'rpm --import https://packages.microsoft.com/keys/microsoft.asc'
-        'curl https://packages.microsoft.com/config/rhel/7/prod.repo | sudo tee /etc/yum.repos.d/microsoft.repo'
-        'dnf update -y'
-        'dnf install -y compat-openssl10'
-        'dnf install -y powershell'
-    )
-
-    [System.Collections.ArrayList]$FedoraManualInstallScript = @(
-        'dnf remove powershell -y'
-        'dnf install -y compat-openssl10'
-        "dnf install -y $FedoraPackageUrl"
-    )
-
-    [System.Collections.ArrayList]$FedoraUninstallScript = @('dnf remove powershell')
-
-    $Fedora = [pscustomobject]@{
-        PackageManagerInstallScript                 = $FedoraPMInstallScript
-        ManualInstallScript                         = $FedoraManualInstallScript
-        UninstallScript                             = $FedoraUninstallScript
-        ConfigurePwshRemotingScript                 = $LinuxPwshRemotingScript
-    }
+    $Fedora = GetFedoraScripts -FedoraPackageUrl $Fedora28PackageUrl -FedoraPackageName $Fedora28PackageName
 
     # Raspbian Install Info
-    [System.Collections.ArrayList]$RaspbianManualInstallScript = @(
-        'apt install libunwind8'
-        "wget -q $LinuxGenericArmPackageUrl"
-        'mkdir ~/powershell'
-        "tar -xvf ./$LinuxGenericArmPackageName -C ~/powershell"
-    )
-
-    [System.Collections.ArrayList]$RaspbianUninstallScript = @('rm -rf ~/powershell')
-
-    $Raspbian = [pscustomobject]@{
-        PackageManagerInstallScript                 = $null
-        ManualInstallScript                         = $RaspbianManualInstallScript
-        UninstallScript                             = $RaspbianUninstallScript
-        ConfigurePwshRemotingScript                 = $LinuxPwshRemotingScript
-    }
+    $Raspbian = GetRaspbianScripts -LinuxGenericArmPackageUrl $LinuxGenericArmPackageUrl -LinuxGenericArmPackageName $LinuxGenericArmPackageName
 
     # The below Operating Systems (Arch and MacOS) are situations where some operations MUST NOT be performed
-    # using sudo and others MUST be performed using sudo. This is why some coding patterns may seem counterintuitive...
+    # using sudo and others MUST be performed using sudo.
 
     # Arch Install Info
-    [System.Collections.ArrayList]$ArchPMInstallScript = @(
-        'ls powershell-bin && rm -rf powershell-bin'
-        'git clone https://aur.archlinux.org/powershell-bin.git'
-        'cd powershell-bin'
-        'makepkg -si --noconfirm'
-    )
-
-    [System.Collections.ArrayList]$ArchUninstallScript = @('pacman -Rcn powershell-bin --noconfirm')
-
-    $Arch = [pscustomobject]@{
-        PackageManagerInstallScript                 = $ArchPMInstallScript
-        ManualInstallScript                         = $ArchPMInstallScript
-        UninstallScript                             = $ArchUninstallScript
-        ConfigurePwshRemotingScript                 = $LinuxPwshRemotingScript
-    }
+    $Arch = GetArchScripts
 
     # MacOS Install Info
-    <#
-    $MacBrewInstall = @'
-        usrlocaldir=$(echo "$HOME/usr/local")
-        if [ ! -d "$usrlocaldir" ]; then mkdir -p "$usrlocaldir"; fi
-        brewscript=$(echo "$(curl -fsSL https://gist.githubusercontent.com/skyl/36563a5be809e54dc139/raw/ad509acb9a3accc6408e184ec5e577657bdae7b3/install.rb)" | sed "s,YOUR_HOME = '',YOUR_HOME = '$HOME',g")
-        yes '' | /usr/bin/ruby -e "$brewscript"
-        export HOMEBREW_PREFIX=$usrlocaldir
-        PATH=$PATH:$HOMEBREW_PREFIX/bin
-        chown -R $USER $HOME/usr/local
-        brew update
-        brew tap caskroom/cask
-        brew install openssl
-        brew cask reinstall powershell
-    '@
-    #>
-    # Line that worked:
-    #    ssh pdadmin@192.168.2.59 "bash -c \`"usrlocaldir=\`$(echo \`"\`"\`$HOME/usr/local\`"\`"); if [ ! -d \`"\`"\`$usrlocaldir/Cellar\`"\`" ]; then mkdir -p \`"\`"\`$usrlocaldir/Cellar\`"\`"; fi; chown -R \`$USER \`$usrlocaldir; curl -fsSL https://raw.githubusercontent.com/pldmgg/BootstrapPowerShellCore/master/BootstrapPowerShellCore/Private/brewinstall.rb > ./brewinstall.rb; chmod +x ./brewinstall.rb; yes '' | ./brewinstall.rb \`$HOME\`""
-    #    "bash -c \`"checkInPath=\`$(echo \`"\`"echo \\\`$PATH \| tr ':' '\\n' \| grep -xc \`"\`"); echo \`$checkInPath\`""
-    #$BrewInstallNoSudoUrl = 'https://gist.githubusercontent.com/skyl/36563a5be809e54dc139/raw/ad509acb9a3accc6408e184ec5e577657bdae7b3/install.rb'
-    $BrewInstallNoSudoUrl = 'https://raw.githubusercontent.com/pldmgg/BootstrapPowerShellCore/master/BootstrapPowerShellCore/Private/brewinstall.rb'
-    [System.Collections.ArrayList]$MacOSPMInstallScript = @(
-        'usrlocaldir=$(echo "$HOME/usr/local")'
-        'if [ ! -d "$usrlocaldir/Cellar" ]; then mkdir -p "$usrlocaldir/Cellar"; fi'
-        'chown -R $USER $usrlocaldir'
-        'checkbrew=$(command -v brew)'
-        $('if test -z $checkbrew; then echo $PATH | tr {0} | grep -xc /usr/local/bin > /dev/null && echo true || PATH=$PATH:/usr/local/bin; fi' -f "':' '\n'")
-        'checkbrew=$(command -v brew)'
-        $('if test -z $checkbrew; then echo $PATH | tr {0} | grep -xc $usrlocaldir/bin > /dev/null && echo true || PATH=$PATH:$usrlocaldir/bin; fi' -f "':' '\n'")
-        'checkbrew=$(command -v brew)'
-        'if test -z $checkbrew; then brew cask uninstall powershell; fi'
-        $('if test -z $checkbrew; then curl -fsSL {0} > ./brewinstall.rb && chmod +x ./brewinstall.rb; fi' -f $BrewInstallNoSudoUrl)
-        "if test -z `$checkbrew; then yes '' | ./brewinstall.rb `$HOME && export HOMEBREW_PREFIX=`$usrlocaldir; fi"
-        'brew update'
-        'brew tap caskroom/cask'
-        'brew install openssl'
-        'brew cask reinstall powershell' # IMPORTANT NOTE: This will prompt for a password!
-    )
-
-    [System.Collections.ArrayList]$MacOSUninstallScript = @('brew cask uninstall powershell')
-
-    $MacOS = [pscustomobject]@{
-        PackageManagerInstallScript                 = $MacOSPMInstallScript
-        ManualInstallScript                         = $MacOSPMInstallScript
-        UninstallScript                             = $MacOSUninstallScript
-        ConfigurePwshRemotingScript                 = $MacPwshRemotingScript
-    }
+    $MacOS = GetMacOSScripts
 
     #endregion >> Prep
 
@@ -1082,8 +715,8 @@ function Bootstrap-PowerShellCore {
 # SIG # Begin signature block
 # MIIMiAYJKoZIhvcNAQcCoIIMeTCCDHUCAQExCzAJBgUrDgMCGgUAMGkGCisGAQQB
 # gjcCAQSgWzBZMDQGCisGAQQBgjcCAR4wJgIDAQAABBAfzDtgWUsITrck0sYpfvNR
-# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUCn7owx74MHbe2ieQf25AIc3l
-# Vc2gggn9MIIEJjCCAw6gAwIBAgITawAAAB/Nnq77QGja+wAAAAAAHzANBgkqhkiG
+# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQU8tymKfrMiq1KJE2MWtY+S2wq
+# fVigggn9MIIEJjCCAw6gAwIBAgITawAAAB/Nnq77QGja+wAAAAAAHzANBgkqhkiG
 # 9w0BAQsFADAwMQwwCgYDVQQGEwNMQUIxDTALBgNVBAoTBFpFUk8xETAPBgNVBAMT
 # CFplcm9EQzAxMB4XDTE3MDkyMDIxMDM1OFoXDTE5MDkyMDIxMTM1OFowPTETMBEG
 # CgmSJomT8ixkARkWA0xBQjEUMBIGCgmSJomT8ixkARkWBFpFUk8xEDAOBgNVBAMT
@@ -1140,11 +773,11 @@ function Bootstrap-PowerShellCore {
 # ARkWA0xBQjEUMBIGCgmSJomT8ixkARkWBFpFUk8xEDAOBgNVBAMTB1plcm9TQ0EC
 # E1gAAAH5oOvjAv3166MAAQAAAfkwCQYFKw4DAhoFAKB4MBgGCisGAQQBgjcCAQwx
 # CjAIoAKAAKECgAAwGQYJKoZIhvcNAQkDMQwGCisGAQQBgjcCAQQwHAYKKwYBBAGC
-# NwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFA/41XhNgCuxyu4G
-# +hZBlRMLn7NHMA0GCSqGSIb3DQEBAQUABIIBAMAcX+kgJFIL2dlydNXxrNQ8F3QZ
-# q132E9hSFEidjPl7zZAHu6Dh76vOZ65jWGyGqYzQ3hlfxrFcvG31xlwkZciN/Ar6
-# pmmsodmV/fr3tuqUUdm1oDIklLqizxAEoSWaIGMkJNhvu/T7jn5pgD68dJTzNUSL
-# M5VL9XwxpcyaFf0mKmtBytwcGwEnB7XP66/No8d+zslsNeTnqukBCUbOVZpR7myK
-# ac05N5SRyZEiAcUF7GNt0Mnj+RBVcvIdwo/ixYaZRrXEmQs4ucDb5kumUa+AbfJa
-# HI4isI24L6CCxOoyFVu3v+9Qwc1xZ4EOOBWnPKREgV+56eZGzNohGwP2mm0=
+# NwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFN6djonlBSumy80+
+# lLZtXzhF4n3aMA0GCSqGSIb3DQEBAQUABIIBACV5BLZZo8VkVNriW0yhiikGNfXD
+# FV/eOERqCwtRqm3ZD8cRXKU/7cOabO4DbyvzvCC66Mdq2Th5NZbYB7rGfUoWIr02
+# wHY/ELRNg142gtpGQtL/yNT0/ZOpji/R+WUSqHZd4wxWPeiEfE4KakBT41krCxjp
+# FHFc0nZZEaiMIN4755VrdPXi6cDjeJRqEbGHdyiaOmEnCQoAM60koWfMe8JBdbdv
+# DnzwkLJF9gk6DuOcRYPmPiU11jdOkiaNiMMqOkRf0wLnCUecFFwg6dkdKLExQ6bE
+# 85yFGo5rlQrZUpmAGNPN2Vhda2Um61MUBsEzd/yMYUjCyBMdVwAQh/PT9xE=
 # SIG # End signature block
