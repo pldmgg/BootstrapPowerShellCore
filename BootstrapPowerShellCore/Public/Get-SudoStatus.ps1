@@ -276,23 +276,26 @@ function Get-SudoStatus {
         RemoteHostNameOrIP  = $RemoteHostNameOrIP
     }
     if ($LocalUserName) {
-        $null = $SSHScriptBuilderSplatParams.Add('LocalUserName',$LocalUserName)
+        $SSHScriptBuilderSplatParams.Add('LocalUserName',$LocalUserName)
     }
     if ($DomainUserName) {
-        $null = $SSHScriptBuilderSplatParams.Add('DomainUserName',$DomainUserName)
+        $SSHScriptBuilderSplatParams.Add('DomainUserName',$DomainUserName)
+    }
+    if ($KeyFilePath) {
+        $SSHScriptBuilderSplatParams.Add("KeyFilePath",$KeyFilePath)
     }
     if ($LocalPassword) {
-        $null = $SSHScriptBuilderSplatParams.Add('LocalPassword',$LocalPassword)
+        $SSHScriptBuilderSplatParams.Add("LocalPassword",$LocalPassword)
     }
     if ($DomainPassword) {
-        $null = $SSHScriptBuilderSplatParams.Add('DomainPassword',$DomainPassword)
+        $SSHScriptBuilderSplatParams.Add("DomainPassword",$DomainPassword)
     }
-
+    
     if ($OnWindows) {
-        $null = $SSHScriptBuilderSplatParams.Add('WindowsWaitTimeMin',[float]'.25')
+        $SSHScriptBuilderSplatParams.Add('WindowsWaitTimeMin',[float]'.25')
     }
         
-    $null = $SSHScriptBuilderSplatParams.Add('SSHScriptArray',$CheckSudoStatusScript)
+    $SSHScriptBuilderSplatParams.Add('SSHScriptArray',$CheckSudoStatusScript)
 
     $Output = SSHScriptBuilder @SSHScriptBuilderSplatParams
     
@@ -324,8 +327,8 @@ function Get-SudoStatus {
 # SIG # Begin signature block
 # MIIMiAYJKoZIhvcNAQcCoIIMeTCCDHUCAQExCzAJBgUrDgMCGgUAMGkGCisGAQQB
 # gjcCAQSgWzBZMDQGCisGAQQBgjcCAR4wJgIDAQAABBAfzDtgWUsITrck0sYpfvNR
-# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUXUQHRWAsaD9XWjHoId8hjgtv
-# Qaugggn9MIIEJjCCAw6gAwIBAgITawAAAB/Nnq77QGja+wAAAAAAHzANBgkqhkiG
+# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUjtj182eihAg4z2JTXJ0Osc1/
+# YLugggn9MIIEJjCCAw6gAwIBAgITawAAAB/Nnq77QGja+wAAAAAAHzANBgkqhkiG
 # 9w0BAQsFADAwMQwwCgYDVQQGEwNMQUIxDTALBgNVBAoTBFpFUk8xETAPBgNVBAMT
 # CFplcm9EQzAxMB4XDTE3MDkyMDIxMDM1OFoXDTE5MDkyMDIxMTM1OFowPTETMBEG
 # CgmSJomT8ixkARkWA0xBQjEUMBIGCgmSJomT8ixkARkWBFpFUk8xEDAOBgNVBAMT
@@ -382,11 +385,11 @@ function Get-SudoStatus {
 # ARkWA0xBQjEUMBIGCgmSJomT8ixkARkWBFpFUk8xEDAOBgNVBAMTB1plcm9TQ0EC
 # E1gAAAH5oOvjAv3166MAAQAAAfkwCQYFKw4DAhoFAKB4MBgGCisGAQQBgjcCAQwx
 # CjAIoAKAAKECgAAwGQYJKoZIhvcNAQkDMQwGCisGAQQBgjcCAQQwHAYKKwYBBAGC
-# NwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFCxS+GzCMOi3MdwB
-# OtCXbqpeARyVMA0GCSqGSIb3DQEBAQUABIIBAF2OqqALdZFzO4eovmL9j4QWzdQN
-# 1q/zR/TJCLsgn1cDvZqwox+6lfVm1Aw9SVtEzlVGOiN3hCq1WeSMAnr/5nnc8Nw/
-# I7Hf2XVqAPvsgDKrD+UDfNBdsXnjKGYYKrL16sktc4zwhDUHmnX4BU9Ulhg7VVmo
-# 8oqAic5YVqJ5UiB19yR/XgO/8yNlpDiD951G8e58nNPDku87fcld6Cg7BlBJY0yI
-# o2k8Xq2peh2/1G7oX/0zCSc1ll+vZmHdim8NA8XMA0NTI+PAS1pGEw+yPjYp70//
-# TpkvesRd22GmhQH4PHlEwhL9Lx9ZUaeZYqzYMYX990pJGiuoqzTUVxtaUsA=
+# NwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFBPEVfbUoCEsV2aq
+# Nm/On6myhYjzMA0GCSqGSIb3DQEBAQUABIIBAJuop+fM2ZBMj6hHmMqai7P63PEA
+# FFWC03EBQRmoQUqQUXBecaKJ7G6mnEqaoAgsfg2FJ1O7ZvGc07Ca/guBqcyWj3v6
+# 3Dola+VT5QdPYSaQQfQdvLAU/fzaiCN/6SQ5P40FFrCw4iNbpOX6lDOtIFBB5m+x
+# 3NmTHljtsfk1X0W0YEPliHpPDviJQ1XwRojPIEZpX2ZcEtxBufNc0fFUwZkMqtbZ
+# twIiSDxxoKr+ru+BmbOrSJVeVZgAt2qxDbGC44DQ1fYJPALz6GE1rrXqS3FpyxGc
+# 15bhmQNfVSlVOatkcUZ3J0hSI07WYR9zsjjvPjKaJPpy5R9SSzzd/1B8jNc=
 # SIG # End signature block

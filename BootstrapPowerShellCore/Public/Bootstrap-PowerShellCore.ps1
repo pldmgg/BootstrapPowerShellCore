@@ -11,7 +11,7 @@
         This parameter is OPTIONAL.
         
         This parameter takes a string (either "Windows" or "Linux") that represents the type of platform you anticipate the
-        Remote Host has. The default value for this parameter is "Windows".
+        Remote Host is running. The default value for this parameter is "Windows".
 
         IMPORTANT NOTE: If you specify "Linux" and it turns out that the Remote Host is running Windows, this function will fail.
         So, if you're not sure, leave the default value "Windows".
@@ -34,19 +34,19 @@
         the Remote Host. This string must be in format: <DomainShortName>\<UserName>
 
     .Parameter LocalPasswordSS
-        This parameter is MANDATORY for the Parameter Set 'Local'.
+        This parameter is OPTIONAL. (However, either -LocalPasswordSS or -KeyFilePath is mandatory for the 'Domain' Parameter Set)
 
         This parameter takes a securestring that represents the password for the -LocalUserName you are using to ssh into the
         Remote Host.
 
     .Parameter DomainPasswordSS
-        This parameter is MANDATORY for the Parameter Set 'Domain'.
+        This parameter is OPTIONAL. (However, either -DomainPasswordSS or -KeyFilePath is mandatory for the 'Domain' Parameter Set)
 
         This parameter takes a securestring that represents the password for the -DomainUserName you are using to ssh into the
         Remote Host.
 
     .PARAMETER KeyFilePath
-        This parameter is OPTIONAL.
+        This parameter is OPTIONAL. (However, either -DomainPasswordSS, -LocalPasswordSS, or -KeyFilePath is required)
 
         This parameter takes a string that represents the full path to the Key File you are using to ssh into the Remote Host.
         Use this parameter instead of -LocalPasswordSS or -DomainPasswordSS.
@@ -360,6 +360,9 @@ function Bootstrap-PowerShellCore {
         if ($DomainPasswordSS -and !$KeyFilePath) {
             $GetSSHProbeSplatParams.Add("DomainPasswordSS",$DomainPasswordSS)
         }
+        if ($RemoteOSGuess) {
+            $GetSSHProbeSplatParams.Add("RemoteOSGuess",$RemoteOSGuess)
+        }
         
         $OSCheck = Get-SSHProbe @GetSSHProbeSplatParams -ErrorAction Stop
     }
@@ -397,6 +400,9 @@ function Bootstrap-PowerShellCore {
             if ($DomainPasswordSS -and !$KeyFilePath) {
                 $GetSSHProbeSplatParams.Add("DomainPasswordSS",$DomainPasswordSS)
             }
+            if ($RemoteOSGuess) {
+                $GetSSHProbeSplatParams.Add("RemoteOSGuess",$RemoteOSGuess)
+            }
             
             $OSCheck = Get-SSHProbe @GetSSHProbeSplatParams -ErrorAction Stop
         }
@@ -420,130 +426,159 @@ function Bootstrap-PowerShellCore {
         $global:FunctionResult = "1"
         return
     }
-
-    Write-Host "Get-SSHProbe identified OS: $($OSCheck.OS); Shell: $($OSCheck.Shell)"
-
-    # Check to make sure the user has sudo privileges
-    $GetSudoStatusSplatParams = @{
-        RemoteHostNameOrIP  = $RemoteHostNameOrIP
-    }
-    if ($KeyFilePath) {
-        $GetSudoStatusSplatParams.Add("KeyFilePath",$KeyFilePath)
-    }
-    if ($LocalUserName) {
-        $GetSudoStatusSplatParams.Add("LocalUserName",$LocalUserName)
-    }
-    if ($DomainUserName) {
-        $GetSudoStatusSplatParams.Add("DomainUserName",$DomainUserName)
-    }
-    if ($LocalPasswordSS -and !$KeyFilePath) {
-        $GetSudoStatusSplatParams.Add("LocalPasswordSS",$LocalPasswordSS)
-    }
-    if ($DomainPasswordSS -and !$KeyFilePath) {
-        $GetSudoStatusSplatParams.Add("DomainPasswordSS",$DomainPasswordSS)
-    }
-    $GetSudoStatusResult = Get-SudoStatus @GetSudoStatusSplatParams
     
-    if (!$GetSudoStatusResult.HasSudoPrivileges) {
-        Write-Error "The user does not appear to have sudo privileges on $RemoteHostNameOrIP! Halting!"
-        $global:FunctionResult = "1"
-        return
-    }
-
-    if (!$OS) {
-        # It's possible that the OSVersionInfo property is an array of strings, but we don't want the below switch to loop through each one,
-        # so we have to make sure we only give the switch one string object (i.e. $SanitizedOSVersionInfo)
-        $SanitizedOSVersionInfo = $($OSCheck.OSVersionInfo | foreach {$_ -split "`n"}) -join "`n"
-        switch ($SanitizedOSVersionInfo) {
-            {$($_ -match 'Microsoft|Windows' -and ![bool]$($_ -match "Linux")) -or $OSCheck.OS -eq "Windows"} {
-                $OS = "Windows"
-                $WindowsVersion = $OSCheck.OSVersionInfo
+    if ($OSCheck.OS -eq "Linux") {
+        # Check to make sure the user has sudo privileges
+        try {
+            $GetSudoStatusSplatParams = @{
+                RemoteHostNameOrIP  = $RemoteHostNameOrIP
             }
-
-            {$_ -match 'Darwin'} {
-                $OS = "MacOS"
-                $MacOSVersion = $OSCheck.OSVersionInfo
+            if ($KeyFilePath) {
+                $GetSudoStatusSplatParams.Add("KeyFilePath",$KeyFilePath)
             }
-
-            {$_ -match "Ubuntu 18\.04|18\.04\.[0-9]+-Ubuntu" -or $_ -match "Ubuntu.*1804|Ubuntu.*18\.04|1804.*Ubuntu|18\.04.*Ubuntu"} {
-                $OS = "Ubuntu1804"
-                $UbuntuVersion = "18.04"
+            if ($LocalPasswordSS) {
+                $GetSudoStatusSplatParams.Add("LocalPasswordSS",$LocalPasswordSS)
             }
-
-            {$_ -match "Ubuntu 16.04|16.04.[0-9]+-Ubuntu" -or $_ -match "Ubuntu.*1604|Ubuntu.*16\.04|1604.*Ubuntu|16\.04.*Ubuntu"} {
-                $OS = "Ubuntu1604"
-                $UbuntuVersion = "16.04"
+            if ($DomainPasswordSS) {
+                $GetSudoStatusSplatParams.Add("DomainPasswordSS",$DomainPasswordSS)
             }
-
-            {$_ -match "Ubuntu 14.04|14.04.[0-9]+-Ubuntu" -or $_ -match "Ubuntu.*1404|Ubuntu.*14\.04|1404.*Ubuntu|14\.04.*Ubuntu"} {
-                $OS = "Ubuntu1404"
-                $UbuntuVersion = "14.04"
+            if ($LocalUserName) {
+                $GetSudoStatusSplatParams.Add("LocalUserName",$LocalUserName)
             }
-
-            {$_ -match 'Debian GNU/Linux 8|\+deb8' -or $_ -match "jessie"} {
-                $OS = "Debian8"
-                $DebianVersion = "8"
+            if ($DomainUserName) {
+                $GetSudoStatusSplatParams.Add("DomainUserName",$DomainUserName)
             }
+            
+            $GetSudoStatusResult = Get-SudoStatus @GetSudoStatusSplatParams
+        }
+        catch {
+            Write-Error $_
+            $global:FunctionResult = "1"
+            return
+        }
+        
+        if (!$GetSudoStatusResult.HasSudoPrivileges) {
+            Write-Error "The user does not appear to have sudo privileges on $RemoteHostNameOrIP! Halting!"
+            $global:FunctionResult = "1"
+            return
+        }
 
-            {$_ -match 'Debian GNU/Linux 9|\+deb9' -or $_ -match "stretch"} {
-                $OS = "Debian9"
-                $DebianVersion = "9"
-            }
-
-            {$_ -match 'CentOS|\.el[0-9]\.'} {
-                $OS = "CentOS7"
-                $CentOSVersion = "7"
-            }
-
-            {$_ -match 'RedHat'} {
-                $OS = "RHEL7"
-                $RHELVersion = "7"
-            }
-
-            {$_ -match 'openSUSE|leap.*42\.3|Leap 42\.3|openSUSE Leap'} {
-                $OS = "OpenSUSE423"
-                $OpenSUSEVersion = "42.3"
-            }
-
-            {$_ -match 'Arch Linux|arch[0-9]|-ARCH'} {
-                $OS = "Arch"
-                $OSVersionInfoLines = $_ -split "`n"
-                $KernelVersion = $($OSVersionInfoLines -match "Kernel: ") -split " " -split "-" -match "[0-9]+\.[0-9]+\.[0-9]+"
-                $ArchReleaseInfo = Invoke-RestMethod -Uri "https://www.archlinux.org/releng/releases/json"
-                $ArchVersionPrep = $($ArchReleaseInfo.releases | Where-Object {$_.kernel_version -eq $KernelVersion}).version
-                if ($ArchVersionPrep) {
-                    $ArchVersion = @($ArchVersionPrep)[0]
-                }
-                else {
-                    $ArchVersion = @(
-                        $ArchReleaseInfo.releases | Where-Object {
-                            $_.kernel_version -match $('^' + $($($KernelVersion -split "\.")[0..1] -join '\.'))
-                        }
-                    )[0]
-                }
-            }
-
-            {$_ -match 'Fedora 28|fedora:28'} {
-                $OS = "Fedora"
-                $FedoraVersion = "28"
-            }
-
-            {$_ -match 'Fedora 27|fedora:27'} {
-                $OS = "Fedora"
-                $FedoraVersion = "27"
-            }
-
-            {$_ -match 'armv.*GNU'} {
-                $OS = "Raspbian"
-                $RaspbianVersion = "stretch"
+        # If the user has sudo privileges but there's a password prompt, but -LocalPasswordSS and -DomainPasswordSS
+        # parameters were not used, we need to halt
+        if ($GetSudoStatusResult.PasswordPrompt) {
+            if (!$LocalPasswordSS -and !$DomainPasswordSS) {
+                Write-Error "The user will be prompted for a sudo password, but neither the -LocalPasswordSS nor -DomainPasswordSS parameter was provided! Halting!"
+                $global:FunctionResult = "1"
+                return
             }
         }
     }
 
-    if (!$OS) {
+    Write-Host "Get-SSHProbe identified OS: $($OSCheck.OS); Shell: $($OSCheck.Shell)"
+
+    # It's possible that the OSVersionInfo property is an array of strings, but we don't want the below switch to loop through each one,
+    # so we have to make sure we only give the switch one string object (i.e. $SanitizedOSVersionInfo)
+    $SanitizedOSVersionInfo = $($OSCheck.OSVersionInfo | foreach {$_ -split "`n"}) -join "`n"
+    switch ($SanitizedOSVersionInfo) {
+        {$($_ -match 'Microsoft|Windows' -and ![bool]$($_ -match "Linux")) -or $OSCheck.OS -eq "Windows"} {
+            $OSDetermination = "Windows"
+            $WindowsVersion = $OSCheck.OSVersionInfo
+        }
+
+        {$_ -match 'Darwin'} {
+            $OSDetermination = "MacOS"
+            $MacOSVersion = $OSCheck.OSVersionInfo
+        }
+
+        {$_ -match "Ubuntu 18\.04|18\.04\.[0-9]+-Ubuntu" -or $_ -match "Ubuntu.*1804|Ubuntu.*18\.04|1804.*Ubuntu|18\.04.*Ubuntu"} {
+            $OSDetermination = "Ubuntu1804"
+            $UbuntuVersion = "18.04"
+        }
+
+        {$_ -match "Ubuntu 16.04|16.04.[0-9]+-Ubuntu" -or $_ -match "Ubuntu.*1604|Ubuntu.*16\.04|1604.*Ubuntu|16\.04.*Ubuntu"} {
+            $OSDetermination = "Ubuntu1604"
+            $UbuntuVersion = "16.04"
+        }
+
+        {$_ -match "Ubuntu 14.04|14.04.[0-9]+-Ubuntu" -or $_ -match "Ubuntu.*1404|Ubuntu.*14\.04|1404.*Ubuntu|14\.04.*Ubuntu"} {
+            $OSDetermination = "Ubuntu1404"
+            $UbuntuVersion = "14.04"
+        }
+
+        {$_ -match 'Debian GNU/Linux 8|\+deb8' -or $_ -match "jessie"} {
+            $OSDetermination = "Debian8"
+            $DebianVersion = "8"
+        }
+
+        {$_ -match 'Debian GNU/Linux 9|\+deb9' -or $_ -match "stretch"} {
+            $OSDetermination = "Debian9"
+            $DebianVersion = "9"
+        }
+
+        {$_ -match 'CentOS|\.el[0-9]\.'} {
+            $OSDetermination = "CentOS7"
+            $CentOSVersion = "7"
+        }
+
+        {$_ -match 'RedHat'} {
+            $OSDetermination = "RHEL7"
+            $RHELVersion = "7"
+        }
+
+        {$_ -match 'openSUSE|leap.*42\.3|Leap 42\.3|openSUSE Leap'} {
+            $OSDetermination = "OpenSUSE423"
+            $OpenSUSEVersion = "42.3"
+        }
+
+        {$_ -match 'Arch Linux|arch[0-9]|-ARCH'} {
+            $OSDetermination = "Arch"
+            $OSVersionInfoLines = $_ -split "`n"
+            $KernelVersion = $($OSVersionInfoLines -match "Kernel: ") -split " " -split "-" -match "[0-9]+\.[0-9]+\.[0-9]+"
+            $ArchReleaseInfo = Invoke-RestMethod -Uri "https://www.archlinux.org/releng/releases/json"
+            $ArchVersionPrep = $($ArchReleaseInfo.releases | Where-Object {$_.kernel_version -eq $KernelVersion}).version
+            if ($ArchVersionPrep) {
+                $ArchVersion = @($ArchVersionPrep)[0]
+            }
+            else {
+                $ArchVersion = @(
+                    $ArchReleaseInfo.releases | Where-Object {
+                        $_.kernel_version -match $('^' + $($($KernelVersion -split "\.")[0..1] -join '\.'))
+                    }
+                )[0]
+            }
+        }
+
+        {$_ -match 'Fedora 28|fedora:28'} {
+            $OSDetermination = "Fedora"
+            $FedoraVersion = "28"
+        }
+
+        {$_ -match 'Fedora 27|fedora:27'} {
+            $OSDetermination = "Fedora"
+            $FedoraVersion = "27"
+        }
+
+        {$_ -match 'armv.*GNU'} {
+            $OSDetermination = "Raspbian"
+            $RaspbianVersion = "stretch"
+        }
+    }
+
+    if (!$OSDetermination) {
         Write-Error "Unable to determine OS Version Information for $RemoteHostNameOrIP! Halting!"
         $global:FunctionResult = "1"
         return
+    }
+
+    if ($OS) {
+        if ($OS -ne $OSDetermination) {
+            Write-Error "The Get-SSHProbe function reports that $RemoteHostNameOrIP is running $OSDetermination, however, the user explicitly specified -OS as $OS! Halting!"
+            $global:FunctionResult = "1"
+            return
+        }
+    }
+    else {
+        $OS = $OSDetermination
     }
 
     Write-Host "`$OS is: $OS"
@@ -571,6 +606,9 @@ function Bootstrap-PowerShellCore {
     }
     if ($DomainPassword) {
         $null = $SSHScriptBuilderSplatParams.Add('DomainPassword',$DomainPassword)
+    }
+    if ($KeyFilePath) {
+        $null = $SSHScriptBuilderSplatParams.Add('KeyFilePath',$KeyFilePath)
     }
 
     $OnWindows = !$PSVersionTable.Platform -or $PSVersionTable.Platform -eq "Win32NT"
@@ -742,8 +780,8 @@ function Bootstrap-PowerShellCore {
 # SIG # Begin signature block
 # MIIMiAYJKoZIhvcNAQcCoIIMeTCCDHUCAQExCzAJBgUrDgMCGgUAMGkGCisGAQQB
 # gjcCAQSgWzBZMDQGCisGAQQBgjcCAR4wJgIDAQAABBAfzDtgWUsITrck0sYpfvNR
-# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQU1JaSqQqqd0eOWH26mrbNKDFV
-# nhagggn9MIIEJjCCAw6gAwIBAgITawAAAB/Nnq77QGja+wAAAAAAHzANBgkqhkiG
+# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUhboQCIUXsG0zCUnGrhqB7I93
+# Lj2gggn9MIIEJjCCAw6gAwIBAgITawAAAB/Nnq77QGja+wAAAAAAHzANBgkqhkiG
 # 9w0BAQsFADAwMQwwCgYDVQQGEwNMQUIxDTALBgNVBAoTBFpFUk8xETAPBgNVBAMT
 # CFplcm9EQzAxMB4XDTE3MDkyMDIxMDM1OFoXDTE5MDkyMDIxMTM1OFowPTETMBEG
 # CgmSJomT8ixkARkWA0xBQjEUMBIGCgmSJomT8ixkARkWBFpFUk8xEDAOBgNVBAMT
@@ -800,11 +838,11 @@ function Bootstrap-PowerShellCore {
 # ARkWA0xBQjEUMBIGCgmSJomT8ixkARkWBFpFUk8xEDAOBgNVBAMTB1plcm9TQ0EC
 # E1gAAAH5oOvjAv3166MAAQAAAfkwCQYFKw4DAhoFAKB4MBgGCisGAQQBgjcCAQwx
 # CjAIoAKAAKECgAAwGQYJKoZIhvcNAQkDMQwGCisGAQQBgjcCAQQwHAYKKwYBBAGC
-# NwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFFj+vdB2uhTqcjko
-# LDcSAr1oFE+QMA0GCSqGSIb3DQEBAQUABIIBABYdcz2GqVagVbHxC6wnGeRczpaP
-# 6ud3EnL/sbhcD/OXqdpc6iN2Ta+lTb4jGtGyE92tmLHCXVvjRyM9SOx7RaqM43zo
-# HS/9NP60RmF24yboDN9Z1wlOyC36Y83x80vkScn7FAv5mRgNoHtOAL2bXJqQ74ih
-# jg0v0E0V0uWH54TebhVxO3fUjBt9bmLSVmgXOGCfglEauG4PRAqQmJisFvbwjaNj
-# 0FyYzxqUd8gftyLOIJQ65q0/8U3XZgVndRuI6e3D1HJdd5EP0y5XXKUYVIo2HpWK
-# aULFI8m41ddDL0AJ1MR2HyfIKDtuWcP7C9VRmIVPigsZtSZxMusSn3H/QWM=
+# NwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFMK0o7ZTiPNP2lmX
+# 0XvpeoYk9CRTMA0GCSqGSIb3DQEBAQUABIIBAKmiugvJYSxPBCLT/s4DbAlIzjiL
+# jYxhcnlByq0hfgiPscB2MGOP23YOQj+MEYjUYo40p+OqzLWnUVT1go/JRG8B2NuR
+# bHkyklPtpbqr4VpHuFKVALAQfhY3Vr1iDgwn6/FqJLpxrlcFVB1YbA4l7mx9t75x
+# 7S+q7iJy515MIQxaewzIWPVqzFQBA/Rb1s7ecOfytR3Mf38Fin9J/u17lblfVTf5
+# N/YZCLV1i4TX+stLY9wwb+Cdyxpc6CtD5EV704pV/NHrWBibEQVfcqyjv0RNPuUz
+# bw7USOeauWjMcqlR48p+6j0Z7fju00mlFBPhaLeUDtUQC9NK4vIDskLRCBw=
 # SIG # End signature block

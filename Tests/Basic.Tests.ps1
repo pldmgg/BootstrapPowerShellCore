@@ -89,6 +89,7 @@ Describe -Name "General Project Validation: $env:BHProjectName" -Tag 'Validation
         $Commands -contains 'TestLDAP' | Should Be $False
 
         $Commands -contains 'Bootstrap-PowerShellCore' | Should Be $True
+        $Commands -contains 'Configure-PwshRemoting' | Should Be $True
         $Commands -contains 'Get-SSHProbe' | Should Be $True
         $Commands -contains 'Get-SudoStatus' | Should Be $True
         $Commands -contains 'Remove-SudoPwd' | Should Be $True
@@ -132,8 +133,8 @@ Describe -Name "General Project Validation: $env:BHProjectName" -Tag 'Validation
 # SIG # Begin signature block
 # MIIMiAYJKoZIhvcNAQcCoIIMeTCCDHUCAQExCzAJBgUrDgMCGgUAMGkGCisGAQQB
 # gjcCAQSgWzBZMDQGCisGAQQBgjcCAR4wJgIDAQAABBAfzDtgWUsITrck0sYpfvNR
-# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUg9HTzzsMDTOG7BJmk7T8gWw+
-# DvCgggn9MIIEJjCCAw6gAwIBAgITawAAAB/Nnq77QGja+wAAAAAAHzANBgkqhkiG
+# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUNhP34DVgd98QATd2WlwNX4zr
+# 0O+gggn9MIIEJjCCAw6gAwIBAgITawAAAB/Nnq77QGja+wAAAAAAHzANBgkqhkiG
 # 9w0BAQsFADAwMQwwCgYDVQQGEwNMQUIxDTALBgNVBAoTBFpFUk8xETAPBgNVBAMT
 # CFplcm9EQzAxMB4XDTE3MDkyMDIxMDM1OFoXDTE5MDkyMDIxMTM1OFowPTETMBEG
 # CgmSJomT8ixkARkWA0xBQjEUMBIGCgmSJomT8ixkARkWBFpFUk8xEDAOBgNVBAMT
@@ -190,11 +191,11 @@ Describe -Name "General Project Validation: $env:BHProjectName" -Tag 'Validation
 # ARkWA0xBQjEUMBIGCgmSJomT8ixkARkWBFpFUk8xEDAOBgNVBAMTB1plcm9TQ0EC
 # E1gAAAH5oOvjAv3166MAAQAAAfkwCQYFKw4DAhoFAKB4MBgGCisGAQQBgjcCAQwx
 # CjAIoAKAAKECgAAwGQYJKoZIhvcNAQkDMQwGCisGAQQBgjcCAQQwHAYKKwYBBAGC
-# NwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFH2jRd5e752HypYe
-# pSwd2xvdvlE0MA0GCSqGSIb3DQEBAQUABIIBAAVg9Lbak6Bf52N7n1pMynVLVS2f
-# lDkdV2KWu5epLqAt4rsbHhOV0yML4cObckMnwmNbP77OtjgVmgnbMTSXluoA66cP
-# t3fP3Gcez3gB3K2/QAZma+fUcVai882DDj2dmD/JNR/BcrsrIpNkMkj3JCdiZhd7
-# jkdRuZeOZOL3gYsLxIhbsnox3XtNWko3pq6XMSsBlYs1PSzCZt0xuA1hKJsWedBh
-# HOTADwB2CoH+6gbKJn0wyyUGbiUZMs6F88vhH34ntcQSyCBfqoKnNqvU3P7eeWYW
-# gIAI6QwV6/5IYD1lWWe8BQSsQd0X0dsFdhr3HvZd7Jicj21It9U3Wxg3C+4=
+# NwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFNP0vVXlSyDUkpqN
+# 4SY1rKYZOJ65MA0GCSqGSIb3DQEBAQUABIIBAB8wk6MTL5wvHbH+FGnfuOe3DfNF
+# 4IA3wq2n1bmGROhdC2O0LemAVQ8my2q/AMa6e1BqvmkK/pnOl76bj+HgyS+vtKBg
+# RR8NWI1+LvZ4UAIWR+D3iDi9E4CTjBr+I0xtfLN0P2toufEZ9nNsunoKtCKnZhvM
+# MpaS+nlimOHpPUTrEVMvGNW8fnwttbS/l+uQF2eSTb+h2Rg+yGL4wffhkrueVi/1
+# g9d2zLMt5VVywNWbnbUl1zLiHN95QlPlWS08RuZDF9OB0zUhH55A0ev02CfAHWO/
+# w8Ejx2dVUfwTbpC3JzzZ1RPL3kjhVH3IhkWdefRQtcqSP9XO6zIqxKvMUFo=
 # SIG # End signature block

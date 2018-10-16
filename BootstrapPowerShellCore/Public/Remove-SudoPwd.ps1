@@ -230,6 +230,140 @@ function Remove-SudoPwd {
         }
     }
 
+    # Make sure the Remote Host is Linux
+    try {
+        Write-Host "Probing $RemoteHostNameOrIP to determine OS and available shell..."
+
+        $GetSSHProbeSplatParams = @{
+            RemoteHostNameOrIP  = $RemoteHostNameOrIP
+        }
+        if ($KeyFilePath) {
+            $GetSSHProbeSplatParams.Add("KeyFilePath",$KeyFilePath)
+        }
+        if ($LocalUserName) {
+            $GetSSHProbeSplatParams.Add("LocalUserName",$LocalUserName)
+        }
+        if ($DomainUserName) {
+            $GetSSHProbeSplatParams.Add("DomainUserName",$DomainUserName)
+        }
+        if ($LocalPasswordSS -and !$KeyFilePath) {
+            $GetSSHProbeSplatParams.Add("LocalPasswordSS",$LocalPasswordSS)
+        }
+        if ($DomainPasswordSS -and !$KeyFilePath) {
+            $GetSSHProbeSplatParams.Add("DomainPasswordSS",$DomainPasswordSS)
+        }
+        
+        $OSCheck = Get-SSHProbe @GetSSHProbeSplatParams -ErrorAction Stop
+    }
+    catch {
+        Write-Verbose $_.Exception.Message
+        $global:FunctionResult = "1"
+
+        try {
+            $null = Stop-AwaitSession
+        }
+        catch {
+            Write-Verbose $_.Exception.Message
+        }
+    }
+
+    if (!$OSCheck.OS -or !$OSCheck.Shell) {
+        try {
+            Write-Host "Probing $RemoteHostNameOrIP to determine OS and available shell..."
+
+            $GetSSHProbeSplatParams = @{
+                RemoteHostNameOrIP  = $RemoteHostNameOrIP
+            }
+            if ($KeyFilePath) {
+                $GetSSHProbeSplatParams.Add("KeyFilePath",$KeyFilePath)
+            }
+            if ($LocalUserName) {
+                $GetSSHProbeSplatParams.Add("LocalUserName",$LocalUserName)
+            }
+            if ($DomainUserName) {
+                $GetSSHProbeSplatParams.Add("DomainUserName",$DomainUserName)
+            }
+            if ($LocalPasswordSS -and !$KeyFilePath) {
+                $GetSSHProbeSplatParams.Add("LocalPasswordSS",$LocalPasswordSS)
+            }
+            if ($DomainPasswordSS -and !$KeyFilePath) {
+                $GetSSHProbeSplatParams.Add("DomainPasswordSS",$DomainPasswordSS)
+            }
+            
+            $OSCheck = Get-SSHProbe @GetSSHProbeSplatParams -ErrorAction Stop
+        }
+        catch {
+            Write-Error $_
+            $global:FunctionResult = "1"
+    
+            try {
+                $null = Stop-AwaitSession
+            }
+            catch {
+                Write-Verbose $_.Exception.Message
+            }
+    
+            return
+        }
+    }
+
+    if (!$OSCheck.OS -or !$OSCheck.Shell) {
+        Write-Error "The Get-SSHProbe function was unable to identify $RemoteHostNameOrIP's platform or default shell! Please check your ssh connection/credentials. Halting!"
+        $global:FunctionResult = "1"
+        return
+    }
+    
+    if ($OSCheck.OS -ne "Linux") {
+        Write-Error "$RemoteHostNameOrIP does not appear to be running Linux! Halting!"
+        $global:FunctionResult = "1"
+        return
+    }
+
+    # Check to make sure the user has sudo privileges
+    try {
+        $GetSudoStatusSplatParams = @{
+            RemoteHostNameOrIP  = $RemoteHostNameOrIP
+        }
+        if ($KeyFilePath) {
+            $GetSudoStatusSplatParams.Add("KeyFilePath",$KeyFilePath)
+        }
+        if ($LocalPasswordSS) {
+            $GetSudoStatusSplatParams.Add("LocalPasswordSS",$LocalPasswordSS)
+        }
+        if ($DomainPasswordSS) {
+            $GetSudoStatusSplatParams.Add("DomainPasswordSS",$DomainPasswordSS)
+        }
+        if ($LocalUserName) {
+            $GetSudoStatusSplatParams.Add("LocalUserName",$LocalUserName)
+        }
+        if ($DomainUserName) {
+            $GetSudoStatusSplatParams.Add("DomainUserName",$DomainUserName)
+        }
+        
+        $GetSudoStatusResult = Get-SudoStatus @GetSudoStatusSplatParams
+    }
+    catch {
+        Write-Error $_
+        $global:FunctionResult = "1"
+        return
+    }
+    
+    if (!$GetSudoStatusResult.HasSudoPrivileges) {
+        Write-Error "The user does not appear to have sudo privileges on $RemoteHostNameOrIP! Halting!"
+        $global:FunctionResult = "1"
+        return
+    }
+
+    # If the user has sudo privileges but there's a password prompt, but -LocalPasswordSS and -DomainPasswordSS
+    # parameters were not used, we need to halt
+    if ($GetSudoStatusResult.PasswordPrompt) {
+        if (!$LocalPasswordSS -and !$DomainPasswordSS) {
+            Write-Error "The user will be prompted for a sudo password, but neither the -LocalPasswordSS nor -DomainPasswordSS parameter was provided! Halting!"
+            $global:FunctionResult = "1"
+            return
+        }
+    }
+
     if ($DomainUserForNoSudoPwd -or $LocalUserForNoSudoPwd -or $DomainGroupForNoSudoPwd) {
         if ($DomainUserForNoSudoPwd) {
             # Check to make sure the Domain User Exists
@@ -481,8 +615,8 @@ function Remove-SudoPwd {
 # SIG # Begin signature block
 # MIIMiAYJKoZIhvcNAQcCoIIMeTCCDHUCAQExCzAJBgUrDgMCGgUAMGkGCisGAQQB
 # gjcCAQSgWzBZMDQGCisGAQQBgjcCAR4wJgIDAQAABBAfzDtgWUsITrck0sYpfvNR
-# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUGfSnL7Nms+MGK1bzVLW36aZ0
-# s+agggn9MIIEJjCCAw6gAwIBAgITawAAAB/Nnq77QGja+wAAAAAAHzANBgkqhkiG
+# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUSp2HPGz0uFO1MBlQZ5xEES2o
+# 7ZWgggn9MIIEJjCCAw6gAwIBAgITawAAAB/Nnq77QGja+wAAAAAAHzANBgkqhkiG
 # 9w0BAQsFADAwMQwwCgYDVQQGEwNMQUIxDTALBgNVBAoTBFpFUk8xETAPBgNVBAMT
 # CFplcm9EQzAxMB4XDTE3MDkyMDIxMDM1OFoXDTE5MDkyMDIxMTM1OFowPTETMBEG
 # CgmSJomT8ixkARkWA0xBQjEUMBIGCgmSJomT8ixkARkWBFpFUk8xEDAOBgNVBAMT
@@ -539,11 +673,11 @@ function Remove-SudoPwd {
 # ARkWA0xBQjEUMBIGCgmSJomT8ixkARkWBFpFUk8xEDAOBgNVBAMTB1plcm9TQ0EC
 # E1gAAAH5oOvjAv3166MAAQAAAfkwCQYFKw4DAhoFAKB4MBgGCisGAQQBgjcCAQwx
 # CjAIoAKAAKECgAAwGQYJKoZIhvcNAQkDMQwGCisGAQQBgjcCAQQwHAYKKwYBBAGC
-# NwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFN3hbN5OJnGEDW6X
-# 7koIMyIoGfTOMA0GCSqGSIb3DQEBAQUABIIBAJfB3+SUjUOGKxPsY1nAqZUX3HnY
-# xgRgZFE+ILwUtLYPbEOBcd6isuC8px9qsa3/tMTzdme9d8xGkOU7uyolcCwGqFWD
-# XtHDIzJpKNSCh/iFsc8DYSR0up1ZDIm+sTvJAVg+FLne/mg0iWEJ99+ZDfau4j49
-# XInBT7ZjYAz/3FTFghx0PTWBDkG71Wa1bXOWFBMTxJSCeMsniLvvqwfxj2pRTKLj
-# rSy26pyAV9E00DoxNdzCK/VNCcZVpyHiJgvBoY4QqsyJQqPehPoE7loayhMjWSOk
-# 8DvcqofLVET4l8R2UOwsjOw39RVJycBoYouk71SSKCEF1x1kW5tWyGPepwY=
+# NwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFFWi/iedusmlWiH2
+# unNh9mi/7a0eMA0GCSqGSIb3DQEBAQUABIIBALV1SBw/6vDDEvf7QU3SJbnezX5S
+# CbBJ42g1TsuUl1q33Ml1kgvFvaFY3K6oMCUxH1/TASJj+6v1b+B6mUeYsU+9MV38
+# NfrXdCsOuDwNM9X0nRLBzMbFDvX7udBX2JVCfyxyXQqRXMzYh6b9/on4fSoQPVPi
+# c5BEKf0S4Xgq4samDYx7DkC1SIsNfTGEKn84sqO86aKbzlrWLUVkrluPV+ARlNbG
+# mX2kchb9w2VIsh6u96ua6NURp/EUnUvWsHfmLJPveSVCyslBM7AJlJccQGRo2cRh
+# QCHKG/njAsqeC+gJako5ev+P5NKAdhBx6kQbfUqi/EXF6q4tA0mialb5q9c=
 # SIG # End signature block
