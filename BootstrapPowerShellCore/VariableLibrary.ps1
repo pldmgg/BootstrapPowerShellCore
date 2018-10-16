@@ -1,8 +1,26 @@
 [System.Collections.ArrayList]$script:FunctionsForSBUse = @(
     ${Function:AddWinRMTrustedHost}.Ast.Extent.Text
     ${Function:AddWinRMTrustLocalHost}.Ast.Extent.Text
+    ${Function:DownloadNugetPackage}.Ast.Extent.Text
+    ${Function:GetArchScripts}.Ast.Extent.Text
+    ${Function:GetCentOS7Scripts}.Ast.Extent.Text
+    ${Function:GetComputerObjectsInLDAP}.Ast.Extent.Text
+    ${Function:GetDebian8Scripts}.Ast.Extent.Text
+    ${Function:GetDebian9Scripts}.Ast.Extent.Text
+    ${Function:GetDomainController}.Ast.Extent.Text
+    ${Function:GetDomainName}.Ast.Extent.Text
     ${Function:GetElevation}.Ast.Extent.Text
+    ${Function:GetFedoraScripts}.Ast.Extent.Text
+    ${Function:GetGroupObjectsInLDAP}.Ast.Extent.Text
+    ${Function:GetMacOSScripts}.Ast.Extent.Text
     ${Function:GetModuleDependencies}.Ast.Extent.Text
+    ${Function:GetOpenSUSE423Scripts}.Ast.Extent.Text
+    ${Function:GetRaspbianScripts}.Ast.Extent.Text
+    ${Function:GetUbuntu1404Scripts}.Ast.Extent.Text
+    ${Function:GetUbuntu1604Scripts}.Ast.Extent.Text
+    ${Function:GetUbuntu1804Scripts}.Ast.Extent.Text
+    ${Function:GetUserObjectsInLDAP}.Ast.Extent.Text
+    ${Function:GetWindowsScripts}.Ast.Extent.Text
     ${Function:InstallLinuxPackage}.Ast.Extent.Text
     ${Function:InvokeModuleDependencies}.Ast.Extent.Text
     ${Function:InvokePSCompatibility}.Ast.Extent.Text
@@ -10,6 +28,7 @@
     ${Function:ResolveHost}.Ast.Extent.Text
     ${Function:SSHScriptBuilder}.Ast.Extent.Text
     ${Function:TestIsValidIPAddress}.Ast.Extent.Text
+    ${Function:TestLDAP}.Ast.Extent.Text
     ${Function:Bootstrap-PowerShellCore}.Ast.Extent.Text
     ${Function:Get-SSHProbe}.Ast.Extent.Text
     ${Function:Get-SudoStatus}.Ast.Extent.Text
@@ -253,8 +272,8 @@ puts "Run `brew help` to get started"
 # SIG # Begin signature block
 # MIIMiAYJKoZIhvcNAQcCoIIMeTCCDHUCAQExCzAJBgUrDgMCGgUAMGkGCisGAQQB
 # gjcCAQSgWzBZMDQGCisGAQQBgjcCAR4wJgIDAQAABBAfzDtgWUsITrck0sYpfvNR
-# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUzG91SJ7vQiOm4j+YSe3Lyp4Y
-# d42gggn9MIIEJjCCAw6gAwIBAgITawAAAB/Nnq77QGja+wAAAAAAHzANBgkqhkiG
+# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQU/UUl1Nrd/NJ9xFVyugJhJfRS
+# bnagggn9MIIEJjCCAw6gAwIBAgITawAAAB/Nnq77QGja+wAAAAAAHzANBgkqhkiG
 # 9w0BAQsFADAwMQwwCgYDVQQGEwNMQUIxDTALBgNVBAoTBFpFUk8xETAPBgNVBAMT
 # CFplcm9EQzAxMB4XDTE3MDkyMDIxMDM1OFoXDTE5MDkyMDIxMTM1OFowPTETMBEG
 # CgmSJomT8ixkARkWA0xBQjEUMBIGCgmSJomT8ixkARkWBFpFUk8xEDAOBgNVBAMT
@@ -311,11 +330,11 @@ puts "Run `brew help` to get started"
 # ARkWA0xBQjEUMBIGCgmSJomT8ixkARkWBFpFUk8xEDAOBgNVBAMTB1plcm9TQ0EC
 # E1gAAAH5oOvjAv3166MAAQAAAfkwCQYFKw4DAhoFAKB4MBgGCisGAQQBgjcCAQwx
 # CjAIoAKAAKECgAAwGQYJKoZIhvcNAQkDMQwGCisGAQQBgjcCAQQwHAYKKwYBBAGC
-# NwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFAK8qO4YorAtzQOU
-# ANCrdpWayXDQMA0GCSqGSIb3DQEBAQUABIIBAMGt7xh162VZMB9sMMk36pV0DQgo
-# o/pGhBJ9LYQtNvbIBI9I3AZFurcB9rHLfsvyAbsxWUWeP8JUEUvl2UH3Y4/0DLwm
-# L8esoJFcJA9gLSAeGpt1csYPiLVL7KqFDFAO0p9dq9AmxMVqg4ERwuI9Czp9HYrP
-# v6IRRqIzjrPMYGiBm+IH+zRKg4roFricnPSaDRL4isL2J1jAhCqP3PmqlOMuRliO
-# ny1hiSsMYkpvfcGYrJIyU3EZOMw+HtYpdYMa7nDnw4PinMZkAFoPc0zU2p3oz3Ka
-# 9jKYoiF/PPABuRcf1iDuXq8oLN2rvLemOI9a7Uc9lY6UoLGuse2tG22YyNo=
+# NwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFI/0YY7t8Yytru26
+# pNKcJVNfNsE6MA0GCSqGSIb3DQEBAQUABIIBAA2zdWnhPTyugICpWxIk9M4PFhAl
+# 0nM3K1+Jq2aKKLZKnJRXyFvAtuklVYfOqvscdYHywp3A4Q0aSeFneIFbaDDza2QQ
+# yH6sgEoEiUN1ppLsqTWm4srT+xoyWu8zE9mhZT2Flg3uoXFuA5ZIdQ06G4PJOlfC
+# MCqEG4Do8w1G4SijnKCVyq2DxUetAv5IT+1N88OA8GJOloSH3o7FX9MAxl3asSNN
+# YVNxB0qR1K8c/yn2UCutzPxQ7iDwMF87v0m/xyurKhxHeeiO1Dxjs6wkpQ0bs48+
+# DIyqyiWP0xFT2/acTsYlLia31525kWRUrFuTh4w4tHY4Og1lm373t5/nZQY=
 # SIG # End signature block

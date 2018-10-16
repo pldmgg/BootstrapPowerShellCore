@@ -2753,7 +2753,7 @@ function Get-SudoStatus {
     }
 
     if ($PSVersionTable.Platform -eq "Unix") {
-        # Determine if we have the required Linux commands
+        # Determine if we have required Linux commands
         [System.Collections.ArrayList]$LinuxCommands = @(
             "echo"
             "expect"
@@ -2929,6 +2929,24 @@ function Get-SudoStatus {
         This parameter takes a string that represents the full path to the Key File you are using to ssh into the Remote Host.
         Use this parameter instead of -LocalPasswordSS or -DomainPasswordSS.
 
+    .PARAMETER DomainUserForNoSudoPwd
+        This parameter is OPTIONAL.
+
+        This parameter takes a string or array of strings that represent Domain Users that you would like to allow to use
+        'sudo pwsh' without a password prompt. Each user must be in format: <DomainShortName>\<UserName>
+
+    .PARAMETER LocalUserForNoSudoPwd
+        This parameter is OPTIONAL.
+
+        This parameter takes a string or array of strings that represent Local Users on the Remote Host that you would like to
+        allow to use 'sudo pwsh' without a password prompt. Each user must be in format: <RemoteHostName>\<UserName>
+
+    .PARAMETER DomainGroupForNoSudoPwd
+        This parameter is OPTIONAL.
+
+        This parameter takes a string or array of strings that represent Domain Groups that you would like to allow to use
+        'sudo pwsh' without a password prompt.
+
     .EXAMPLE
         # Minimal parameters...
 
@@ -2936,6 +2954,28 @@ function Get-SudoStatus {
             RemoteHostNameOrIP      = "zerowin16sshb"
             DomainUserNameSS        = "zero\zeroadmin"
             DomainPasswordSS        = $(Read-Host -Prompt "Enter password" -AsSecureString)
+        }
+        Remove-SudoPwd @RemoveSudoPwdSplatParams
+    
+    .EXAMPLE
+        # Remove sudo prompt requirement for multiple Domain Users
+
+        $RemoveSudoPwdSplatParams = @{
+            RemoteHostNameOrIP      = "zerowin16sshb"
+            DomainUserNameSS        = "zero\zeroadmin"
+            DomainPasswordSS        = $(Read-Host -Prompt "Enter password" -AsSecureString)
+            DomainUserForNoSudoPwd  = @('zero\zeroadmin','zero\zeroadminbackup')
+        }
+        Remove-SudoPwd @RemoveSudoPwdSplatParams
+
+    .EXAMPLE
+        # Remove sudo prompt requirement for a Domain Group
+
+        $RemoveSudoPwdSplatParams = @{
+            RemoteHostNameOrIP      = "zerowin16sshb"
+            DomainUserNameSS        = "zero\zeroadmin"
+            DomainPasswordSS        = $(Read-Host -Prompt "Enter password" -AsSecureString)
+            DomainGroupForNoSudoPwd  = @('Domain Admins')
         }
         Remove-SudoPwd @RemoveSudoPwdSplatParams
 
@@ -2982,7 +3022,7 @@ function Remove-SudoPwd {
 
         [Parameter(
             Mandatory=$False,
-            ParameterSetName='Local'    
+            ParameterSetName='Local'
         )]
         [securestring]$LocalPasswordSS,
 
@@ -2993,7 +3033,24 @@ function Remove-SudoPwd {
         [securestring]$DomainPasswordSS,
 
         [Parameter(Mandatory=$False)]
-        [string]$KeyFilePath
+        [string]$KeyFilePath,
+
+        [Parameter(Mandatory=$False)]
+        [ValidatePattern("\\")] # Must be in format <DomainShortName>\<User>
+        [string[]]$DomainUserForNoSudoPwd,
+
+        [Parameter(
+            Mandatory=$False,
+            ParameterSetName='Local'
+        )]
+        [ValidatePattern("\\")] # Must be in format <DomainShortName>\<User>
+        [string[]]$LocalUserForNoSudoPwd,
+
+        [Parameter(
+            Mandatory=$False,
+            ParameterSetName='Domain'
+        )]
+        [string[]]$DomainGroupForNoSudoPwd
     )
 
     #region >> Prep
@@ -3050,6 +3107,89 @@ function Remove-SudoPwd {
             Write-Error $ErrMsg
             $global:FunctionResult = "1"
             return
+        }
+    }
+
+    if (!$DomainUserForNoSudoPwd -and !$LocalUserForNoSudoPwd -and !$DomainGroupForNoSudoPwd) {
+        if ($LocalUserName) {
+            $LocalUserForNoSudoPwd = $LocalUserName
+        }
+        if ($DomainUserName) {
+            $DomainUserForNoSudoPwd = $DomainUserName
+        }
+    }
+
+    if ($DomainUserForNoSudoPwd -or $LocalUserForNoSudoPwd -or $DomainGroupForNoSudoPwd) {
+        if ($DomainUserForNoSudoPwd) {
+            # Check to make sure the Domain User Exists
+            try {
+                $Domain = GetDomainName
+                $LDAPCreds = [pscredential]::new($DomainUserName,$DomainPasswordSS)
+                $UserLDAPObjectsPrep = GetUserObjectsInLDAP -Domain $Domain -LDAPCreds $LDAPCreds
+            }
+            catch {
+                Write-Error $_
+                $global:FunctionResult = "1"
+                return
+            }
+
+            # If we're on windows, $UserLDAPObjectsPrep contains DirectoryServices Objects
+            if (!$PSVersionTable.Platform -or $PSVersionTable.Platform -eq "Win32NT") {
+                $DomainUserNames = $UserLDAPObjectsPrep | foreach {$_.name[0].ToString()}
+            }
+            else {
+                # If we're on Linux, $UserLDAPObjectsPrep contains strings like - cn: zeroadmin
+                $DomainUserNames = $UserLDAPObjectsPrep | foreach {$_ -replace [regex]::Escape('cn: '),''}
+            }
+
+            $UsersNotFound = [System.Collections.Generic.List[PSObject]]::new()
+            foreach ($User in $DomainUserForNoSudoPwd) {
+                if ($DomainUserNames -notcontains $($User -split '\\')[-1]) {
+                    $UsersNotFound.Add($User)
+                }
+            }
+
+            if ($UsersNotFound.Count -gt 0) {
+                Write-Error "The following users were not found:`n$($UsersNotFound -join "`n")`nHalting!"
+                $global:FunctionResult = "1"
+                return
+            }
+        }
+
+        if ($DomainGroupForNoSudoPwd) {
+            # Check to make sure the Domain Group Exists
+            try {
+                $Domain = GetDomainName
+                $LDAPCreds = [pscredential]::new($DomainUserName,$DomainPasswordSS)
+                $GroupLDAPObjectsPrep = GetGroupObjectsInLDAP -Domain $Domain -LDAPCreds $LDAPCreds
+            }
+            catch {
+                Write-Error $_
+                $global:FunctionResult = "1"
+                return
+            }
+
+            # If we're on windows, $GroupLDAPObjectsPrep contains DirectoryServices Objects
+            if (!$PSVersionTable.Platform -or $PSVersionTable.Platform -eq "Win32NT") {
+                $DomainGroupNames = $GroupLDAPObjectsPrep | foreach {$_.name[0].ToString()}
+            }
+            else {
+                # If we're on Linux, $GroupLDAPObjectsPrep contains strings like - cn: zeroadmin
+                $DomainGroupNames = $GroupLDAPObjectsPrep | foreach {$_ -replace [regex]::Escape('cn: '),''}
+            }
+
+            $GroupsNotFound = [System.Collections.Generic.List[PSObject]]::new()
+            foreach ($Group in $DomainGroupForNoSudoPwd) {
+                if ($DomainGroupNames -notcontains $Group) {
+                    $GroupsNotFound.Add($Group)
+                }
+            }
+
+            if ($GroupsNotFound.Count -gt 0) {
+                Write-Error "The following Groups were not found:`n$($GroupsNotFound -join "`n")`nHalting!"
+                $global:FunctionResult = "1"
+                return
+            }
         }
     }
 
@@ -3135,14 +3275,6 @@ function Remove-SudoPwd {
         $DomainPassword = [Runtime.InteropServices.Marshal]::PtrToStringAuto([Runtime.InteropServices.Marshal]::SecureStringToBSTR($DomainPasswordSS))
     }
 
-    if ($LocalUserName) {
-        $FullUserName = $($LocalUserName -split "\\")[-1]
-    }
-    if ($DomainUserName) {
-        $DomainNameShort = $($DomainUserName -split "\\")[0]
-        $FullUserName = $($DomainUserName -split "\\")[-1]
-    }
-
     $OnWindows = !$PSVersionTable.Platform -or $PSVersionTable.Platform -eq "Win32NT"
 
     #endregion >> Prep
@@ -3150,26 +3282,60 @@ function Remove-SudoPwd {
     #region >> Main
 
     # cat /etc/sudoers | grep -Eic 'Cmnd_Alias SUDO_PWSH = /bin/pwsh' > /dev/null && echo present || echo absent
-    [System.Collections.ArrayList]$UpdateSudoersScript = @(
+    [System.Collections.Generic.List[PSObject]]$UpdateSudoersScript = @(
         'pscorepath=$(command -v pwsh)'
         "cat /etc/sudoers | grep -Eic 'Cmnd_Alias SUDO_PWSH =' > /dev/null && echo present || echo 'Cmnd_Alias SUDO_PWSH = '`"`$pscorepath`" | sudo EDITOR='tee -a' visudo"
         "cat /etc/sudoers | grep -Eic 'Defaults!SUDO_PWSH !requiretty' > /dev/null && echo present || echo 'Defaults!SUDO_PWSH !requiretty' | sudo EDITOR='tee -a' visudo"
     )
-    if ($DomainUserName) {
-        if (!$OnWindows) {
-            $AddUserString = "cat /etc/sudoers | grep -Eic '\%$DomainNameShort..$FullUserName ALL=\(ALL\) NOPASSWD: SUDO_PWSH' > " +
-            "/dev/null && echo present || echo '%$DomainNameShort\\\$FullUserName ALL=(ALL) NOPASSWD: SUDO_PWSH' | sudo EDITOR='tee -a' visudo"
-        }
-        else {
-            $AddUserString = "cat /etc/sudoers | grep -Eic '\%$DomainNameShort..$FullUserName ALL=\(ALL\) NOPASSWD: SUDO_PWSH' > " +
-            "/dev/null && echo present || echo '%$DomainNameShort\\$FullUserName ALL=(ALL) NOPASSWD: SUDO_PWSH' | sudo EDITOR='tee -a' visudo"
+    if ($DomainUserForNoSudoPwd) {
+        foreach ($User in $DomainUserForNoSudoPwd) {
+            $DomainNameShort = $($User -split "\\")[0]
+            $FullUserName = $($User -split "\\")[-1]
+
+            if (!$OnWindows) {
+                $AddUserString = "cat /etc/sudoers | grep -Eic '\%$DomainNameShort..$FullUserName ALL=\(ALL\) NOPASSWD: SUDO_PWSH' > " +
+                "/dev/null && echo present || echo '%$DomainNameShort\\\$FullUserName ALL=(ALL) NOPASSWD: SUDO_PWSH' | sudo EDITOR='tee -a' visudo"
+            }
+            else {
+                $AddUserString = "cat /etc/sudoers | grep -Eic '\%$DomainNameShort..$FullUserName ALL=\(ALL\) NOPASSWD: SUDO_PWSH' > " +
+                "/dev/null && echo present || echo '%$DomainNameShort\\$FullUserName ALL=(ALL) NOPASSWD: SUDO_PWSH' | sudo EDITOR='tee -a' visudo"
+            }
+
+            $UpdateSudoersScript.Add($AddUserString)
         }
     }
-    if ($LocalUserName) {
-        $AddUserString = "cat /etc/sudoers | grep -Eic '$FullUserName ALL=\(ALL\) NOPASSWD: SUDO_PWSH' > " +
-        "/dev/null && echo present || echo '$FullUserName ALL=(ALL) NOPASSWD: SUDO_PWSH' | sudo EDITOR='tee -a' visudo"
+    if ($DomainGroupForNoSudoPwd) {
+        $DomainNameShort = $($Domain -split '\.')[0]
+        
+        foreach ($Group in $DomainGroupForNoSudoPwd) {
+            # Ultimately needs to look like:
+            #     %zero\\Domain\ Admins    ALL=(ALL)    ALL
+            $FinalGroup = $Group -replace "[\s]","\ "
+            $FinalGroupRegex = $Group -replace "[\s]",". "
+            $FinalGroupAddString = $Group -replace "[\s]","\\ "
+
+            if (!$OnWindows) {
+                $AddUserString = "cat /etc/sudoers | grep -Eic '\%$DomainNameShort..$FinalGroupRegex ALL=\(ALL\) NOPASSWD: SUDO_PWSH' > " +
+                "/dev/null && echo present || echo '%$DomainNameShort\\\$FinalGroupAddString ALL=(ALL) NOPASSWD: SUDO_PWSH' | sudo EDITOR='tee -a' visudo"
+            }
+            else {
+                $AddUserString = "cat /etc/sudoers | grep -Eic '\%$DomainNameShort..$FinalGroupRegex ALL=\(ALL\) NOPASSWD: SUDO_PWSH' > " +
+                "/dev/null && echo present || echo '%$DomainNameShort\\$FinalGroup ALL=(ALL) NOPASSWD: SUDO_PWSH' | sudo EDITOR='tee -a' visudo"
+            }
+
+            $UpdateSudoersScript.Add($AddUserString)
+        }
     }
-    $null = $UpdateSudoersScript.Add($AddUserString)
+    if ($LocalUserForNoSudoPwd) {
+        foreach ($User in $LocalUserForNoSudoPwd) {
+            $FullUserName = $($User -split "\\")[-1]
+
+            $AddUserString = "cat /etc/sudoers | grep -Eic '$FullUserName ALL=\(ALL\) NOPASSWD: SUDO_PWSH' > " +
+            "/dev/null && echo present || echo '$FullUserName ALL=(ALL) NOPASSWD: SUDO_PWSH' | sudo EDITOR='tee -a' visudo"
+
+            $UpdateSudoersScript.Add($AddUserString)
+        }
+    }
     $null = $UpdateSudoersScript.Add('echo sudoersUpdated')
 
     $SSHScriptBuilderSplatParams = @{
@@ -3230,8 +3396,26 @@ if ($PSVersionTable.Platform -eq "Win32NT" -and $PSVersionTable.PSEdition -eq "C
 [System.Collections.ArrayList]$script:FunctionsForSBUse = @(
     ${Function:AddWinRMTrustedHost}.Ast.Extent.Text
     ${Function:AddWinRMTrustLocalHost}.Ast.Extent.Text
+    ${Function:DownloadNugetPackage}.Ast.Extent.Text
+    ${Function:GetArchScripts}.Ast.Extent.Text
+    ${Function:GetCentOS7Scripts}.Ast.Extent.Text
+    ${Function:GetComputerObjectsInLDAP}.Ast.Extent.Text
+    ${Function:GetDebian8Scripts}.Ast.Extent.Text
+    ${Function:GetDebian9Scripts}.Ast.Extent.Text
+    ${Function:GetDomainController}.Ast.Extent.Text
+    ${Function:GetDomainName}.Ast.Extent.Text
     ${Function:GetElevation}.Ast.Extent.Text
+    ${Function:GetFedoraScripts}.Ast.Extent.Text
+    ${Function:GetGroupObjectsInLDAP}.Ast.Extent.Text
+    ${Function:GetMacOSScripts}.Ast.Extent.Text
     ${Function:GetModuleDependencies}.Ast.Extent.Text
+    ${Function:GetOpenSUSE423Scripts}.Ast.Extent.Text
+    ${Function:GetRaspbianScripts}.Ast.Extent.Text
+    ${Function:GetUbuntu1404Scripts}.Ast.Extent.Text
+    ${Function:GetUbuntu1604Scripts}.Ast.Extent.Text
+    ${Function:GetUbuntu1804Scripts}.Ast.Extent.Text
+    ${Function:GetUserObjectsInLDAP}.Ast.Extent.Text
+    ${Function:GetWindowsScripts}.Ast.Extent.Text
     ${Function:InstallLinuxPackage}.Ast.Extent.Text
     ${Function:InvokeModuleDependencies}.Ast.Extent.Text
     ${Function:InvokePSCompatibility}.Ast.Extent.Text
@@ -3239,6 +3423,7 @@ if ($PSVersionTable.Platform -eq "Win32NT" -and $PSVersionTable.PSEdition -eq "C
     ${Function:ResolveHost}.Ast.Extent.Text
     ${Function:SSHScriptBuilder}.Ast.Extent.Text
     ${Function:TestIsValidIPAddress}.Ast.Extent.Text
+    ${Function:TestLDAP}.Ast.Extent.Text
     ${Function:Bootstrap-PowerShellCore}.Ast.Extent.Text
     ${Function:Get-SSHProbe}.Ast.Extent.Text
     ${Function:Get-SudoStatus}.Ast.Extent.Text
@@ -3482,8 +3667,8 @@ puts "Run `brew help` to get started"
 # SIG # Begin signature block
 # MIIMiAYJKoZIhvcNAQcCoIIMeTCCDHUCAQExCzAJBgUrDgMCGgUAMGkGCisGAQQB
 # gjcCAQSgWzBZMDQGCisGAQQBgjcCAR4wJgIDAQAABBAfzDtgWUsITrck0sYpfvNR
-# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUMKCcX8gItJIdph8nK337lLVL
-# spagggn9MIIEJjCCAw6gAwIBAgITawAAAB/Nnq77QGja+wAAAAAAHzANBgkqhkiG
+# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUvnObLa9DLTfeCY7oURIVVp2d
+# UF2gggn9MIIEJjCCAw6gAwIBAgITawAAAB/Nnq77QGja+wAAAAAAHzANBgkqhkiG
 # 9w0BAQsFADAwMQwwCgYDVQQGEwNMQUIxDTALBgNVBAoTBFpFUk8xETAPBgNVBAMT
 # CFplcm9EQzAxMB4XDTE3MDkyMDIxMDM1OFoXDTE5MDkyMDIxMTM1OFowPTETMBEG
 # CgmSJomT8ixkARkWA0xBQjEUMBIGCgmSJomT8ixkARkWBFpFUk8xEDAOBgNVBAMT
@@ -3540,11 +3725,11 @@ puts "Run `brew help` to get started"
 # ARkWA0xBQjEUMBIGCgmSJomT8ixkARkWBFpFUk8xEDAOBgNVBAMTB1plcm9TQ0EC
 # E1gAAAH5oOvjAv3166MAAQAAAfkwCQYFKw4DAhoFAKB4MBgGCisGAQQBgjcCAQwx
 # CjAIoAKAAKECgAAwGQYJKoZIhvcNAQkDMQwGCisGAQQBgjcCAQQwHAYKKwYBBAGC
-# NwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFF4GdF/o07Nrbs3n
-# DNJ+tVvA4ENjMA0GCSqGSIb3DQEBAQUABIIBAJ+Hl5GEsZI7eu61RWAisth6F0tg
-# g07oas90Nlp29bOkMTvAjkgARZct1qWl/zMDsAQqK9c/NyPmAXHbz0/aT2q7xw/P
-# I1eJNgyPwQOaodSIjihO8H+3kFBgqbb4rkrbxFYwsT64IVWcD42TDb6uPGO9uClD
-# InvWAEu2IwdB/XxXSEssZjO9p/iEdFD8HiwJucZ7bp7Z19yBooIsay0zxlLkx0EI
-# R5yXwE5rhSHWEOpd0YiG0ia9oJvt9trvKkTiNATaHbM1+hYQQqxqqhv+hiblb9nj
-# aMydVZAG4i/RD5hZ++psGaFU6xrrs/EW7oMFYjVhMXlQxhqK5DestqeyxxM=
+# NwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFGkwDwjjAdJe6mag
+# 8Qfj32hXXtw0MA0GCSqGSIb3DQEBAQUABIIBAGs3dL2v0Df9WSNxzCw+yiaEE05c
+# qhdQtwOuKwtfeoFjfe8H1Y8lYdmNAfXpKyWQd2vCV5IHKb5KOy0d71SdpbN4RWkI
+# iaS8smY4HYQ6QpbfPj+SwyFdBU/lpTx08o4NO/URz9X6Soksi4winJh7v3+h/PGp
+# YNIzlR/LoIWt29JDdqkKI5EBJmC3QnAbQtv/onWW37RyOwmQ9tfmg1CHqzrRfHl6
+# b+08oXGP8XY/aPVkNa1jraledXaN1isUu+6mNffTugp0hhnEq2/6oPc+fsD/qTjZ
+# KIR7PiCIRG878OwQIN6dNWjDjH1mAzit1b0sS+VYZDusv3IR0ot0/3CAm90=
 # SIG # End signature block
