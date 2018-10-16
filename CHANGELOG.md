@@ -1,5 +1,9 @@
 # Change log
 
+## 1.0.3 (October 16, 2018)
+
+- Update to Remove-SudoPwd function to allow removing Sudo password prompt for Domain Users and Groups
+
 ## 1.0.2 (October 15, 2018)
 
 - Added Remove-SudoPwd and Get-SudoStatus functions
