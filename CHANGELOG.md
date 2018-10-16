@@ -1,5 +1,10 @@
 # Change log
 
+## 1.0.4 (October 16, 2018)
+
+- Added Configure-PwshRemoting function
+- Fixed issue with Bootstrap-PowerShellCore function
+
 ## 1.0.3 (October 16, 2018)
 
 - Update to Remove-SudoPwd function to allow removing Sudo password prompt for Domain Users and Groups
