@@ -29,18 +29,18 @@ function GetCentOS7Scripts {
     )
 
     [pscustomobject]@{
-        PackageManagerInstallScript = $CentOS7PMInstallScript
-        ManualInstallScript         = $CentOS7ManualInstallScript
-        UninstallScript             = $CentOS7UninstallScript
-        ConfigurePwshRemotingScript = $LinuxPwshRemotingScript
+        PackageManagerInstallScript = [System.Collections.ArrayList]$CentOS7PMInstallScript
+        ManualInstallScript         = [System.Collections.ArrayList]$CentOS7ManualInstallScript
+        UninstallScript             = [System.Collections.ArrayList]$CentOS7UninstallScript
+        ConfigurePwshRemotingScript = [System.Collections.ArrayList]$LinuxPwshRemotingScript
     }
 }
 
 # SIG # Begin signature block
 # MIIMiAYJKoZIhvcNAQcCoIIMeTCCDHUCAQExCzAJBgUrDgMCGgUAMGkGCisGAQQB
 # gjcCAQSgWzBZMDQGCisGAQQBgjcCAR4wJgIDAQAABBAfzDtgWUsITrck0sYpfvNR
-# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUD0xX1NM3m6qSowNQ+ovdmXBC
-# LMegggn9MIIEJjCCAw6gAwIBAgITawAAAB/Nnq77QGja+wAAAAAAHzANBgkqhkiG
+# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUGwFLa3PCIro2u3VzKcaVT6qS
+# O6Ogggn9MIIEJjCCAw6gAwIBAgITawAAAB/Nnq77QGja+wAAAAAAHzANBgkqhkiG
 # 9w0BAQsFADAwMQwwCgYDVQQGEwNMQUIxDTALBgNVBAoTBFpFUk8xETAPBgNVBAMT
 # CFplcm9EQzAxMB4XDTE3MDkyMDIxMDM1OFoXDTE5MDkyMDIxMTM1OFowPTETMBEG
 # CgmSJomT8ixkARkWA0xBQjEUMBIGCgmSJomT8ixkARkWBFpFUk8xEDAOBgNVBAMT
@@ -97,11 +97,11 @@ function GetCentOS7Scripts {
 # ARkWA0xBQjEUMBIGCgmSJomT8ixkARkWBFpFUk8xEDAOBgNVBAMTB1plcm9TQ0EC
 # E1gAAAH5oOvjAv3166MAAQAAAfkwCQYFKw4DAhoFAKB4MBgGCisGAQQBgjcCAQwx
 # CjAIoAKAAKECgAAwGQYJKoZIhvcNAQkDMQwGCisGAQQBgjcCAQQwHAYKKwYBBAGC
-# NwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFIamXjxoJg+cqBsH
-# DkuXL/gLM8FxMA0GCSqGSIb3DQEBAQUABIIBAKww/QsfSBOIdUukVMsxgGAsXz/H
-# Jszix9uYzNF4TQesq8wPX+689lJpoNWmSWvw8DMYgzKpyx31T9Vgj5prU8/KotQ3
-# PgGsSv6zjlF5I/HLVb9+tK2ed9Mnsi1Oj4j5gU4DY611Jw2nnVpE7/R/vNF5ILqO
-# CemU/mXpp6dAz0vjMmyGqCx5d8R1ohXxXUva3BEnWfLAlW42xNH4XVPphisbZbJ8
-# zDCb0v9huvsZmVcXHly1fZCJ1snhcDe9lLyXbT2qikp4S+l9tmOt+6E640JjOh6X
-# jRc3pye4/QR91NgAHFbBGSJofZW+Zfc98UCdGqtWnZ3I43Ms0MihK63TVI8=
+# NwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFDuxkjvdKPFW7gMX
+# 1hq+1x+Xd4E0MA0GCSqGSIb3DQEBAQUABIIBAEqrSdQlllHRP30oalenp5Dz8Z8R
+# pa6TeVfalHvsIz2AG2yMM3BYur0MG9jclmnmFQWeR7fuldgX2ZwV5N1+tKP23Y67
+# 1yiad6SZoncgCB4nFoWLNAdSFiDoUjartzZtzcT3UOssrhv3UX9YlHs2u9YVFukV
+# qI1YVJ5KeEgm1M7I0Jv9FbGiejL5bHXqLtOPJgsXbdz27alp5ZRAnmbrtf/oLcV5
+# cOtOL1olF4OMxRTLFeHt1dQY+MMek3KIA396BL7c+c7FpaBLpyGKuMubEiZJE9OP
+# wR8R3NI2XIuLAFQDofPaec334+fwG7yOMfGlcjjVgxiWa9FBgw5KK6Ep32M=
 # SIG # End signature block

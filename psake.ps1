@@ -102,7 +102,7 @@ if ($ModulesToInstallAndImport.Count -gt 0) {
             continue
         }
 
-        if (!$(Get-Module -ListAvailable $ModuleItem.Name -ErrorAction SilentlyContinue)) {Install-Module $ModuleItem.Name}
+        if (!$(Get-Module -ListAvailable $ModuleItem.Name -ErrorAction SilentlyContinue)) {Install-Module $ModuleItem.Name -AllowClobber}
 
         if ($PSVersionTable.Platform -eq "Unix" -or $PSVersionTable.OS -match "Darwin") {
             # Make sure the Module Manifest file name and the Module Folder name are exactly the same case
@@ -168,8 +168,8 @@ if ($ModulesToInstallAndImport.Count -gt 0) {
 
     Add-Content -Value $FunctionTextToAdd -Path "$env:BHModulePath\$env:BHProjectName.psm1"
 
-    # Add the Import-Module Universal.Dashboard Module else install .Net Framework 4.7.2 code
-    $ImportUDCommCode = @'
+    # Add the Import-Module WinCompat
+    $ImportWinCompat = @'
 
 if ($PSVersionTable.Platform -eq "Win32NT" -and $PSVersionTable.PSEdition -eq "Core") {
     if (![bool]$(Get-Module -ListAvailable WindowsCompatibility)) {
@@ -197,7 +197,7 @@ if ($PSVersionTable.Platform -eq "Win32NT" -and $PSVersionTable.PSEdition -eq "C
 
 '@
 
-    Add-Content -Value $ImportUDCommCode -Path "$env:BHModulePath\$env:BHProjectName.psm1"
+    Add-Content -Value $ImportWinCompat -Path "$env:BHModulePath\$env:BHProjectName.psm1"
 
     # Finally, add array the variables contained in VariableLibrary.ps1 if it exists in case we want to use this Module Remotely
     if (Test-Path "$env:BHModulePath\VariableLibrary.ps1") {
@@ -294,8 +294,8 @@ Task Deploy -Depends Build {
 # SIG # Begin signature block
 # MIIMiAYJKoZIhvcNAQcCoIIMeTCCDHUCAQExCzAJBgUrDgMCGgUAMGkGCisGAQQB
 # gjcCAQSgWzBZMDQGCisGAQQBgjcCAR4wJgIDAQAABBAfzDtgWUsITrck0sYpfvNR
-# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUvSeVKSU/TElhVBqz6os3Ho4r
-# Re2gggn9MIIEJjCCAw6gAwIBAgITawAAAB/Nnq77QGja+wAAAAAAHzANBgkqhkiG
+# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQU+OHXR0Jcrojl4AjD2IAqT0U9
+# qeigggn9MIIEJjCCAw6gAwIBAgITawAAAB/Nnq77QGja+wAAAAAAHzANBgkqhkiG
 # 9w0BAQsFADAwMQwwCgYDVQQGEwNMQUIxDTALBgNVBAoTBFpFUk8xETAPBgNVBAMT
 # CFplcm9EQzAxMB4XDTE3MDkyMDIxMDM1OFoXDTE5MDkyMDIxMTM1OFowPTETMBEG
 # CgmSJomT8ixkARkWA0xBQjEUMBIGCgmSJomT8ixkARkWBFpFUk8xEDAOBgNVBAMT
@@ -352,11 +352,11 @@ Task Deploy -Depends Build {
 # ARkWA0xBQjEUMBIGCgmSJomT8ixkARkWBFpFUk8xEDAOBgNVBAMTB1plcm9TQ0EC
 # E1gAAAH5oOvjAv3166MAAQAAAfkwCQYFKw4DAhoFAKB4MBgGCisGAQQBgjcCAQwx
 # CjAIoAKAAKECgAAwGQYJKoZIhvcNAQkDMQwGCisGAQQBgjcCAQQwHAYKKwYBBAGC
-# NwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFB1bAt60CzLF/R+2
-# gZoKhSrukP91MA0GCSqGSIb3DQEBAQUABIIBAHiv402VrG3GrcGCfQ7MG3+h4aY1
-# BQjlBuCy93OEcEK0nVbrJhbDr7Ala6yXh9DctgZKWRXwd/M0fxPYTMGkHvOG9z5G
-# DNVjTZ68nNzDOKLwILtvMbj6mLxNnkM+AwBXbDQXGOhfQgEweZZxiGNmAeEXnSwv
-# LrRdHv9ALFgGYHvLIAN8waBV18cwd6+vRCw4S56J9uFwpp0XarNrtWyIkpc+LPcF
-# ZvfPB7za+wMKmvWPJcM09dE4xfTquXLsB8E5vksxtCzdZAno8piybq/Tj2yWvl8Y
-# wlbNPb6xU2xvsc1URQEj2CS8I1vefMUUOJ3uum5BT97t7N2uQyyESV54WQw=
+# NwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFFCr21C7fy57HGk1
+# IHZFhNHJl108MA0GCSqGSIb3DQEBAQUABIIBAKuJJQ2CH6kbzmdqKL9f/+Wekbym
+# dCpR61RvnbgibXrtz0SoNES6b0bRgLeCiRYQp09sbR7o9pWjhSr7o3+AgUsD5TSO
+# CtEwtcmkuyGqXDw34W9bvEAKtnJ3dogdXT/O1N9tSyG38fHZTZ295LM32vTj0W9t
+# ERKBrBzJwEeu2Wiyr81vJDfkPzrkb6rlu964J9vQHL4m6j0reDBaieplWkqssL5e
+# U9Ja0V3F8Ptrox2e2rXhc3DNsLfwvQmoZJOEe60wo4p/aLfmtQXMxX2sUP4R+4Ka
+# S+5lq1sK9MI4EyHbTi0q9GshWzNewBjobv7kbvQW2sht0ESk4I3XkSo6+YQ=
 # SIG # End signature block

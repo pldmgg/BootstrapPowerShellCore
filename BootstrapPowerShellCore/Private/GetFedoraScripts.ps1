@@ -35,18 +35,18 @@ function GetFedoraScripts {
     )
 
     [pscustomobject]@{
-        PackageManagerInstallScript = $FedoraPMInstallScript
-        ManualInstallScript         = $FedoraManualInstallScript
-        UninstallScript             = $FedoraUninstallScript
-        ConfigurePwshRemotingScript = $LinuxPwshRemotingScript
+        PackageManagerInstallScript = [System.Collections.ArrayList]$FedoraPMInstallScript
+        ManualInstallScript         = [System.Collections.ArrayList]$FedoraManualInstallScript
+        UninstallScript             = [System.Collections.ArrayList]$FedoraUninstallScript
+        ConfigurePwshRemotingScript = [System.Collections.ArrayList]$LinuxPwshRemotingScript
     }
 }
 
 # SIG # Begin signature block
 # MIIMiAYJKoZIhvcNAQcCoIIMeTCCDHUCAQExCzAJBgUrDgMCGgUAMGkGCisGAQQB
 # gjcCAQSgWzBZMDQGCisGAQQBgjcCAR4wJgIDAQAABBAfzDtgWUsITrck0sYpfvNR
-# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUU/R+oJN/RtS0vqdmYodGHmQj
-# uOmgggn9MIIEJjCCAw6gAwIBAgITawAAAB/Nnq77QGja+wAAAAAAHzANBgkqhkiG
+# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUClQKcuN5RH0ydc1gsIEqB18C
+# x0qgggn9MIIEJjCCAw6gAwIBAgITawAAAB/Nnq77QGja+wAAAAAAHzANBgkqhkiG
 # 9w0BAQsFADAwMQwwCgYDVQQGEwNMQUIxDTALBgNVBAoTBFpFUk8xETAPBgNVBAMT
 # CFplcm9EQzAxMB4XDTE3MDkyMDIxMDM1OFoXDTE5MDkyMDIxMTM1OFowPTETMBEG
 # CgmSJomT8ixkARkWA0xBQjEUMBIGCgmSJomT8ixkARkWBFpFUk8xEDAOBgNVBAMT
@@ -103,11 +103,11 @@ function GetFedoraScripts {
 # ARkWA0xBQjEUMBIGCgmSJomT8ixkARkWBFpFUk8xEDAOBgNVBAMTB1plcm9TQ0EC
 # E1gAAAH5oOvjAv3166MAAQAAAfkwCQYFKw4DAhoFAKB4MBgGCisGAQQBgjcCAQwx
 # CjAIoAKAAKECgAAwGQYJKoZIhvcNAQkDMQwGCisGAQQBgjcCAQQwHAYKKwYBBAGC
-# NwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFG5DYn1sUW8TCnpq
-# 6alzeMOSvWHyMA0GCSqGSIb3DQEBAQUABIIBAHWZjOEH3bxkb1fj6kaSFUl7dSfK
-# aw6LJPogIJJIVTg1BtrE1GB6x3DY8pu7j+7QMaokIFIFS1m0EQ2GB5lKtbUMCioo
-# /eQ0GBZ4C4qGpADLaO6eWrX6qkl5VDdwcF7+2a+SceHyI+soyw37UBDyRRQELLUP
-# KoQmTu/DqhvC+1yb0boFVcBwDxom4MauKOm2yytHQwG/CS4EmKCyqEF/8vWMFdiR
-# YuTnk4aR2uzICRth7NpZjNRzNdVZGO5kdNI98SZjSEcE1pcEt6EqRMzW9nObia4T
-# x25rXIt3P5LnygaoFgLehq7TD4UseiR3JNXPqQWAs5kqyH8T2asfgX33Oi8=
+# NwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFK22MURAAa9WG392
+# 09JmYI836WcZMA0GCSqGSIb3DQEBAQUABIIBAJUeOuWO+UURdSEI8k9w9Xkljvgc
+# ViNPWM8lCAiOxPa93OkIVExZZchx26I5GtaKgarf/Unlz0oElEXV+0jXebhB9XAs
+# PkjPT7NI9CZ8IN40YAzlf9kG7DsC/9GcyGw2b2JcqEwHn3w/tA/Acc3ruZTEDEfd
+# OOx7cDiVvISVLcf7zKIHMFeSG7ssHsriiJHzCC7qlaLr00Aep1Jqndbr0YLPt48q
+# 7kpJY/m0phj47ev4gjN7Ni4dePfBxrRdkJqMGxlQrlweoL6XDrXDOZU7vNvWRCCd
+# xt07hARfRGq1CKqwkYxTHXbtIZITm6sT7Lw6eYdFMzWwDo6LLVNbRQnlETk=
 # SIG # End signature block

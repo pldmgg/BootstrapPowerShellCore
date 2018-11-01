@@ -63,7 +63,7 @@ function GetWindowsScripts {
         'try {'
         '    if ($(Get-Module -ListAvailable).Name -notcontains "ProgramManagement") {$null = Install-Module ProgramManagement -ErrorAction Stop}'
         '    if ($(Get-Module).Name -notcontains "ProgramManagement") {$null = Import-Module ProgramManagement -ErrorAction Stop}'
-        '    Install-Program -ProgramName powershell-core -CommandName pwsh.exe'
+        '    Install-Program -ProgramName powershell-core -CommandName pwsh.exe -ExpectedInstallLocation "$env:ProgramFiles\PowerShell" -ErrorAction Stop'
         '} catch {'
         '    Write-Error $_'
         '    $global:FunctionResult = "1"'
@@ -98,18 +98,18 @@ function GetWindowsScripts {
     [System.Collections.ArrayList]$WindowsPwshRemotingScript = @("powershell -NoProfile -EncodedCommand $EncodedCommandInstallPwsh")
 
     [pscustomobject]@{
-        PackageManagerInstallScript = $WindowsPMInstallScript
-        ManualInstallScript         = $WindowsManualInstallScript
-        UninstallScript             = $WindowsUninstallScript
-        ConfigurePwshRemotingScript = $WindowsPwshRemotingScript
+        PackageManagerInstallScript = [System.Collections.ArrayList]$WindowsPMInstallScript
+        ManualInstallScript         = [System.Collections.ArrayList]$WindowsManualInstallScript
+        UninstallScript             = [System.Collections.ArrayList]$WindowsUninstallScript
+        ConfigurePwshRemotingScript = [System.Collections.ArrayList]$WindowsPwshRemotingScript
     }
 }
 
 # SIG # Begin signature block
 # MIIMiAYJKoZIhvcNAQcCoIIMeTCCDHUCAQExCzAJBgUrDgMCGgUAMGkGCisGAQQB
 # gjcCAQSgWzBZMDQGCisGAQQBgjcCAR4wJgIDAQAABBAfzDtgWUsITrck0sYpfvNR
-# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUqLKClQSMbkAo13mfajc56GNr
-# doCgggn9MIIEJjCCAw6gAwIBAgITawAAAB/Nnq77QGja+wAAAAAAHzANBgkqhkiG
+# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUiPuEtfJe55bukUk+36ZMRMvc
+# x5igggn9MIIEJjCCAw6gAwIBAgITawAAAB/Nnq77QGja+wAAAAAAHzANBgkqhkiG
 # 9w0BAQsFADAwMQwwCgYDVQQGEwNMQUIxDTALBgNVBAoTBFpFUk8xETAPBgNVBAMT
 # CFplcm9EQzAxMB4XDTE3MDkyMDIxMDM1OFoXDTE5MDkyMDIxMTM1OFowPTETMBEG
 # CgmSJomT8ixkARkWA0xBQjEUMBIGCgmSJomT8ixkARkWBFpFUk8xEDAOBgNVBAMT
@@ -166,11 +166,11 @@ function GetWindowsScripts {
 # ARkWA0xBQjEUMBIGCgmSJomT8ixkARkWBFpFUk8xEDAOBgNVBAMTB1plcm9TQ0EC
 # E1gAAAH5oOvjAv3166MAAQAAAfkwCQYFKw4DAhoFAKB4MBgGCisGAQQBgjcCAQwx
 # CjAIoAKAAKECgAAwGQYJKoZIhvcNAQkDMQwGCisGAQQBgjcCAQQwHAYKKwYBBAGC
-# NwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFO+7MTYjJ5rW7Ext
-# ZVd/anK2dH7YMA0GCSqGSIb3DQEBAQUABIIBAK0F4dLqCd4xOHcBIkQsybTR83oU
-# 3T+r5ci3NL9/B239nZPE4KZY2ZTo2Y+iE3oC7YWCAu6q0eVCKghMR9qz8Pzu/j9l
-# pXnkpnCGodHheOnPQaX+pqidA8SOub38FwUGegwpKsw8UscQ5LRnQ1uSLHLK68sb
-# 6lXAs4gOg+apb6ololl8Uwdlzc5OHyHf3YYB8YwN31bZkn5Tg8ijmmDEZpnS72eU
-# yZXSTZrmUSxEZdwmPJvqF8vzMnAv+a/TALApJ6JKLWeC4w3xO3ZiAbHKQVrmLepA
-# rS153OO2bMRKb1HAJCy2ooIkVEIABKnDzncrNparzfNLO/BD2z/S9aDaGfI=
+# NwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFLyC1aGRerAjUo4J
+# vGScFYev9304MA0GCSqGSIb3DQEBAQUABIIBAJ0B2k8QSgFCQ1hRXZTXkVcd3X6x
+# fF50FY2Y623vQTyrVDs44gua41nqBOteEVg5Po/r2H5qvHXkA0Wi3eMPzaCDCYIE
+# 30Qz+d+ZIYeoA/6Quz4z8RlCgGN7LLlxxA+HTtGunjA7kYCW+OfOVCRUWbI/j1kw
+# EHyR/5AXmhfE3wY8iSJXSmGHfuRMBYynZZsIlIkbs11wTCX0hrbckgMkrfPAuVIj
+# ig445U2A9Ejz1mJ87UndmpByy6HNBPryUp6Sfv0BQx3N/TW4/L3127G+wP3/beGl
+# pEZei+XBqM8YAz5EP87CUY+nSNy2eGHgpq+ML/2fWhZ9Ec0lzDeb5BVZVns=
 # SIG # End signature block

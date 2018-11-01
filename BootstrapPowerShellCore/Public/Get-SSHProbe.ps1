@@ -286,7 +286,7 @@ function Get-SSHProbe {
                 try {
                     if ($(Get-Module -ListAvailable).Name -notcontains 'ProgramManagement') {$null = Install-Module ProgramManagement -ErrorAction Stop}
                     if ($(Get-Module).Name -notcontains 'ProgramManagement') {$null = Import-Module ProgramManagement -ErrorAction Stop}
-                    $InstallPwshResult = Install-Program -ProgramName powershell-core -CommandName pwsh.exe
+                    $InstallPwshResult = Install-Program -ProgramName powershell-core -CommandName pwsh.exe -ExpectedInstallLocation "$env:ProgramFiles\PowerShell" -ErrorAction Stop
                 }
                 catch {
                     Write-Error $_
@@ -1737,8 +1737,8 @@ function Get-SSHProbe {
 # SIG # Begin signature block
 # MIIMiAYJKoZIhvcNAQcCoIIMeTCCDHUCAQExCzAJBgUrDgMCGgUAMGkGCisGAQQB
 # gjcCAQSgWzBZMDQGCisGAQQBgjcCAR4wJgIDAQAABBAfzDtgWUsITrck0sYpfvNR
-# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUOvwGB67+RP3/JlXm50CSzcvM
-# FNmgggn9MIIEJjCCAw6gAwIBAgITawAAAB/Nnq77QGja+wAAAAAAHzANBgkqhkiG
+# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUOW/xjalCphxkWH37/6N1VJ9z
+# o12gggn9MIIEJjCCAw6gAwIBAgITawAAAB/Nnq77QGja+wAAAAAAHzANBgkqhkiG
 # 9w0BAQsFADAwMQwwCgYDVQQGEwNMQUIxDTALBgNVBAoTBFpFUk8xETAPBgNVBAMT
 # CFplcm9EQzAxMB4XDTE3MDkyMDIxMDM1OFoXDTE5MDkyMDIxMTM1OFowPTETMBEG
 # CgmSJomT8ixkARkWA0xBQjEUMBIGCgmSJomT8ixkARkWBFpFUk8xEDAOBgNVBAMT
@@ -1795,11 +1795,11 @@ function Get-SSHProbe {
 # ARkWA0xBQjEUMBIGCgmSJomT8ixkARkWBFpFUk8xEDAOBgNVBAMTB1plcm9TQ0EC
 # E1gAAAH5oOvjAv3166MAAQAAAfkwCQYFKw4DAhoFAKB4MBgGCisGAQQBgjcCAQwx
 # CjAIoAKAAKECgAAwGQYJKoZIhvcNAQkDMQwGCisGAQQBgjcCAQQwHAYKKwYBBAGC
-# NwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFDIKzN96kcsB8Gh1
-# uKOIFCv613GYMA0GCSqGSIb3DQEBAQUABIIBAH/CCDnG5SZRsajJH4tDE8y2rClX
-# audvCoOV7IjII5nlHKrOAqWy8G6UHLgMbFsdvDsICiB6QZMOOrnvzenKFqF/Uik+
-# v0gV4fsl9PkIO8U70N03OFz5vGz8XIHvZE0YWH7a5pP4UtIwlwPa9jS/OeXDz74G
-# H10dww7eL21A1N0Z+QjFyk3dtIQatSb5fJpj58303v3cDhh4rxbDQjFHqJJJG2/+
-# nBToojcVDkO5GAF3LH6DDeaVxdY2BVrdD22VsJa1msYyICIV/N4Tv4VuR8X1zRQJ
-# XTKVtoXLip+z76Je7zfBSQdHDgeIJwULPxnuYDa8KNoPez0tvoOCVmNPjUc=
+# NwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFK6So6ljHCQQDXB5
+# TwqnlUOkCFSnMA0GCSqGSIb3DQEBAQUABIIBAC9N7wfILzG7+0H+HoA9+ef29l56
+# 7APZ7L/7qsx7YWE/j9+uRGiNBUoPCWEvmfMkAgQn0Yk5ZN3JpaCuoDh0H9F/cGlE
+# FZ/wPCFSs1vHyNGnDM5epyzWliIpBExUum7ULYk5Tz1unDen1gAX/JKuNwGel/su
+# Bjfr0bupObaY2OtJww+t7ChAIIMA9HD8stR/rmLo4SQBvSadGrxNBaWcNcgpf+H6
+# ttDvTUgxx/+hJlRee+9yKIAtvVciEo+6b3rxIytEQTQis9cKfoEeJBdOz3xFTzyr
+# CKp5tRZARks+wVzOiSBEQ3AQvVw5WV359TATaWMR2dTiLMTkggkIGo9Nv38=
 # SIG # End signature block

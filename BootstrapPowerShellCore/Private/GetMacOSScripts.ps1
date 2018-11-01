@@ -32,18 +32,18 @@ function GetMacOSScripts {
     )
 
     $MacOS = [pscustomobject]@{
-        PackageManagerInstallScript                 = $MacOSPMInstallScript
-        ManualInstallScript                         = $MacOSPMInstallScript
-        UninstallScript                             = $MacOSUninstallScript
-        ConfigurePwshRemotingScript                 = $MacPwshRemotingScript
+        PackageManagerInstallScript                 = [System.Collections.ArrayList]$MacOSPMInstallScript
+        ManualInstallScript                         = [System.Collections.ArrayList]$MacOSPMInstallScript
+        UninstallScript                             = [System.Collections.ArrayList]$MacOSUninstallScript
+        ConfigurePwshRemotingScript                 = [System.Collections.ArrayList]$MacPwshRemotingScript
     }
 }
 
 # SIG # Begin signature block
 # MIIMiAYJKoZIhvcNAQcCoIIMeTCCDHUCAQExCzAJBgUrDgMCGgUAMGkGCisGAQQB
 # gjcCAQSgWzBZMDQGCisGAQQBgjcCAR4wJgIDAQAABBAfzDtgWUsITrck0sYpfvNR
-# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUJiycF4DLbr8GX0zJ0nHi27nS
-# 8vmgggn9MIIEJjCCAw6gAwIBAgITawAAAB/Nnq77QGja+wAAAAAAHzANBgkqhkiG
+# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUyO+N63+bZEtuUdvwc2QQzigr
+# wXKgggn9MIIEJjCCAw6gAwIBAgITawAAAB/Nnq77QGja+wAAAAAAHzANBgkqhkiG
 # 9w0BAQsFADAwMQwwCgYDVQQGEwNMQUIxDTALBgNVBAoTBFpFUk8xETAPBgNVBAMT
 # CFplcm9EQzAxMB4XDTE3MDkyMDIxMDM1OFoXDTE5MDkyMDIxMTM1OFowPTETMBEG
 # CgmSJomT8ixkARkWA0xBQjEUMBIGCgmSJomT8ixkARkWBFpFUk8xEDAOBgNVBAMT
@@ -100,11 +100,11 @@ function GetMacOSScripts {
 # ARkWA0xBQjEUMBIGCgmSJomT8ixkARkWBFpFUk8xEDAOBgNVBAMTB1plcm9TQ0EC
 # E1gAAAH5oOvjAv3166MAAQAAAfkwCQYFKw4DAhoFAKB4MBgGCisGAQQBgjcCAQwx
 # CjAIoAKAAKECgAAwGQYJKoZIhvcNAQkDMQwGCisGAQQBgjcCAQQwHAYKKwYBBAGC
-# NwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFIR07kd3qOAj6tGV
-# 4ZPYvu1Hdra6MA0GCSqGSIb3DQEBAQUABIIBAHDUuC3J2vupU8mwZ+w5SnBlkZwC
-# 4cSPZIiR7cVsihFD4nHVQ2AJKHaA9RFWRgADS5bGPrY/sPo8D01pUqzdHoZWJMl1
-# 6RkH4zSUrkAp0trQB7h6nj2JOJuUFNichyZ9qK4r/gFKWgGXvAthXFUw+YyVAF4L
-# VsFrlI8HycwPK7JtsjTpo+HqpDCEtmCEgcVmrTk7GkdZkqWpmgosOPJyG9NGNRHN
-# mFrM+cQ0/2e8OOJcJZ7VR2wBmg+oiGlMnaaDaEL1MV6wXDbq6HqUlgns9AxttPPi
-# 5J4XFu8H43cFPN/ubrWcqJCDvI/vZUPkC+3+MvtC5hXtp5QeuBCcFyR4yco=
+# NwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFOi0APAEBjnBFhcY
+# wg9cceDII4kUMA0GCSqGSIb3DQEBAQUABIIBAA362tm7VSCjwslIEdyUOuC2qCEl
+# Z6m6q+j1VQ2zHaFG60P1O1FbscGn4rUV0w07/MmY6gQzpvaQKJdgb1KNyHDDyduF
+# OKa+yrwrI6kSZ1YrFZGDEENEAO8Fkbpum1JdpJRSf5Ddmwtp9zr1XQO1PF0MV3AN
+# CdPC8HVqK0igfLWyJESgGs/BQCiJSEOFmKZMn0AJar4bmFp3Q1lxm2J253QiVgyn
+# SUPDDOjW2Pm9l8nhm4OKwULcHDnL6ptzDY5+gFRkh01P8xmyOp+mtN+1KtvG3py6
+# /4LfJeqF+730mRfOpm1bFei2YDSuUTBrfLxIK6cUCYcujd+IOmJLYV8v47k=
 # SIG # End signature block

@@ -36,7 +36,7 @@ if ($ModulesToInstallAndImport.Count -gt 0) {
             continue
         }
 
-        if (!$(Get-Module -ListAvailable $ModuleItem.Name -ErrorAction SilentlyContinue)) {Install-Module $ModuleItem.Name}
+        if (!$(Get-Module -ListAvailable $ModuleItem.Name -ErrorAction SilentlyContinue)) {Install-Module $ModuleItem.Name -AllowClobber}
 
         if ($PSVersionTable.Platform -eq "Unix" -or $PSVersionTable.OS -match "Darwin") {
             # Make sure the Module Manifest file name and the Module Folder name are exactly the same case
@@ -512,6 +512,9 @@ function Bootstrap-PowerShellCore {
         $global:FunctionResult = "1"
         return
     }
+
+    Write-Host "OS: $OSCheck.OS"
+    Write-Host "Shell: $OSCheck.Shell"
     
     if ($OSCheck.OS -eq "Linux") {
         # Check to make sure the user has sudo privileges
@@ -1601,7 +1604,7 @@ function Get-SSHProbe {
                 try {
                     if ($(Get-Module -ListAvailable).Name -notcontains 'ProgramManagement') {$null = Install-Module ProgramManagement -ErrorAction Stop}
                     if ($(Get-Module).Name -notcontains 'ProgramManagement') {$null = Import-Module ProgramManagement -ErrorAction Stop}
-                    $InstallPwshResult = Install-Program -ProgramName powershell-core -CommandName pwsh.exe
+                    $InstallPwshResult = Install-Program -ProgramName powershell-core -CommandName pwsh.exe -ExpectedInstallLocation "$env:ProgramFiles\PowerShell" -ErrorAction Stop
                 }
                 catch {
                     Write-Error $_
@@ -3319,7 +3322,7 @@ function Get-SudoStatus {
     $EncodedCommand = [Convert]::ToBase64String($PSVerTablePwshBytes)
 
     [System.Collections.ArrayList]$CheckSudoStatusScript = @(
-        $('prompt=$(sudo -n pwsh -EncodedCommand {0} 2>&1)' -f $EncodedCommand)
+        'command -v pwsh >/dev/null && ' + $('prompt=$(sudo -n pwsh -EncodedCommand {0} 2>&1)' -f $EncodedCommand) + ' || ' + $('prompt=$(sudo -n bash -c {0} 2>&1)' -f "'echo bashSuccess'")
         $('if [ $? -eq 0 ]; then echo {0}; elif echo $prompt | grep -q {1}; then echo {2}; else echo {3}; fi' -f "'NoPasswordPrompt'","'^sudo'","'PasswordPrompt'","'NoSudoPrivileges'")
     )
     $null = $CheckSudoStatusScript.Add('echo checkSudoComplete')
@@ -4292,8 +4295,8 @@ puts "Run `brew help` to get started"
 # SIG # Begin signature block
 # MIIMiAYJKoZIhvcNAQcCoIIMeTCCDHUCAQExCzAJBgUrDgMCGgUAMGkGCisGAQQB
 # gjcCAQSgWzBZMDQGCisGAQQBgjcCAR4wJgIDAQAABBAfzDtgWUsITrck0sYpfvNR
-# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUT98r1MYOmwYqFx/PU0pm8Vrj
-# ZISgggn9MIIEJjCCAw6gAwIBAgITawAAAB/Nnq77QGja+wAAAAAAHzANBgkqhkiG
+# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUXVHyQZqTjOBUmKDifDR2e57v
+# z5ygggn9MIIEJjCCAw6gAwIBAgITawAAAB/Nnq77QGja+wAAAAAAHzANBgkqhkiG
 # 9w0BAQsFADAwMQwwCgYDVQQGEwNMQUIxDTALBgNVBAoTBFpFUk8xETAPBgNVBAMT
 # CFplcm9EQzAxMB4XDTE3MDkyMDIxMDM1OFoXDTE5MDkyMDIxMTM1OFowPTETMBEG
 # CgmSJomT8ixkARkWA0xBQjEUMBIGCgmSJomT8ixkARkWBFpFUk8xEDAOBgNVBAMT
@@ -4350,11 +4353,11 @@ puts "Run `brew help` to get started"
 # ARkWA0xBQjEUMBIGCgmSJomT8ixkARkWBFpFUk8xEDAOBgNVBAMTB1plcm9TQ0EC
 # E1gAAAH5oOvjAv3166MAAQAAAfkwCQYFKw4DAhoFAKB4MBgGCisGAQQBgjcCAQwx
 # CjAIoAKAAKECgAAwGQYJKoZIhvcNAQkDMQwGCisGAQQBgjcCAQQwHAYKKwYBBAGC
-# NwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFJTH02ll1Nu87xwD
-# KMDalxc9aipdMA0GCSqGSIb3DQEBAQUABIIBALzbgGcaN5/lOKwQZ21gJPVMZl7z
-# yxXDBFIdioZu2iXZ49Kx7kdLmMRWdC3d/iBXo45HYJQ61jtSIfBXdxZWk5CoXS4g
-# B7eQOKxmZm0Tv1XacVzzln8yz8IRCcpQz/X9+Z4nOAlIPwmo7Q7UfTCGZmX11t3M
-# +Btxaha5xbC7ggt61G+V7TxMRuaRge26B3BR8YvfXiPrcO8UmpJHHxiAoHuCeaw/
-# w4ZeC0INNJhChexMv0/LIsfRTTIBjmYLyzsxJvE1P2wVXbQVMqAs7jYjwC7G1Tcq
-# bJxhcwrb1lP+fZNBAvBUoNgTNAFvYSoUIJInqDf7D6VFDfPY1mlPe9vwsmk=
+# NwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFNMLDYz2b+bOVRfH
+# LEmPGxGoBo2OMA0GCSqGSIb3DQEBAQUABIIBAI4y2DHSoxFGzuWBdVBk1bGJUnFy
+# GvteKnIuRihDe8csHaB8mfMd+4jx8lTB143ep0Uds8HChcPEACZFbo/x/NtM5oTs
+# b0kq4k0df+mwxl2WBf7z3DJFVGXkw8Qn8fn9yPImnWoNvjQBCu+67VkmEC/6fNRa
+# AlTpn21/MdQj64vQAkNqww/A/5WKCA5OwlLXp9GozXl2H4syIfUVenYx2S55QdCP
+# ppRun1maJT+sfjhvfbsEXvLwLKzE/r0kYJ0PjXr5M2KistkVRpiPBFZHwxw+MGSt
+# R1Yh4FbtQ6ey93qzrbNKyN4Sue9n7yCvzEeNI/6z2Eku5xCk2OfWcHyTGzI=
 # SIG # End signature block

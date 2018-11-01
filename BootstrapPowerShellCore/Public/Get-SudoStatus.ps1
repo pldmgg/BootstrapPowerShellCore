@@ -267,7 +267,7 @@ function Get-SudoStatus {
     $EncodedCommand = [Convert]::ToBase64String($PSVerTablePwshBytes)
 
     [System.Collections.ArrayList]$CheckSudoStatusScript = @(
-        $('prompt=$(sudo -n pwsh -EncodedCommand {0} 2>&1)' -f $EncodedCommand)
+        'command -v pwsh >/dev/null && ' + $('prompt=$(sudo -n pwsh -EncodedCommand {0} 2>&1)' -f $EncodedCommand) + ' || ' + $('prompt=$(sudo -n bash -c {0} 2>&1)' -f "'echo bashSuccess'")
         $('if [ $? -eq 0 ]; then echo {0}; elif echo $prompt | grep -q {1}; then echo {2}; else echo {3}; fi' -f "'NoPasswordPrompt'","'^sudo'","'PasswordPrompt'","'NoSudoPrivileges'")
     )
     $null = $CheckSudoStatusScript.Add('echo checkSudoComplete')
@@ -327,8 +327,8 @@ function Get-SudoStatus {
 # SIG # Begin signature block
 # MIIMiAYJKoZIhvcNAQcCoIIMeTCCDHUCAQExCzAJBgUrDgMCGgUAMGkGCisGAQQB
 # gjcCAQSgWzBZMDQGCisGAQQBgjcCAR4wJgIDAQAABBAfzDtgWUsITrck0sYpfvNR
-# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUjtj182eihAg4z2JTXJ0Osc1/
-# YLugggn9MIIEJjCCAw6gAwIBAgITawAAAB/Nnq77QGja+wAAAAAAHzANBgkqhkiG
+# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUs70s9Y+nNnVKx5Uw3zHVkA0D
+# 5ZKgggn9MIIEJjCCAw6gAwIBAgITawAAAB/Nnq77QGja+wAAAAAAHzANBgkqhkiG
 # 9w0BAQsFADAwMQwwCgYDVQQGEwNMQUIxDTALBgNVBAoTBFpFUk8xETAPBgNVBAMT
 # CFplcm9EQzAxMB4XDTE3MDkyMDIxMDM1OFoXDTE5MDkyMDIxMTM1OFowPTETMBEG
 # CgmSJomT8ixkARkWA0xBQjEUMBIGCgmSJomT8ixkARkWBFpFUk8xEDAOBgNVBAMT
@@ -385,11 +385,11 @@ function Get-SudoStatus {
 # ARkWA0xBQjEUMBIGCgmSJomT8ixkARkWBFpFUk8xEDAOBgNVBAMTB1plcm9TQ0EC
 # E1gAAAH5oOvjAv3166MAAQAAAfkwCQYFKw4DAhoFAKB4MBgGCisGAQQBgjcCAQwx
 # CjAIoAKAAKECgAAwGQYJKoZIhvcNAQkDMQwGCisGAQQBgjcCAQQwHAYKKwYBBAGC
-# NwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFBPEVfbUoCEsV2aq
-# Nm/On6myhYjzMA0GCSqGSIb3DQEBAQUABIIBAJuop+fM2ZBMj6hHmMqai7P63PEA
-# FFWC03EBQRmoQUqQUXBecaKJ7G6mnEqaoAgsfg2FJ1O7ZvGc07Ca/guBqcyWj3v6
-# 3Dola+VT5QdPYSaQQfQdvLAU/fzaiCN/6SQ5P40FFrCw4iNbpOX6lDOtIFBB5m+x
-# 3NmTHljtsfk1X0W0YEPliHpPDviJQ1XwRojPIEZpX2ZcEtxBufNc0fFUwZkMqtbZ
-# twIiSDxxoKr+ru+BmbOrSJVeVZgAt2qxDbGC44DQ1fYJPALz6GE1rrXqS3FpyxGc
-# 15bhmQNfVSlVOatkcUZ3J0hSI07WYR9zsjjvPjKaJPpy5R9SSzzd/1B8jNc=
+# NwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFIT+4YR/s9yU03Lo
+# UnYVUZ1WPM8QMA0GCSqGSIb3DQEBAQUABIIBAETGJXFC2sR3zypUd1SLlgGtKXXB
+# XjbVl1AP4KF+VNmL9fhUbeuha1hfMI/Lga6k2X/X0z10yzGKFyZO9HgG/853sfBE
+# cXkSgPS1WQV4tRaKkKi5CFLNLxCfEVb+u0q5F/2kyEwxfdVVV+2pozunfRwJ3ibM
+# H37NaIcknh49tx2rdzw4C2Dj172XRDhdNDhI0D8r9SERUB022vlrsDizKFQPUcNs
+# m3/a1RUzIOaNVHmIneTV7pR9kaHnmfysjNeEKjToMaWS6KfY6a4MnDw8cNwMKUcg
+# vDbBDYcGCbHchHzA1aHXybYjkTndisEGixA5uFju+FVniy+4+JaVQIa13j4=
 # SIG # End signature block

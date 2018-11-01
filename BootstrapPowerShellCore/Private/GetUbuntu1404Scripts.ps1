@@ -36,18 +36,18 @@ function GetUbuntu1404Scripts {
     )
 
     [pscustomobject]@{
-        PackageManagerInstallScript = $Ubuntu1404PMInstallScript
-        ManualInstallScript         = $Ubuntu1404ManualInstallScript
-        UninstallScript             = $Ubuntu1404UninstallScript
-        ConfigurePwshRemotingScript = $LinuxPwshRemotingScript
+        PackageManagerInstallScript = [System.Collections.ArrayList]$Ubuntu1404PMInstallScript
+        ManualInstallScript         = [System.Collections.ArrayList]$Ubuntu1404ManualInstallScript
+        UninstallScript             = [System.Collections.ArrayList]$Ubuntu1404UninstallScript
+        ConfigurePwshRemotingScript = [System.Collections.ArrayList]$LinuxPwshRemotingScript
     }
 }
 
 # SIG # Begin signature block
 # MIIMiAYJKoZIhvcNAQcCoIIMeTCCDHUCAQExCzAJBgUrDgMCGgUAMGkGCisGAQQB
 # gjcCAQSgWzBZMDQGCisGAQQBgjcCAR4wJgIDAQAABBAfzDtgWUsITrck0sYpfvNR
-# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUl5tFXZs0rEeysq3oKdb6MGFN
-# yJWgggn9MIIEJjCCAw6gAwIBAgITawAAAB/Nnq77QGja+wAAAAAAHzANBgkqhkiG
+# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUgMwk86pUVtmDLAOfJzLqFCps
+# Rtygggn9MIIEJjCCAw6gAwIBAgITawAAAB/Nnq77QGja+wAAAAAAHzANBgkqhkiG
 # 9w0BAQsFADAwMQwwCgYDVQQGEwNMQUIxDTALBgNVBAoTBFpFUk8xETAPBgNVBAMT
 # CFplcm9EQzAxMB4XDTE3MDkyMDIxMDM1OFoXDTE5MDkyMDIxMTM1OFowPTETMBEG
 # CgmSJomT8ixkARkWA0xBQjEUMBIGCgmSJomT8ixkARkWBFpFUk8xEDAOBgNVBAMT
@@ -104,11 +104,11 @@ function GetUbuntu1404Scripts {
 # ARkWA0xBQjEUMBIGCgmSJomT8ixkARkWBFpFUk8xEDAOBgNVBAMTB1plcm9TQ0EC
 # E1gAAAH5oOvjAv3166MAAQAAAfkwCQYFKw4DAhoFAKB4MBgGCisGAQQBgjcCAQwx
 # CjAIoAKAAKECgAAwGQYJKoZIhvcNAQkDMQwGCisGAQQBgjcCAQQwHAYKKwYBBAGC
-# NwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFGcorBaN6C3d9xxL
-# yiyCo8WG3U9SMA0GCSqGSIb3DQEBAQUABIIBAC5YUf1/XKJ4X7UhuCIdGOv2gbVQ
-# 9s6gTDXdHTsqonciMWelYMkKV3pNYRHk3g9kXIQt8+7aA0mOpm/mz9fDAfspaP/Q
-# aG2p2BVUC2eZVXPdPDgYzPG6wtsrw481i7nHdYLuHDgaQebJE/q+duEMrWtEmU5k
-# sl0d729XzyvYujLkcrVdHw8RvVt5nLE2LhlriZK4eyCFNvDsx1+WZKP6f/bM1iG1
-# Rps6hdX0Hb7QnNq3HF0NuCDY0qqV5iuy0VX1Cu6beduq2ZWkB+n+f4EU3neaJvUS
-# OGdTkR01iWI5i4Qey0u8/LXfADPN/zlUZboOjhJcq+6gd4HhvacTXSaet8o=
+# NwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFC/Ttxe40GN9OElg
+# PT4/2nJwpQE6MA0GCSqGSIb3DQEBAQUABIIBAMQZqxaL/VXghqO5Ke7N79TFCcES
+# SKLsOs2XigT7S5AcC1piMwKkuORjsT9PZbUIeAerQlk0lG7+/4QMhy5iFdEQg52N
+# xeKqPAWo/lvCPxID3M2lrH9j7IpIEJBlT1KsE4tYNptot2fLmGjmjwCejU3HchtM
+# rtKVlyczvwyTmjks1PJokvSeohKxmIcB57UQqhKfOk1EKm7SYq9SdtPai5caJP5V
+# 8NsYWbriR5/erdHh1PeMobf06BeZsN9PahHXuaB2n8nhbVFFXbWrwwOb1/pqqcK+
+# ltm/i1dvn6jgmey9VxZ8oYKwG/Z3MJRpbdD+jrClPabiA48UaS3DYk+QYQw=
 # SIG # End signature block

@@ -426,6 +426,9 @@ function Bootstrap-PowerShellCore {
         $global:FunctionResult = "1"
         return
     }
+
+    Write-Host "OS: $OSCheck.OS"
+    Write-Host "Shell: $OSCheck.Shell"
     
     if ($OSCheck.OS -eq "Linux") {
         # Check to make sure the user has sudo privileges
@@ -780,8 +783,8 @@ function Bootstrap-PowerShellCore {
 # SIG # Begin signature block
 # MIIMiAYJKoZIhvcNAQcCoIIMeTCCDHUCAQExCzAJBgUrDgMCGgUAMGkGCisGAQQB
 # gjcCAQSgWzBZMDQGCisGAQQBgjcCAR4wJgIDAQAABBAfzDtgWUsITrck0sYpfvNR
-# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUhboQCIUXsG0zCUnGrhqB7I93
-# Lj2gggn9MIIEJjCCAw6gAwIBAgITawAAAB/Nnq77QGja+wAAAAAAHzANBgkqhkiG
+# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQU9kFTwKry9aUaAyxzrD+l8eZS
+# Y9igggn9MIIEJjCCAw6gAwIBAgITawAAAB/Nnq77QGja+wAAAAAAHzANBgkqhkiG
 # 9w0BAQsFADAwMQwwCgYDVQQGEwNMQUIxDTALBgNVBAoTBFpFUk8xETAPBgNVBAMT
 # CFplcm9EQzAxMB4XDTE3MDkyMDIxMDM1OFoXDTE5MDkyMDIxMTM1OFowPTETMBEG
 # CgmSJomT8ixkARkWA0xBQjEUMBIGCgmSJomT8ixkARkWBFpFUk8xEDAOBgNVBAMT
@@ -838,11 +841,11 @@ function Bootstrap-PowerShellCore {
 # ARkWA0xBQjEUMBIGCgmSJomT8ixkARkWBFpFUk8xEDAOBgNVBAMTB1plcm9TQ0EC
 # E1gAAAH5oOvjAv3166MAAQAAAfkwCQYFKw4DAhoFAKB4MBgGCisGAQQBgjcCAQwx
 # CjAIoAKAAKECgAAwGQYJKoZIhvcNAQkDMQwGCisGAQQBgjcCAQQwHAYKKwYBBAGC
-# NwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFMK0o7ZTiPNP2lmX
-# 0XvpeoYk9CRTMA0GCSqGSIb3DQEBAQUABIIBAKmiugvJYSxPBCLT/s4DbAlIzjiL
-# jYxhcnlByq0hfgiPscB2MGOP23YOQj+MEYjUYo40p+OqzLWnUVT1go/JRG8B2NuR
-# bHkyklPtpbqr4VpHuFKVALAQfhY3Vr1iDgwn6/FqJLpxrlcFVB1YbA4l7mx9t75x
-# 7S+q7iJy515MIQxaewzIWPVqzFQBA/Rb1s7ecOfytR3Mf38Fin9J/u17lblfVTf5
-# N/YZCLV1i4TX+stLY9wwb+Cdyxpc6CtD5EV704pV/NHrWBibEQVfcqyjv0RNPuUz
-# bw7USOeauWjMcqlR48p+6j0Z7fju00mlFBPhaLeUDtUQC9NK4vIDskLRCBw=
+# NwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFAsNAiXIsiEI9xXp
+# c0ewYavqRaxRMA0GCSqGSIb3DQEBAQUABIIBABberJ5rYqkIcDFrir+7x1XHzpdW
+# aZ2C6Od0ZfPbvmoOICHwzJ3iSHKQnyx+WY0OIfAGsYraLAs8HienJ+uV86w2hD+3
+# aMCpYmFLqmwaSU5bKOqgDY6Emgs/DZBCIdK+RKPLydpx7AGcT+78omp0f6QVX2u8
+# 34WnMqq4qL1T2YSBTHA7iTH/A7uDeErLYqlUSh2Ryzqt6ro/ff3hG2tK+RhWK6zL
+# yFwICmPbHblf4gP+U3Zjnkv6c7P8diaxhaXnLkoF2GRPQt7cfeFgicA4SMKSvnkK
+# HhtQ51gcswC+zhg8lIxVudJuLKlJHM8cx3ndOmu/TzSbHcUlx5ote1ffqCc=
 # SIG # End signature block

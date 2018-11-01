@@ -36,18 +36,18 @@ function GetUbuntu1604Scripts {
     )
 
     [pscustomobject]@{
-        PackageManagerInstallScript = $Ubuntu1604PMInstallScript
-        ManualInstallScript         = $Ubuntu1604ManualInstallScript
-        UninstallScript             = $Ubuntu1604UninstallScript
-        ConfigurePwshRemotingScript = $LinuxPwshRemotingScript
+        PackageManagerInstallScript = [System.Collections.ArrayList]$Ubuntu1604PMInstallScript
+        ManualInstallScript         = [System.Collections.ArrayList]$Ubuntu1604ManualInstallScript
+        UninstallScript             = [System.Collections.ArrayList]$Ubuntu1604UninstallScript
+        ConfigurePwshRemotingScript = [System.Collections.ArrayList]$LinuxPwshRemotingScript
     }
 }
 
 # SIG # Begin signature block
 # MIIMiAYJKoZIhvcNAQcCoIIMeTCCDHUCAQExCzAJBgUrDgMCGgUAMGkGCisGAQQB
 # gjcCAQSgWzBZMDQGCisGAQQBgjcCAR4wJgIDAQAABBAfzDtgWUsITrck0sYpfvNR
-# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQU0SPMiMLG4lOxDfTcnbgyLOeH
-# w5ugggn9MIIEJjCCAw6gAwIBAgITawAAAB/Nnq77QGja+wAAAAAAHzANBgkqhkiG
+# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUDmrUM4/Gfovs2KnLxIAghM5L
+# 7aegggn9MIIEJjCCAw6gAwIBAgITawAAAB/Nnq77QGja+wAAAAAAHzANBgkqhkiG
 # 9w0BAQsFADAwMQwwCgYDVQQGEwNMQUIxDTALBgNVBAoTBFpFUk8xETAPBgNVBAMT
 # CFplcm9EQzAxMB4XDTE3MDkyMDIxMDM1OFoXDTE5MDkyMDIxMTM1OFowPTETMBEG
 # CgmSJomT8ixkARkWA0xBQjEUMBIGCgmSJomT8ixkARkWBFpFUk8xEDAOBgNVBAMT
@@ -104,11 +104,11 @@ function GetUbuntu1604Scripts {
 # ARkWA0xBQjEUMBIGCgmSJomT8ixkARkWBFpFUk8xEDAOBgNVBAMTB1plcm9TQ0EC
 # E1gAAAH5oOvjAv3166MAAQAAAfkwCQYFKw4DAhoFAKB4MBgGCisGAQQBgjcCAQwx
 # CjAIoAKAAKECgAAwGQYJKoZIhvcNAQkDMQwGCisGAQQBgjcCAQQwHAYKKwYBBAGC
-# NwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFMCf3eLMg/S5Ohnq
-# 2yUHPQ/NAaxeMA0GCSqGSIb3DQEBAQUABIIBAEZKvbGWeJrmWPY8t506TSvlf2fb
-# r5oCyJe26MUV4VCL39AjRL23+HwUh6/o3PeVV6kptsakNgJOUI0Zsqj0FPzGsppe
-# 7uby7nM0Mw7+NTneLGd/TuIYU45alVfYrLjDNnA646xpe0hCbbJVplZR0pb9PZXT
-# uI0boDG57PEBBcRKFewi+f3qMZ5FSknFDUZHIL3GGwhAJqEmwIifuMuSETr1rBE0
-# JVKQNzLLtQMY4XNqPjKPKath8zS+j9OGSUDOdKbp3jDJVIN7h0dHBiM2JarNq5jn
-# hNON23gtsz10RTxY7ceoEkENtmGF1fM/rxOXBSbvyO+P+M9Ms5sGlElWc74=
+# NwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFPSymU/mDjR/E0mV
+# Dlnf65/+v6IJMA0GCSqGSIb3DQEBAQUABIIBAAlBgxqkdKjGpMimY22VoLA+u7e6
+# BTGXVm4/EzLTyG39nYdUQPDZ41xgE4Pjfyr+FiJKykbV1vKOzFfXGeUibU74sluW
+# seAB0M0WOuB3VzfShyMc9w0UsaDBPeRDw+V8jDQolQAYS+tE2AtFoK/SMpnjYQfJ
+# nfNhDIh0HPGL5aZlfZ5Gd7PY1pF/avkwHQx3HX/X1cgAT6MI+l+kKQc5yt3BWaRq
+# 6BT2s1qwhKuOpWN6l6qamkZXcuuB9iTHCWIlPuaU0AIc8wWjtPXX1grMJeWuSFj8
+# K1WxL1VyRz6f4ndCNlnBY+BjmH+SdONY2uKar50NlBmNkywdmcN6YJBSNo4=
 # SIG # End signature block

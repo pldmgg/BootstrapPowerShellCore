@@ -860,7 +860,12 @@ function SSHScriptBuilder {
     }
 
     if ($PSVersionTable.Platform -eq "Unix") {
-        $FinalPassword = if ($DomainPassword) {$DomainPassword} else {$LocalPassword}
+        if ($DomainPassword -or $LocalPassword) {
+            $FinalPassword = if ($DomainPassword) {$DomainPassword} else {$LocalPassword}
+        }
+        else {
+            $FinalPassword = 'null'
+        }
         #$FinalPassword = $FinalPassword -replace [regex]::Escape('$'),'\\\$' -replace [regex]::Escape('"'),'\\\"'
 
         if ($SSHScriptArray -and $ElevatedSSHScriptArray) {
@@ -1036,8 +1041,8 @@ function SSHScriptBuilder {
 # SIG # Begin signature block
 # MIIMiAYJKoZIhvcNAQcCoIIMeTCCDHUCAQExCzAJBgUrDgMCGgUAMGkGCisGAQQB
 # gjcCAQSgWzBZMDQGCisGAQQBgjcCAR4wJgIDAQAABBAfzDtgWUsITrck0sYpfvNR
-# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUwAqWzI8gGoSTwiHea0E+doBK
-# xjigggn9MIIEJjCCAw6gAwIBAgITawAAAB/Nnq77QGja+wAAAAAAHzANBgkqhkiG
+# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUaLE+cYLJlNXt0GFGzoh5tROe
+# 9eCgggn9MIIEJjCCAw6gAwIBAgITawAAAB/Nnq77QGja+wAAAAAAHzANBgkqhkiG
 # 9w0BAQsFADAwMQwwCgYDVQQGEwNMQUIxDTALBgNVBAoTBFpFUk8xETAPBgNVBAMT
 # CFplcm9EQzAxMB4XDTE3MDkyMDIxMDM1OFoXDTE5MDkyMDIxMTM1OFowPTETMBEG
 # CgmSJomT8ixkARkWA0xBQjEUMBIGCgmSJomT8ixkARkWBFpFUk8xEDAOBgNVBAMT
@@ -1094,11 +1099,11 @@ function SSHScriptBuilder {
 # ARkWA0xBQjEUMBIGCgmSJomT8ixkARkWBFpFUk8xEDAOBgNVBAMTB1plcm9TQ0EC
 # E1gAAAH5oOvjAv3166MAAQAAAfkwCQYFKw4DAhoFAKB4MBgGCisGAQQBgjcCAQwx
 # CjAIoAKAAKECgAAwGQYJKoZIhvcNAQkDMQwGCisGAQQBgjcCAQQwHAYKKwYBBAGC
-# NwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFD4dFcEFHmjufd0C
-# 3qz+TbtAvM0jMA0GCSqGSIb3DQEBAQUABIIBAH5GXGXYF737sU7lSzPu+pYErXMe
-# V8eXoP52/z0hFvUAbjYiG/t4NulXHx5pQIuF7PcDZ5Byu/1lpv6N1vtKnXrW4aHP
-# RHOHr1SaKOdR9/TqcyXZbMj8rDhQwsqYuQbII3SDav3D8CQc82bfPeBNBby6NbpS
-# Mhar579AcToWSryVGYhRwZ6qgsyt727IoDMNoJdP8AAhFF+/+w68bYm3GQ/1OupL
-# 3a8V5nV9wf9ud92NdV0S0BEu8Pf3xQ5B3IckLQ1/2nVorDevjRnmgRG4V/LeH5O2
-# 2v9ZvT7bkLb98wJQgbwdf+rzIijMttKkW0eFvOeYOqAa9bgEgcWwE3PUH0o=
+# NwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFFDCXp5og/kDJOy9
+# eyNQhH6torlRMA0GCSqGSIb3DQEBAQUABIIBAC34/aTwx4W7Y5XmgYA9l0amkCoH
+# TLsSs9kln3zSK0WJ98ltZ4/80Fndbk6vyo7qlFTlVLwLW67Qit/elqSccjUkzvJK
+# fyYsbIYgl2yd3Cuj4Kr3YnXL9TIz0o+1ObVHDMHptCeIBkCikIEUqmEs6IIvmhHV
+# jj/ocJJ0dr2HLQ/BuTcbyxVP5kL848fXUYEfe64TQPaVyoPgmKWS86lLaMfbV1GR
+# Rs41i5ByHp6GyqsI40+VY6x8hlvvmdpGn9Wf9UyCRmqwFI6WHWPghAPZMpXBwsrT
+# BR3pcyZpy7lZ48lre96iTdw967W17ZV+6RGlV//BOOgpW29bJ6Y56nv/mEg=
 # SIG # End signature block

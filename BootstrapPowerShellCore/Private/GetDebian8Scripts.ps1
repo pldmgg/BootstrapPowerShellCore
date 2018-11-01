@@ -36,18 +36,18 @@ function GetDebian8Scripts {
     )
 
     [pscustomobject]@{
-        PackageManagerInstallScript = $Debian8PMInstallScript
-        ManualInstallScript         = $Debian8ManualInstallScript
-        UninstallScript             = $Debian8UninstallScript
-        ConfigurePwshRemotingScript = $LinuxPwshRemotingScript
+        PackageManagerInstallScript = [System.Collections.ArrayList]$Debian8PMInstallScript
+        ManualInstallScript         = [System.Collections.ArrayList]$Debian8ManualInstallScript
+        UninstallScript             = [System.Collections.ArrayList]$Debian8UninstallScript
+        ConfigurePwshRemotingScript = [System.Collections.ArrayList]$LinuxPwshRemotingScript
     }
 }
 
 # SIG # Begin signature block
 # MIIMiAYJKoZIhvcNAQcCoIIMeTCCDHUCAQExCzAJBgUrDgMCGgUAMGkGCisGAQQB
 # gjcCAQSgWzBZMDQGCisGAQQBgjcCAR4wJgIDAQAABBAfzDtgWUsITrck0sYpfvNR
-# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUlIdQhTVBz0F6jZ8d47I5i0Ur
-# SnWgggn9MIIEJjCCAw6gAwIBAgITawAAAB/Nnq77QGja+wAAAAAAHzANBgkqhkiG
+# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUihac6Izj9/Far1LvSe4aK0RV
+# aH+gggn9MIIEJjCCAw6gAwIBAgITawAAAB/Nnq77QGja+wAAAAAAHzANBgkqhkiG
 # 9w0BAQsFADAwMQwwCgYDVQQGEwNMQUIxDTALBgNVBAoTBFpFUk8xETAPBgNVBAMT
 # CFplcm9EQzAxMB4XDTE3MDkyMDIxMDM1OFoXDTE5MDkyMDIxMTM1OFowPTETMBEG
 # CgmSJomT8ixkARkWA0xBQjEUMBIGCgmSJomT8ixkARkWBFpFUk8xEDAOBgNVBAMT
@@ -104,11 +104,11 @@ function GetDebian8Scripts {
 # ARkWA0xBQjEUMBIGCgmSJomT8ixkARkWBFpFUk8xEDAOBgNVBAMTB1plcm9TQ0EC
 # E1gAAAH5oOvjAv3166MAAQAAAfkwCQYFKw4DAhoFAKB4MBgGCisGAQQBgjcCAQwx
 # CjAIoAKAAKECgAAwGQYJKoZIhvcNAQkDMQwGCisGAQQBgjcCAQQwHAYKKwYBBAGC
-# NwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFBV+2IbPtFvLTmN6
-# AbL7O3jawHeDMA0GCSqGSIb3DQEBAQUABIIBAJgVFWfxYnwjn2HnP9IICoR33WO/
-# XlQ93mmNf6V79yrBfBXuMQg32afzVHAH+AQx4SDgr/otspvHRzh3keJpzi3Zx9Ri
-# HMf7QUM5DJZQcyCfajJ5ECDSCmxvZfV/UiA+MSaqUIImhsokNyXfQoq2pdMqZ96/
-# YHWF04qRNeC/VeSz9BG0B33yMOIaRWkU6H950wOBiKxUvLAI2xeknko1U65QJPnx
-# iWHB4tJT02UWoU2myy+nrOv5uCggNDyRdawnQq+7QpTCmKc6oLOTDlxxZi6TEEAI
-# 6OuuWXs/5HeDzKW/5SOJOyEUBj/3dbF3zCnzx/TRKIE035f6PhebLpX5Eao=
+# NwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFMvta9w3zBaPGAjr
+# D5yjK6NUL5MeMA0GCSqGSIb3DQEBAQUABIIBALxOsjMXlaUAhmdmk3zUHusXxuLI
+# 5o+YGLypMjktDXRJ55uSfcUcp/Y3cvdYElFgSUkoAEUOrTghWm6Uo/3yzDs8SxPk
+# Q0pIJdiV9XWg6sxFa6sSkcts4hmOo0aF0VRsp7V8anK/cK+6PZ7WBRfeSInvfLNc
+# /Dh+lyWspzD9dTnVhyF0UAKtlakPyXhJC0jA5GrSuHZgh6zT7y6Cms6AzGnLkNSg
+# yqVJFCtgyF5qtUgWygSs7QyEJuFW1TdjO32gwWxKz1c1j7ZVckpcZr37ZvwXLUSX
+# vWfHTCQfKB59VAN5+U7+qIzmjJwZ0urNX6iyW3I3q8GwU2mcIkuzHXuyRD8=
 # SIG # End signature block
