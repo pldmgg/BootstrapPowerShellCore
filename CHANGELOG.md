@@ -1,5 +1,9 @@
 # Change log
 
+## 1.0.5 (November 1, 2018)
+
+- Fixed issue with Get<OS>Scripts Private Functions where properties did not stay ArrayList objects
+
 ## 1.0.4 (October 16, 2018)
 
 - Added Configure-PwshRemoting function
