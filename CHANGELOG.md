@@ -1,5 +1,9 @@
 # Change log
 
+## 1.0.6 (November 14, 2018)
+
+- Fix Authenticode Signature Attempt 1
+
 ## 1.0.5 (November 1, 2018)
 
 - Fixed issue with Get<OS>Scripts Private Functions where properties did not stay ArrayList objects
